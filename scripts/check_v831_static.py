@@ -10,7 +10,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO = Path('/home/z/my-project/arvexa')
+REPO = Path('/home/z/my-project/arvexa-academy')  # v8.33 : la copie academy (l'original arvexa. reste intouché)
 REG = REPO / 'register.html'
 html = REG.read_text(encoding='utf-8')
 errors = []
@@ -50,6 +50,8 @@ else:
 
 # 4. Invariants fonctionnels v8.31 + v8.32
 html_only = html.split('<script type="module">')[0]  # sans le JS inline
+m_draft = re.search(r'const DRAFT_KEYS = \[(.*?)\]', html, re.S)
+draft_no_password = bool(m_draft) and 'password' not in m_draft.group(1)
 checks = [
     ('5 panneaux d\'étapes', html.count('class="step-panel') == 5),
     ('5 points de progression', len(re.findall(r'class="step-dot', html)) == 5),
@@ -83,7 +85,7 @@ checks = [
     ('tracking étapes', 'inscription_etape_' in html),
     ('tracking session', 'inscription_session_' in html),
     ('tracking pays', 'inscription_pays_' in html),
-    ('brouillon sans mot de passe', 'password' not in re.search(r'const DRAFT_KEYS = \[(.*?)\]', html, re.S).group(1)),
+    ('brouillon sans mot de passe', draft_no_password),
 ]
 for label, ok in checks:
     (oks if ok else errors).append(('OK  ' if ok else 'FAIL') + ' ' + label)
