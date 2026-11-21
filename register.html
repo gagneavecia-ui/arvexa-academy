@@ -272,7 +272,7 @@
     }
 
     /* ============================================================
-       PROGRESS DOTS
+       PROGRESS DOTS (wizard 5 étapes)
        ============================================================ */
     .progress-steps {
       display: flex;
@@ -291,6 +291,9 @@
     .step-dot.active {
       background: linear-gradient(90deg, var(--accent), var(--accent-bright));
       width: 36px;
+    }
+    .step-dot.done {
+      background: rgba(224, 184, 74, 0.45);
     }
     .step-label {
       font-size: 11.5px;
@@ -323,6 +326,260 @@
       height: 1px;
       background: linear-gradient(90deg, transparent, rgba(224, 184, 74, 0.45), transparent);
     }
+
+    /* ============================================================
+       WIZARD — PANNEAUX D'ÉTAPES (v8.31)
+       ============================================================ */
+    .step-panel { display: none; }
+    .step-panel.active {
+      display: block;
+      animation: panelEnter 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    @keyframes panelEnter {
+      from { opacity: 0; transform: translateX(10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .step-title {
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--text-light);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .step-title i { color: var(--accent-bright); font-size: 14px; }
+    .step-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.55;
+    }
+
+    /* Cartes de classe (étape 3) */
+    .class-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .class-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 16px 10px 14px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius);
+      background: var(--input-bg);
+      cursor: pointer;
+      transition: var(--transition-fast);
+      text-align: center;
+      user-select: none;
+    }
+    .class-card:hover { border-color: rgba(224, 184, 74, 0.4); }
+    .class-card input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .class-card.selected {
+      border-color: var(--accent-bright);
+      background: rgba(224, 184, 74, 0.07);
+      box-shadow: 0 0 0 3px rgba(224, 184, 74, 0.12);
+    }
+    .class-card:focus-within {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 2px;
+    }
+    .class-icon { font-size: 18px; color: var(--text-muted); transition: var(--transition-fast); }
+    .class-card.selected .class-icon { color: var(--accent-bright); }
+    .class-name { font-size: 17px; font-weight: 700; color: var(--text-light); }
+    .class-sub { font-size: 11.5px; color: var(--text-muted); }
+    .class-exam {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--accent-bright);
+      background: rgba(224, 184, 74, 0.10);
+      border: 1px solid rgba(224, 184, 74, 0.25);
+      padding: 2px 9px;
+      border-radius: 999px;
+      margin-top: 5px;
+    }
+    .class-exam.none {
+      color: var(--text-muted);
+      background: transparent;
+      border-color: rgba(255, 255, 255, 0.10);
+    }
+
+    .exam-note {
+      font-size: 12.5px;
+      color: var(--text-dim);
+      background: rgba(var(--rgb-soft), 0.02);
+      border: 1px dashed rgba(224, 184, 74, 0.25);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      line-height: 1.55;
+    }
+    .exam-note.error {
+      border-color: rgba(231, 76, 60, 0.4);
+      color: var(--danger-light);
+    }
+
+    .serie-block { margin-bottom: 4px; }
+    .serie-chips {
+      display: flex;
+      gap: 10px;
+    }
+    .serie-chip {
+      flex: 1;
+      position: relative;
+      text-align: center;
+      padding: 12px 8px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      background: var(--input-bg);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      transition: var(--transition-fast);
+      user-select: none;
+    }
+    .serie-chip:hover { border-color: rgba(224, 184, 74, 0.4); }
+    .serie-chip input { position: absolute; opacity: 0; pointer-events: none; }
+    .serie-chip.selected {
+      border-color: var(--accent-bright);
+      background: rgba(224, 184, 74, 0.08);
+      color: var(--text-light);
+      box-shadow: 0 0 0 3px rgba(224, 184, 74, 0.10);
+    }
+    .serie-chip:focus-within {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 2px;
+    }
+    .serie-chip small {
+      display: block;
+      font-size: 10.5px;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Pays + indicatif intelligent (étape 4) */
+    .country-wrap select { cursor: pointer; }
+    .country-wrap select option {
+      background: #141414;
+      color: #F5F0E8;
+    }
+    .country-chevron {
+      position: absolute;
+      right: 14px;
+      color: var(--text-muted);
+      font-size: 12px;
+      pointer-events: none;
+      transition: var(--transition-fast);
+    }
+    .country-wrap:focus-within .country-chevron { color: var(--accent-bright); }
+
+    .dial-chip {
+      flex-shrink: 0;
+      padding: 6px 10px;
+      margin: 0 0 0 10px;
+      border-radius: 10px;
+      background: rgba(224, 184, 74, 0.10);
+      border: 1px solid rgba(224, 184, 74, 0.30);
+      color: var(--accent-bright);
+      font-size: 13.5px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      min-width: 58px;
+      text-align: center;
+      transition: var(--transition-fast);
+    }
+
+    .privacy-note {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 10px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      padding-left: 4px;
+    }
+    .privacy-note i { color: var(--success-light); font-size: 11px; }
+
+    /* Récapitulatif (étape 5) */
+    .recap-grid {
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      background: rgba(var(--rgb-soft), 0.02);
+      padding: 6px 16px;
+      margin-bottom: 4px;
+    }
+    .recap-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 14px;
+      padding: 11px 0;
+      border-bottom: 1px solid rgba(var(--rgb-soft), 0.05);
+      font-size: 13.5px;
+    }
+    .recap-row:last-child { border-bottom: none; }
+    .recap-label { color: var(--text-muted); flex-shrink: 0; }
+    .recap-row .recap-value {
+      color: var(--text-light);
+      font-weight: 600;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+    .recap-hint {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin: 10px 0 0;
+      padding-left: 4px;
+    }
+
+    /* Navigation du wizard */
+    .wizard-nav {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .wizard-nav .btn-submit { flex: 1; }
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 18px;
+      min-height: 54px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: transparent;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      touch-action: manipulation;
+      flex-shrink: 0;
+    }
+    .btn-ghost:hover {
+      color: var(--text-light);
+      border-color: rgba(224, 184, 74, 0.35);
+    }
+    .btn-ghost:focus-visible {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 3px;
+    }
+    .btn-ghost[hidden] { display: none; }
 
     /* ============================================================
        FORM FIELDS
@@ -390,7 +647,8 @@
       color: var(--danger);
     }
 
-    .field-input-wrap input {
+    .field-input-wrap input,
+    .field-input-wrap select {
       flex: 1;
       min-width: 0;
       padding: 14px 14px 14px 10px;
@@ -480,16 +738,6 @@
       min-width: 0;
       max-width: 100%;
       overflow: hidden;
-    }
-
-    @media (max-width: 400px) {
-      .name-row {
-        grid-template-columns: 1fr;
-        gap: 16px;
-      }
-      .name-row > .field {
-        margin-bottom: 0;
-      }
     }
 
     /* ============================================================
@@ -786,6 +1034,7 @@
 
     @media (max-width: 400px) {
       .name-row { grid-template-columns: 1fr; gap: 16px; }
+      .class-grid { gap: 10px; }
     }
 
     @media (max-width: 360px) {
@@ -803,6 +1052,11 @@
       .terms-box label,
       .terms-box > span { font-size: 12.5px; }
       .btn-submit { font-size: 14.5px; padding: 13px 16px; }
+      .btn-ghost { padding: 13px 14px; min-height: 52px; font-size: 13.5px; }
+      .class-name { font-size: 16px; }
+      .dial-chip { min-width: 52px; font-size: 12.5px; }
+      .serie-chip { font-size: 12px; padding: 11px 6px; }
+      .recap-row { font-size: 12.5px; }
     }
 
     @media (min-width: 768px) {
@@ -816,6 +1070,7 @@
        ============================================================ */
     @media (prefers-reduced-motion: reduce) {
       .page,
+      .step-panel.active,
       .logo .gold,
       .step-dot,
       .field-input-wrap,
@@ -829,7 +1084,7 @@
       html { scroll-behavior: auto; }
     }
 
-    a:focus-visible, button:focus-visible, input:focus-visible, label:focus-visible {
+    a:focus-visible, button:focus-visible, input:focus-visible, label:focus-visible, select:focus-visible {
       outline: 2px solid var(--accent-bright);
       outline-offset: 3px;
     }
@@ -870,197 +1125,346 @@
     <!-- HERO -->
     <section class="hero">
       <div class="hero-badge">
-        <i class="fas fa-rocket"></i>
-        <span>Étape 1 sur 2</span>
+        <i class="fas fa-route"></i>
+        <span>Inscription en 5 étapes</span>
       </div>
       <h1 class="hero-title">
         Crée ton compte<br>
         <em>ARVEXA</em>
       </h1>
       <p class="hero-subtitle">
-        Rejoins la communauté des élèves qui préparent leur BAC avec méthode et sérénité.
+        Rejoins les élèves qui révisent avec méthode, de la 3ᵉ jusqu'au BAC.
       </p>
     </section>
 
-    <!-- PROGRESS STEPS -->
-    <div class="progress-steps">
+    <!-- PROGRESS STEPS (wizard) -->
+    <div class="progress-steps" id="progressSteps">
       <div class="step-dot active"></div>
       <div class="step-dot"></div>
-      <span class="step-label">Inscription</span>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+      <span class="step-label" id="stepLabel">Identité</span>
     </div>
 
     <!-- FORM CARD -->
     <div class="form-card">
       <form id="registerForm" novalidate autocomplete="on">
 
-        <!-- Prénom + Nom -->
-        <div class="name-row">
+        <!-- ============ ÉTAPE 1 — IDENTITÉ ============ -->
+        <section class="step-panel active" data-step="1">
+          <div class="step-title"><i class="fas fa-user"></i> Qui es-tu ?</div>
+          <p class="step-desc">Ton nom apparaîtra sur ton profil et tes réalisations.</p>
+
+          <div class="name-row">
+            <div class="field">
+              <label class="field-label" for="firstName">Prénom</label>
+              <div class="field-input-wrap" id="firstNameWrap">
+                <span class="icon"><i class="fas fa-user"></i></span>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="given-name"
+                  placeholder="Ton prénom"
+                  autocomplete="given-name"
+                  required
+                  maxlength="40"
+                >
+                <span class="field-status" id="firstNameStatus"></span>
+              </div>
+              <div class="field-help" id="firstNameHelp"></div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="lastName">Nom</label>
+              <div class="field-input-wrap" id="lastNameWrap">
+                <span class="icon"><i class="fas fa-user"></i></span>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="family-name"
+                  placeholder="Ton nom"
+                  autocomplete="family-name"
+                  required
+                  maxlength="40"
+                >
+                <span class="field-status" id="lastNameStatus"></span>
+              </div>
+              <div class="field-help" id="lastNameHelp"></div>
+            </div>
+          </div>
+
           <div class="field">
-            <label class="field-label" for="firstName">Prénom</label>
-            <div class="field-input-wrap" id="firstNameWrap">
-              <span class="icon"><i class="fas fa-user"></i></span>
+            <label class="field-label" for="establishment">
+              Établissement
+              <span class="optional">optionnel</span>
+            </label>
+            <div class="field-input-wrap" id="establishmentWrap">
+              <span class="icon"><i class="fas fa-school"></i></span>
               <input
                 type="text"
-                id="firstName"
-                name="given-name"
-                placeholder="Ton prénom"
-                autocomplete="given-name"
-                required
-                maxlength="40"
+                id="establishment"
+                name="organization"
+                placeholder="Nom de ton collège ou lycée"
+                autocomplete="organization"
+                maxlength="60"
               >
-              <span class="field-status" id="firstNameStatus"></span>
+              <span class="field-status" id="establishmentStatus"></span>
             </div>
-            <div class="field-help" id="firstNameHelp"></div>
+            <div class="field-help" id="establishmentHelp"></div>
+          </div>
+        </section>
+
+        <!-- ============ ÉTAPE 2 — COMPTE ============ -->
+        <section class="step-panel" data-step="2">
+          <div class="step-title"><i class="fas fa-envelope"></i> Ton accès</div>
+          <p class="step-desc">Ton e-mail et ton mot de passe serviront à te connecter sur tous tes appareils.</p>
+
+          <div class="field">
+            <label class="field-label" for="email">Adresse e-mail</label>
+            <div class="field-input-wrap" id="emailWrap">
+              <span class="icon"><i class="fas fa-envelope"></i></span>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="exemple@email.com"
+                autocomplete="email"
+                inputmode="email"
+                required
+              >
+              <span class="field-status" id="emailStatus"></span>
+            </div>
+            <div class="field-help" id="emailHelp"></div>
           </div>
 
           <div class="field">
-            <label class="field-label" for="lastName">Nom</label>
-            <div class="field-input-wrap" id="lastNameWrap">
-              <span class="icon"><i class="fas fa-user"></i></span>
+            <label class="field-label" for="password">Mot de passe</label>
+            <div class="field-input-wrap" id="passwordWrap">
+              <span class="icon"><i class="fas fa-lock"></i></span>
               <input
-                type="text"
-                id="lastName"
-                name="family-name"
-                placeholder="Ton nom"
-                autocomplete="family-name"
+                type="password"
+                id="password"
+                name="new-password"
+                placeholder="Minimum 6 caractères"
+                autocomplete="new-password"
                 required
-                maxlength="40"
+                minlength="6"
               >
-              <span class="field-status" id="lastNameStatus"></span>
+              <button
+                type="button"
+                class="toggle-pwd"
+                id="togglePassword"
+                aria-label="Afficher le mot de passe"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
             </div>
-            <div class="field-help" id="lastNameHelp"></div>
+            <div class="pwd-strength" id="pwdStrength">
+              <div class="pwd-strength-bar">
+                <div class="pwd-strength-segment"></div>
+                <div class="pwd-strength-segment"></div>
+                <div class="pwd-strength-segment"></div>
+                <div class="pwd-strength-segment"></div>
+                <div class="pwd-strength-segment"></div>
+              </div>
+              <div class="pwd-strength-text">
+                <span class="label" id="pwdStrengthLabel"></span>
+                <span>Solidité du mot de passe</span>
+              </div>
+            </div>
+            <div class="field-help" id="passwordHelp"></div>
           </div>
-        </div>
 
-        <!-- Email -->
-        <div class="field">
-          <label class="field-label" for="email">Adresse e-mail</label>
-          <div class="field-input-wrap" id="emailWrap">
-            <span class="icon"><i class="fas fa-envelope"></i></span>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="exemple@email.com"
-              autocomplete="email"
-              inputmode="email"
-              required
-            >
-            <span class="field-status" id="emailStatus"></span>
+          <div class="field">
+            <label class="field-label" for="confirmPassword">Confirme ton mot de passe</label>
+            <div class="field-input-wrap" id="confirmPasswordWrap">
+              <span class="icon"><i class="fas fa-lock"></i></span>
+              <input
+                type="password"
+                id="confirmPassword"
+                name="new-password"
+                placeholder="Retape ton mot de passe"
+                autocomplete="new-password"
+                required
+                minlength="6"
+              >
+              <button
+                type="button"
+                class="toggle-pwd"
+                id="toggleConfirm"
+                aria-label="Afficher le mot de passe"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div class="field-help" id="confirmPasswordHelp"></div>
           </div>
-          <div class="field-help" id="emailHelp"></div>
-        </div>
+        </section>
 
-        <!-- Établissement -->
-        <div class="field">
-          <label class="field-label" for="establishment">
-            Établissement
-            <span class="optional">optionnel</span>
+        <!-- ============ ÉTAPE 3 — CLASSE ============ -->
+        <section class="step-panel" data-step="3">
+          <div class="step-title"><i class="fas fa-graduation-cap"></i> Ta classe</div>
+          <p class="step-desc">Tout ARVEXA s'adapte à ta classe : cours, question du jour et épreuves.</p>
+
+          <div class="class-grid" role="radiogroup" aria-label="Choisis ta classe">
+            <label class="class-card">
+              <input type="radio" name="classId" value="troisieme">
+              <span class="class-icon"><i class="fas fa-book-open"></i></span>
+              <span class="class-name">3ᵉ</span>
+              <span class="class-sub">Troisième</span>
+              <span class="class-exam">BEPC</span>
+            </label>
+            <label class="class-card">
+              <input type="radio" name="classId" value="seconde">
+              <span class="class-icon"><i class="fas fa-book"></i></span>
+              <span class="class-name">2ᵉ</span>
+              <span class="class-sub">Seconde</span>
+              <span class="class-exam none">Plus tard</span>
+            </label>
+            <label class="class-card">
+              <input type="radio" name="classId" value="premiere">
+              <span class="class-icon"><i class="fas fa-pen"></i></span>
+              <span class="class-name">1ʳᵉ</span>
+              <span class="class-sub">Première</span>
+              <span class="class-exam none">Plus tard</span>
+            </label>
+            <label class="class-card">
+              <input type="radio" name="classId" value="terminale">
+              <span class="class-icon"><i class="fas fa-award"></i></span>
+              <span class="class-name">Tle</span>
+              <span class="class-sub">Terminale</span>
+              <span class="class-exam">BAC</span>
+            </label>
+          </div>
+
+          <div class="exam-note" id="examNote">Choisis ta classe pour continuer.</div>
+
+          <div class="serie-block" id="serieBlock" hidden>
+            <div class="field-label">Série du BAC</div>
+            <div class="serie-chips" role="radiogroup" aria-label="Choisis ta série du BAC">
+              <label class="serie-chip">
+                <input type="radio" name="series" value="A">
+                A
+                <small>Lettres</small>
+              </label>
+              <label class="serie-chip">
+                <input type="radio" name="series" value="C">
+                C
+                <small>Sciences maths</small>
+              </label>
+              <label class="serie-chip">
+                <input type="radio" name="series" value="D">
+                D
+                <small>Sciences exp</small>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ ÉTAPE 4 — WHATSAPP ============ -->
+        <section class="step-panel" data-step="4">
+          <div class="step-title"><i class="fab fa-whatsapp"></i> Ton numéro WhatsApp</div>
+          <p class="step-desc">Pour recevoir les informations importantes : cours, épreuves, annonces.</p>
+
+          <div class="field">
+            <label class="field-label" for="countrySelect">Pays</label>
+            <div class="field-input-wrap country-wrap" id="countryWrap">
+              <span class="icon"><i class="fas fa-globe-africa"></i></span>
+              <select id="countrySelect" name="country" aria-label="Choisis ton pays"></select>
+              <span class="country-chevron"><i class="fas fa-chevron-down"></i></span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="phoneInput">Numéro WhatsApp</label>
+            <div class="field-input-wrap" id="phoneWrap">
+              <span class="dial-chip" id="dialChip">+227</span>
+              <input
+                type="tel"
+                id="phoneInput"
+                name="tel-national"
+                placeholder="70 12 34 56"
+                autocomplete="tel-national"
+                inputmode="tel"
+                required
+              >
+              <span class="field-status" id="phoneStatus"></span>
+            </div>
+            <div class="field-help" id="phoneHelp"></div>
+            <p class="privacy-note">
+              <i class="fas fa-lock"></i>
+              Ton numéro reste privé et n'est jamais partagé.
+            </p>
+          </div>
+        </section>
+
+        <!-- ============ ÉTAPE 5 — CONFIRMATION ============ -->
+        <section class="step-panel" data-step="5">
+          <div class="step-title"><i class="fas fa-check-circle"></i> Tout est prêt ?</div>
+          <p class="step-desc">Vérifie tes informations, accepte les conditions et crée ton compte.</p>
+
+          <div class="recap-grid">
+            <div class="recap-row">
+              <span class="recap-label">Nom</span>
+              <span class="recap-value" id="recapName">—</span>
+            </div>
+            <div class="recap-row">
+              <span class="recap-label">E-mail</span>
+              <span class="recap-value" id="recapEmail">—</span>
+            </div>
+            <div class="recap-row">
+              <span class="recap-label">Classe</span>
+              <span class="recap-value" id="recapClass">—</span>
+            </div>
+            <div class="recap-row">
+              <span class="recap-label">Objectif</span>
+              <span class="recap-value" id="recapExam">—</span>
+            </div>
+            <div class="recap-row" id="recapSerieRow">
+              <span class="recap-label">Série</span>
+              <span class="recap-value" id="recapSerie">—</span>
+            </div>
+            <div class="recap-row">
+              <span class="recap-label">WhatsApp</span>
+              <span class="recap-value" id="recapPhone">—</span>
+            </div>
+            <div class="recap-row" id="recapEtabRow">
+              <span class="recap-label">Établissement</span>
+              <span class="recap-value" id="recapEtab">—</span>
+            </div>
+          </div>
+          <p class="recap-hint">Tu peux revenir en arrière pour modifier une information.</p>
+
+          <label class="terms-box" id="termsBox" for="termsCheckbox">
+            <input type="checkbox" id="termsCheckbox">
+            <span>
+              J'accepte les <a href="conditions.html" target="_blank">Conditions d'utilisation</a>
+              et la <a href="confidentialite.html" target="_blank">Politique de confidentialité</a>
+              d'ARVEXA School.
+            </span>
           </label>
-          <div class="field-input-wrap" id="establishmentWrap">
-            <span class="icon"><i class="fas fa-school"></i></span>
-            <input
-              type="text"
-              id="establishment"
-              name="organization"
-              placeholder="Nom de ton lycée"
-              autocomplete="organization"
-              maxlength="60"
-            >
-            <span class="field-status" id="establishmentStatus"></span>
+          <div class="terms-error" id="termsError">
+            Tu dois accepter les conditions pour continuer.
           </div>
-          <div class="field-help" id="establishmentHelp"></div>
-        </div>
 
-        <!-- Mot de passe -->
-        <div class="field">
-          <label class="field-label" for="password">Mot de passe</label>
-          <div class="field-input-wrap" id="passwordWrap">
-            <span class="icon"><i class="fas fa-lock"></i></span>
-            <input
-              type="password"
-              id="password"
-              name="new-password"
-              placeholder="Minimum 6 caractères"
-              autocomplete="new-password"
-              required
-              minlength="6"
-            >
-            <button
-              type="button"
-              class="toggle-pwd"
-              id="togglePassword"
-              aria-label="Afficher le mot de passe"
-            >
-              <i class="fas fa-eye"></i>
-            </button>
+          <div class="security-note">
+            <i class="fas fa-shield-alt"></i>
+            <span>Inscription sécurisée par Firebase</span>
           </div>
-          <div class="pwd-strength" id="pwdStrength">
-            <div class="pwd-strength-bar">
-              <div class="pwd-strength-segment" data-seg="1"></div>
-              <div class="pwd-strength-segment" data-seg="2"></div>
-              <div class="pwd-strength-segment" data-seg="3"></div>
-              <div class="pwd-strength-segment" data-seg="4"></div>
-              <div class="pwd-strength-segment" data-seg="5"></div>
-            </div>
-            <div class="pwd-strength-text">
-              <span>Force du mot de passe</span>
-              <span class="label" id="pwdStrengthLabel">Très faible</span>
-            </div>
-          </div>
-          <div class="field-help" id="passwordHelp"></div>
-        </div>
+        </section>
 
-        <!-- Confirmation -->
-        <div class="field">
-          <label class="field-label" for="confirmPassword">Confirmer le mot de passe</label>
-          <div class="field-input-wrap" id="confirmWrap">
-            <span class="icon"><i class="fas fa-check-circle"></i></span>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirm-password"
-              placeholder="Retape ton mot de passe"
-              autocomplete="new-password"
-              required
-            >
-            <button
-              type="button"
-              class="toggle-pwd"
-              id="toggleConfirm"
-              aria-label="Afficher le mot de passe"
-            >
-              <i class="fas fa-eye"></i>
-            </button>
-            <span class="field-status" id="confirmStatus"></span>
-          </div>
-          <div class="field-help" id="confirmHelp"></div>
-        </div>
-
-        <!-- Conditions -->
-        <label class="terms-box" id="termsBox" for="termsCheckbox">
-          <input type="checkbox" id="termsCheckbox">
-          <span>
-            J'accepte les <a href="conditions.html" target="_blank">Conditions d'utilisation</a>
-            et la <a href="confidentialite.html" target="_blank">Politique de confidentialité</a>
-            d'ARVEXA School.
-          </span>
-        </label>
-        <div class="terms-error" id="termsError">
-          Tu dois accepter les conditions pour continuer.
-        </div>
-
-        <!-- Bouton -->
-        <button type="submit" class="btn-submit" id="submitBtn" disabled>
-          <span class="btn-icon"><i class="fas fa-user-plus"></i></span>
-          <span class="btn-text">Créer mon compte</span>
-          <span class="spinner"></span>
-        </button>
-
-        <!-- Note sécurité -->
-        <div class="security-note">
-          <i class="fas fa-shield-alt"></i>
-          <span>Inscription sécurisée par Firebase</span>
+        <!-- NAVIGATION DU WIZARD -->
+        <div class="wizard-nav">
+          <button type="button" class="btn-ghost" id="backBtn" hidden>
+            <i class="fas fa-arrow-left"></i>
+            Retour
+          </button>
+          <button type="submit" class="btn-submit" id="submitBtn">
+            <span class="btn-icon"><i class="fas fa-arrow-right"></i></span>
+            <span class="btn-text" id="submitText">Suivant</span>
+            <span class="spinner"></span>
+          </button>
         </div>
       </form>
     </div>
@@ -1094,7 +1498,11 @@
 
   <script type="module">
   // ================================================================
-  // REGISTER — Version robuste
+  // REGISTER — v8.31 : inscription guidée en 5 étapes
+  // 1 Identité → 2 Compte → 3 Classe (BEPC/BAC) → 4 WhatsApp
+  //   (pays + indicatif intelligent) → 5 Récapitulatif + création
+  // Le compte Firebase Auth n'est créé QU'À L'ÉTAPE 5 : zéro compte
+  // orphelin si l'élève abandonne en route. Une seule écriture Firestore.
   // ================================================================
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
@@ -1110,11 +1518,11 @@
   persistentSingleTabManager,
   doc,
   setDoc,
-  addDoc,        // ⚡ AJOUTER si manquant
-  collection,    // ⚡ AJOUTER si manquant
+  addDoc,
+  collection,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
-    
+
   // ================================================================
   // CONFIG FIREBASE
   // ================================================================
@@ -1130,7 +1538,6 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // ⚡ FIRESTORE AVEC PERSISTANCE LOCALE
   const db = initializeFirestore(app, {
     localCache: persistentLocalCache({
       tabManager: persistentSingleTabManager()
@@ -1150,16 +1557,24 @@
   // ÉLÉMENTS DU DOM
   // ================================================================
   const form = $('registerForm');
-  const firstName = $('firstName');
-  const lastName = $('lastName');
-  const email = $('email');
-  const establishment = $('establishment');
-  const password = $('password');
-  const confirmPassword = $('confirmPassword');
+  const backBtn = $('backBtn');
+  const submitBtn = $('submitBtn');
+  const submitText = $('submitText');
+  const submitIcon = submitBtn.querySelector('.btn-icon i');
+  const stepLabel = $('stepLabel');
+  const dots = Array.from(document.querySelectorAll('#progressSteps .step-dot'));
+  const panels = Array.from(document.querySelectorAll('.step-panel'));
+  const examNote = $('examNote');
+  const serieBlock = $('serieBlock');
+  const countrySelect = $('countrySelect');
+  const dialChip = $('dialChip');
+  const phoneInput = $('phoneInput');
+  const phoneWrap = $('phoneWrap');
+  const phoneStatus = $('phoneStatus');
+  const phoneHelp = $('phoneHelp');
   const termsCheckbox = $('termsCheckbox');
   const termsBox = $('termsBox');
   const termsError = $('termsError');
-  const submitBtn = $('submitBtn');
   const toastContainer = $('toastContainer');
 
   // ================================================================
@@ -1172,26 +1587,142 @@
       email: '',
       establishment: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      classId: '',
+      series: '',
+      phone: ''
     },
+    countryIso: 'NE',
     touched: {},
-    isSubmitting: false,
-    isValid: false
+    currentStep: 1,
+    isSubmitting: false
   };
 
   // ================================================================
-  // STORAGE — Sauvegarde de progression
+  // WIZARD — DÉFINITION DES 5 ÉTAPES
+  // ================================================================
+  const STEPS = [
+    { id: 1, label: 'Identité', fields: ['firstName', 'lastName', 'establishment'] },
+    { id: 2, label: 'Compte', fields: ['email', 'password', 'confirmPassword'] },
+    { id: 3, label: 'Classe', fields: [] },
+    { id: 4, label: 'WhatsApp', fields: [] },
+    { id: 5, label: 'Confirmation', fields: [] }
+  ];
+
+  // Classe → libellés + examen national associé (consigne propriétaire :
+  // « on se base sur les classes du lycée et la troisième »).
+  // exam : 'bepc' (3ᵉ) | 'bac' (terminale) | '' (2ᵉ, 1ʳᵉ — pas d'examen national).
+  const CLASS_INFO = {
+    troisieme: { short: '3ᵉ', long: 'Troisième', exam: 'bepc', examLabel: 'BEPC',
+      note: 'Objectif : BEPC — ton examen national de fin de 3ᵉ. On prépare chaque matière avec toi.' },
+    seconde: { short: '2ᵉ', long: 'Seconde', exam: '', examLabel: 'BAC plus tard',
+      note: "Pas d'examen national cette année : tu poses des bases solides et tu prends de l'avance sur le BAC." },
+    premiere: { short: '1ʳᵉ', long: 'Première', exam: '', examLabel: 'BAC plus tard',
+      note: "Pas d'examen national cette année : tu prends de l'avance pour aborder le BAC sereinement." },
+    terminale: { short: 'Tle', long: 'Terminale', exam: 'bac', examLabel: 'BAC',
+      note: 'Objectif : BAC — choisis ta série ci-dessous pour un accompagnement adapté.' }
+  };
+  const SERIES_INFO = { A: 'Lettres', C: 'Sciences maths', D: 'Sciences exp' };
+
+  // ================================================================
+  // INDICATIFS — LES 54 PAYS D'AFRIQUE (liste identique à whatsapp.html)
+  // [iso, drapeau, indicatif, nom FR, nom EN] — tri alphabétique FR.
+  // Défaut : NIGER (+227), mémorisé dans localStorage 'arvexa-dial'.
+  // ================================================================
+  const AFRIQUE = [
+    ['ZA','🇿🇦','+27','Afrique du Sud','South Africa'],
+    ['DZ','🇩🇿','+213','Algérie','Algeria'],
+    ['AO','🇦🇴','+244','Angola','Angola'],
+    ['BJ','🇧🇯','+229','Bénin','Benin'],
+    ['BW','🇧🇼','+267','Botswana','Botswana'],
+    ['BF','🇧🇫','+226','Burkina Faso','Burkina Faso'],
+    ['BI','🇧🇮','+257','Burundi','Burundi'],
+    ['CM','🇨🇲','+237','Cameroun','Cameroon'],
+    ['CV','🇨🇻','+238','Cap-Vert','Cape Verde'],
+    ['KM','🇰🇲','+269','Comores','Comoros'],
+    ['CG','🇨🇬','+242','Congo-Brazzaville','Republic of the Congo'],
+    ['CI','🇨🇮','+225','Côte d’Ivoire','Ivory Coast'],
+    ['DJ','🇩🇯','+253','Djibouti','Djibouti'],
+    ['EG','🇪🇬','+20','Égypte','Egypt'],
+    ['ER','🇪🇷','+291','Érythrée','Eritrea'],
+    ['SZ','🇸🇿','+268','Eswatini','Eswatini'],
+    ['ET','🇪🇹','+251','Éthiopie','Ethiopia'],
+    ['GA','🇬🇦','+241','Gabon','Gabon'],
+    ['GM','🇬🇲','+220','Gambie','Gambia'],
+    ['GH','🇬🇭','+233','Ghana','Ghana'],
+    ['GN','🇬🇳','+224','Guinée','Guinea'],
+    ['GW','🇬🇼','+245','Guinée-Bissau','Guinea-Bissau'],
+    ['GQ','🇬🇶','+240','Guinée équatoriale','Equatorial Guinea'],
+    ['KE','🇰🇪','+254','Kenya','Kenya'],
+    ['LS','🇱🇸','+266','Lesotho','Lesotho'],
+    ['LR','🇱🇷','+231','Liberia','Liberia'],
+    ['LY','🇱🇾','+218','Libye','Libya'],
+    ['MG','🇲🇬','+261','Madagascar','Madagascar'],
+    ['MW','🇲🇼','+265','Malawi','Malawi'],
+    ['ML','🇲🇱','+223','Mali','Mali'],
+    ['MA','🇲🇦','+212','Maroc','Morocco'],
+    ['MR','🇲🇷','+222','Mauritanie','Mauritania'],
+    ['MU','🇲🇺','+230','Maurice','Mauritius'],
+    ['MZ','🇲🇿','+258','Mozambique','Mozambique'],
+    ['NA','🇳🇦','+264','Namibie','Namibia'],
+    ['NE','🇳🇪','+227','Niger','Niger'],
+    ['NG','🇳🇬','+234','Nigéria','Nigeria'],
+    ['UG','🇺🇬','+256','Ouganda','Uganda'],
+    ['CF','🇨🇫','+236','République centrafricaine','Central African Republic'],
+    ['CD','🇨🇩','+243','République démocratique du Congo','DR Congo'],
+    ['RW','🇷🇼','+250','Rwanda','Rwanda'],
+    ['ST','🇸🇹','+239','São Tomé-et-Príncipe','São Tomé and Príncipe'],
+    ['SN','🇸🇳','+221','Sénégal','Senegal'],
+    ['SC','🇸🇨','+248','Seychelles','Seychelles'],
+    ['SL','🇸🇱','+232','Sierra Leone','Sierra Leone'],
+    ['SO','🇸🇴','+252','Somalie','Somalia'],
+    ['SD','🇸🇩','+249','Soudan','Sudan'],
+    ['SS','🇸🇸','+211','Soudan du Sud','South Sudan'],
+    ['TZ','🇹🇿','+255','Tanzanie','Tanzania'],
+    ['TD','🇹🇩','+235','Tchad','Chad'],
+    ['TG','🇹🇬','+228','Togo','Togo'],
+    ['TN','🇹🇳','+216','Tunisie','Tunisia'],
+    ['ZM','🇿🇲','+260','Zambie','Zambia'],
+    ['ZW','🇿🇼','+263','Zimbabwe','Zimbabwe']
+  ].map(([iso, flag, dial, fr, en]) => ({ iso, flag, dial, fr, en }));
+  console.assert(AFRIQUE.length === 54, '[Register] 54 pays attendus, trouvé :', AFRIQUE.length);
+
+  function countryByIso(iso) { return AFRIQUE.find((c) => c.iso === iso) || null; }
+
+  // Indicatif intelligent : détecte le pays d'un numéro international tapé
+  // avec « + » par préfixe d'indicatif LE PLUS LONG (indicatifs uniques).
+  function detectCountryFromDigits(digits) {
+    if (!digits) return null;
+    let best = null;
+    for (const c of AFRIQUE) {
+      const d = c.dial.replace(/\D/g, '');
+      if (digits.startsWith(d) && (!best || d.length > best.dial.replace(/\D/g, '').length)) best = c;
+    }
+    return best;
+  }
+
+  let COUNTRY = countryByIso('NE') || AFRIQUE[0];
+  try {
+    const savedIso = localStorage.getItem('arvexa-dial');
+    const found = savedIso && countryByIso(savedIso);
+    if (found) { COUNTRY = found; state.countryIso = found.iso; }
+  } catch (e) { /* localStorage indisponible → Niger */ }
+
+  // ================================================================
+  // STORAGE — Sauvegarde de progression (jamais les mots de passe)
   // ================================================================
   const SAVE_KEY = 'arvexa_register_draft_v2';
+  // Jamais de mot de passe dans le brouillon ; classId/series sont des
+  // choix non sensibles : les restaurer évite de perdre la classe si
+  // l'élève recharge la page au milieu du wizard.
+  const DRAFT_KEYS = ['firstName', 'lastName', 'email', 'establishment', 'phone', 'classId', 'series'];
 
   function saveDraft() {
     try {
-      const draft = {
-        firstName: state.values.firstName,
-        lastName: state.values.lastName,
-        email: state.values.email,
-        establishment: state.values.establishment
-      };
+      const draft = {};
+      DRAFT_KEYS.forEach((k) => { draft[k] = state.values[k]; });
+      draft.countryIso = state.countryIso;
+      draft.step = state.currentStep;
       localStorage.setItem(SAVE_KEY, JSON.stringify(draft));
     } catch (e) {}
   }
@@ -1201,14 +1732,21 @@
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return;
       const draft = JSON.parse(raw);
-
-      ['firstName', 'lastName', 'email', 'establishment'].forEach((key) => {
+      DRAFT_KEYS.forEach((key) => {
         if (draft[key]) {
           state.values[key] = draft[key];
-          const input = $(key);
+          // Le champ téléphone s'appelle phoneInput (id ≠ clé de state)
+          const input = $(key === 'phone' ? 'phoneInput' : key);
           if (input) input.value = draft[key];
         }
       });
+      if (draft.countryIso && countryByIso(draft.countryIso)) {
+        state.countryIso = draft.countryIso;
+        COUNTRY = countryByIso(draft.countryIso);
+      }
+      if (Number.isInteger(draft.step) && draft.step >= 1 && draft.step <= 5) {
+        state.currentStep = draft.step;
+      }
     } catch (e) {}
   }
 
@@ -1270,6 +1808,56 @@
       return { valid: true };
     }
   };
+
+  // ================================================================
+  // TÉLÉPHONE — NORMALISATION + VALIDATION (logique whatsapp.html v8.3)
+  //  - « + » tapé devant → numéro international COMPLET accepté tel quel
+  //  - sinon → E.164 = indicatif du pays choisi + chiffres locaux
+  //    (espaces/tirets ignorés, un 0 initial est retiré)
+  // ================================================================
+  function normalizePhone(raw) {
+    const cleaned = String(raw || '').replace(/[\s\-().\u00A0]/g, '').trim();
+    if (!cleaned) return null;
+    if (cleaned.startsWith('+')) {
+      return /^\+\d{8,15}$/.test(cleaned) ? cleaned : null;
+    }
+    const digits = cleaned.replace(/\D/g, '');
+    if (!digits) return null;
+    const local = digits.replace(/^0+/, '');
+    if (local.length < 6 || local.length > 12) return null;
+    const dialDigits = String(COUNTRY.dial).replace(/\D/g, '');
+    const e164 = '+' + dialDigits + local;
+    return (e164.length - 1) <= 15 ? e164 : null;
+  }
+
+  function validatePhoneField() {
+    const raw = phoneInput.value.trim();
+    const norm = raw ? normalizePhone(raw) : null;
+
+    if (!raw) {
+      phoneWrap.classList.remove('is-error', 'is-success');
+      phoneStatus.textContent = '';
+      phoneStatus.className = 'field-status';
+      phoneHelp.className = 'field-help';
+      return null;
+    }
+    if (!norm) {
+      phoneWrap.classList.add('is-error');
+      phoneWrap.classList.remove('is-success');
+      phoneStatus.textContent = '✕';
+      phoneStatus.className = 'field-status error';
+      phoneHelp.textContent = '6 à 12 chiffres après l\'indicatif, ex. : +227 74 87 20 82.';
+      phoneHelp.className = 'field-help visible error';
+      return null;
+    }
+    phoneWrap.classList.remove('is-error');
+    phoneWrap.classList.add('is-success');
+    phoneStatus.textContent = '✓';
+    phoneStatus.className = 'field-status success';
+    phoneHelp.textContent = 'Numéro valide : ' + norm;
+    phoneHelp.className = 'field-help visible success';
+    return norm;
+  }
 
   // ================================================================
   // PASSWORD STRENGTH
@@ -1363,48 +1951,245 @@
     }
   }
 
-  // ================================================================
-  // VALIDATION GLOBALE
-  // ================================================================
-  function validateAll() {
-    const results = {};
-
-    results.firstName = validators.firstName(state.values.firstName);
-    results.lastName = validators.lastName(state.values.lastName);
-    results.email = validators.email(state.values.email);
-    results.establishment = validators.establishment(state.values.establishment);
-    results.password = validators.password(state.values.password);
-    results.confirmPassword = validators.confirmPassword(
-      state.values.confirmPassword,
-      { password: state.values.password }
-    );
-
-    const allFieldsOk = Object.values(results).every(
-      (r) => r.valid || r.optional
-    );
-
-    const pwdOk = results.password.valid && results.confirmPassword.valid;
-    const termsOk = termsCheckbox.checked;
-
-    state.isValid = allFieldsOk && pwdOk && termsOk;
-
-    return { results, termsOk };
+  function validateStepFields(stepId) {
+    const step = STEPS.find((s) => s.id === stepId);
+    let ok = true;
+    (step ? step.fields : []).forEach((fieldId) => {
+      const result = validators[fieldId](
+        state.values[fieldId],
+        { password: state.values.password }
+      );
+      renderField(fieldId, result);
+      if (!result.valid) ok = false;
+    });
+    return ok;
   }
 
-  function updateSubmitButton() {
-    const { results, termsOk } = validateAll();
+  function validateClassStep(markError) {
+    if (!state.values.classId) {
+      if (markError) {
+        examNote.classList.add('error');
+        examNote.textContent = 'Choisis ta classe pour continuer.';
+      }
+      return false;
+    }
+    if (state.values.classId === 'terminale' && !state.values.series) {
+      if (markError) {
+        examNote.classList.add('error');
+        examNote.textContent = 'Choisis ta série (A, C ou D) pour continuer.';
+      }
+      return false;
+    }
+    return true;
+  }
 
-    Object.keys(results).forEach((key) => {
-      renderField(key, results[key]);
+  function validatePhoneStep(markError) {
+    const norm = validatePhoneField();
+    if (!norm && markError && !phoneInput.value.trim()) {
+      phoneWrap.classList.add('is-error');
+      phoneStatus.textContent = '✕';
+      phoneStatus.className = 'field-status error';
+      phoneHelp.textContent = 'Entre ton numéro WhatsApp.';
+      phoneHelp.className = 'field-help visible error';
+    }
+    return Boolean(norm);
+  }
+
+  function validateStep(stepId, markError) {
+    let ok = validateStepFields(stepId);
+    if (stepId === 3) ok = validateClassStep(markError) && ok;
+    if (stepId === 4) ok = validatePhoneStep(markError) && ok;
+    return ok;
+  }
+
+  // ================================================================
+  // WIZARD — NAVIGATION
+  // ================================================================
+  function trackStep(stepId) {
+    try {
+      if (window.arvexaAnalytics && window.arvexaAnalytics.trackFeature) {
+        window.arvexaAnalytics.trackFeature('inscription_etape_' + stepId);
+      }
+    } catch (e) {}
+  }
+
+  function goToStep(stepId) {
+    state.currentStep = stepId;
+
+    panels.forEach((panel) => {
+      const isActive = Number(panel.dataset.step) === stepId;
+      panel.classList.toggle('active', isActive);
+      panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
     });
 
-    termsBox.classList.toggle('is-error', !termsOk && state.touched.terms);
-    termsError.classList.toggle('visible', !termsOk && state.touched.terms);
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === stepId - 1);
+      dot.classList.toggle('done', i < stepId - 1);
+    });
 
-    submitBtn.disabled = !state.isValid || state.isSubmitting;
+    const step = STEPS[stepId - 1];
+    stepLabel.textContent = 'Étape ' + stepId + ' — ' + step.label;
 
-    return state.isValid;
+    // Navigation : Retour masqué à l'étape 1 ; bouton principal change
+    backBtn.hidden = stepId === 1;
+    if (stepId === 5) {
+      submitText.textContent = 'Créer mon compte';
+      submitIcon.className = 'fas fa-user-plus';
+      renderRecap();
+      updateSubmitDisabled();
+    } else {
+      submitText.textContent = 'Suivant';
+      submitIcon.className = 'fas fa-arrow-right';
+      submitBtn.disabled = state.isSubmitting;
+    }
+
+    saveDraft();
+    trackStep(stepId);
+
+    // Focus du premier champ utile (sans scroll agressif)
+    setTimeout(() => {
+      const panel = panels[stepId - 1];
+      const focusable = panel && panel.querySelector('input, select');
+      if (focusable && window.matchMedia('(min-width: 480px)').matches) {
+        try { focusable.focus({ preventScroll: true }); } catch (e) {}
+      }
+    }, 180);
   }
+
+  function renderRecap() {
+    const info = state.values.classId ? CLASS_INFO[state.values.classId] : null;
+    const EXAM_DISPLAY = { bepc: 'BEPC', bac: 'BAC' };
+    $('recapName').textContent =
+      `${state.values.firstName.trim()} ${state.values.lastName.trim()}`.trim() || '—';
+    $('recapEmail').textContent = state.values.email.trim() || '—';
+    $('recapClass').textContent = info ? `${info.short} (${info.long})` : '—';
+    $('recapExam').textContent = info ? (EXAM_DISPLAY[info.exam] || 'BAC en vue') : '—';
+    const serieRow = $('recapSerieRow');
+    if (state.values.classId === 'terminale' && state.values.series) {
+      serieRow.style.display = 'flex';
+      $('recapSerie').textContent = state.values.series + ' · ' + SERIES_INFO[state.values.series];
+    } else {
+      serieRow.style.display = 'none';
+    }
+    const norm = normalizePhone(phoneInput.value);
+    $('recapPhone').textContent = norm || '—';
+    const etabRow = $('recapEtabRow');
+    if (state.values.establishment.trim()) {
+      etabRow.style.display = 'flex';
+      $('recapEtab').textContent = state.values.establishment.trim();
+    } else {
+      etabRow.style.display = 'none';
+    }
+  }
+
+  function updateSubmitDisabled() {
+    // Étape 5 : le bouton n'est bloqué que par les conditions.
+    const ok = termsCheckbox.checked && !state.isSubmitting;
+    submitBtn.disabled = !ok;
+    termsBox.classList.toggle('is-error', !termsCheckbox.checked && state.touched.terms);
+    termsError.classList.toggle('visible', !termsCheckbox.checked && state.touched.terms);
+  }
+
+  backBtn.addEventListener('click', () => {
+    if (state.currentStep > 1 && !state.isSubmitting) {
+      goToStep(state.currentStep - 1);
+    }
+  });
+
+  // ================================================================
+  // ÉTAPE 3 — CLASSE + SÉRIE
+  // ================================================================
+  const classInputs = Array.from(document.querySelectorAll('input[name="classId"]'));
+  const serieInputs = Array.from(document.querySelectorAll('input[name="series"]'));
+
+  classInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+      state.values.classId = input.value;
+      state.touched.classId = true;
+      classInputs.forEach((r) => r.closest('.class-card').classList.toggle('selected', r.checked));
+      const info = CLASS_INFO[input.value];
+      examNote.classList.remove('error');
+      examNote.textContent = info.note;
+      // La série n'existe que pour la Terminale (BAC)
+      serieBlock.hidden = input.value !== 'terminale';
+      if (input.value !== 'terminale') {
+        state.values.series = '';
+        serieInputs.forEach((r) => {
+          r.checked = false;
+          r.closest('.serie-chip').classList.remove('selected');
+        });
+      }
+      try {
+        if (window.arvexaAnalytics && window.arvexaAnalytics.trackFeature) {
+          window.arvexaAnalytics.trackFeature('inscription_classe_' + input.value);
+        }
+      } catch (e) {}
+    });
+  });
+
+  serieInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+      state.values.series = input.value;
+      state.touched.series = true;
+      serieInputs.forEach((r) => r.closest('.serie-chip').classList.toggle('selected', r.checked));
+      if (state.values.classId === 'terminale') {
+        examNote.classList.remove('error');
+        examNote.textContent = CLASS_INFO.terminale.note;
+      }
+    });
+  });
+
+  // ================================================================
+  // ÉTAPE 4 — PAYS (choix en premier) + INDICATIF INTELLIGENT
+  // ================================================================
+  function buildCountrySelect() {
+    const frag = document.createDocumentFragment();
+    AFRIQUE.forEach((c) => {
+      const opt = document.createElement('option');
+      opt.value = c.iso;
+      opt.textContent = `${c.flag} ${c.fr} (${c.dial})`;
+      frag.appendChild(opt);
+    });
+    countrySelect.appendChild(frag);
+    countrySelect.value = state.countryIso;
+  }
+
+  function renderDialChip() {
+    dialChip.textContent = COUNTRY.dial;
+    phoneInput.placeholder = COUNTRY.dial.replace('+', '') === '227'
+      ? '70 12 34 56'
+      : COUNTRY.dial + ' …';
+  }
+
+  countrySelect.addEventListener('change', () => {
+    const c = countryByIso(countrySelect.value);
+    if (!c) return;
+    COUNTRY = c;
+    state.countryIso = c.iso;
+    try { localStorage.setItem('arvexa-dial', c.iso); } catch (e) {}
+    renderDialChip();
+    if (phoneInput.value.trim()) validatePhoneField(); // revalide avec le nouvel indicatif
+  });
+
+  phoneInput.addEventListener('input', () => {
+    state.values.phone = phoneInput.value;
+    // Indicatif intelligent : si l'élève tape « + » (numéro international
+    // complet), on détecte le pays par le préfixe le plus long et on
+    // aligne le sélecteur — l'indicatif reste juste dans le champ.
+    const raw = phoneInput.value.trim();
+    if (raw.startsWith('+')) {
+      const digits = raw.replace(/\D/g, '');
+      const detected = detectCountryFromDigits(digits);
+      if (detected && detected.iso !== COUNTRY.iso) {
+        COUNTRY = detected;
+        state.countryIso = detected.iso;
+        countrySelect.value = detected.iso;
+        try { localStorage.setItem('arvexa-dial', detected.iso); } catch (e) {}
+        renderDialChip();
+      }
+    }
+    validatePhoneField();
+  });
 
   // ================================================================
   // TOASTS
@@ -1431,16 +2216,9 @@
   }
 
   // ================================================================
-  // BINDING DES CHAMPS
+  // BINDING DES CHAMPS TEXTE
   // ================================================================
-  const FIELD_IDS = [
-    'firstName',
-    'lastName',
-    'email',
-    'establishment',
-    'password',
-    'confirmPassword'
-  ];
+  const FIELD_IDS = ['firstName', 'lastName', 'email', 'establishment', 'password', 'confirmPassword'];
 
   FIELD_IDS.forEach((fieldId) => {
     const input = $(fieldId);
@@ -1449,17 +2227,15 @@
     input.addEventListener('input', () => {
       state.values[fieldId] = input.value;
       if (fieldId === 'password') renderPasswordStrength(input.value);
-      updateSubmitButton();
+      const step = STEPS.find((s) => s.fields.includes(fieldId));
+      if (step) validateStepFields(step.id);
       if (fieldId !== 'password' && fieldId !== 'confirmPassword') saveDraft();
     });
 
     input.addEventListener('blur', () => {
       state.touched[fieldId] = true;
-      updateSubmitButton();
-    });
-
-    input.addEventListener('focus', () => {
-      updateSubmitButton();
+      const step = STEPS.find((s) => s.fields.includes(fieldId));
+      if (step) validateStepFields(step.id);
     });
   });
 
@@ -1480,25 +2256,45 @@
   setupTogglePwd('togglePassword', 'password');
   setupTogglePwd('toggleConfirm', 'confirmPassword');
 
-  // Terms checkbox
+  // Terms checkbox (étape 5)
   termsCheckbox.addEventListener('change', () => {
     state.touched.terms = true;
-    updateSubmitButton();
+    updateSubmitDisabled();
   });
 
   // ================================================================
-  // SOUMISSION
+  // SOUMISSION — Suivant (étapes 1-4) puis création réelle (étape 5)
   // ================================================================
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    if (submitBtn.disabled || state.isSubmitting) return;
+    if (state.isSubmitting) return;
 
-    FIELD_IDS.forEach((id) => (state.touched[id] = true));
+    // ── Étapes 1 à 4 : valider puis avancer ──
+    if (state.currentStep < 5) {
+      const ok = validateStep(state.currentStep, true);
+      if (!ok) {
+        showToast('Vérifie les champs en rouge', 'error', 3000);
+        return;
+      }
+      goToStep(state.currentStep + 1);
+      return;
+    }
+
+    // ── Étape 5 : revalider TOUT avant de créer le compte ──
+    const allStepsOk = [1, 2, 3, 4].every((s) => validateStep(s, false));
     state.touched.terms = true;
+    updateSubmitDisabled();
 
-    if (!updateSubmitButton()) {
+    if (!allStepsOk) {
       showToast('Vérifie les champs en rouge', 'error', 3000);
+      const badStep = [1, 2, 3, 4].find((s) => !validateStep(s, false));
+      if (badStep) goToStep(badStep);
+      return;
+    }
+
+    if (!termsCheckbox.checked) {
+      showToast('Tu dois accepter les conditions pour continuer.', 'error', 4000);
       return;
     }
 
@@ -1511,9 +2307,17 @@
     const firstNameValue = state.values.firstName.trim();
     const lastNameValue = state.values.lastName.trim();
     const establishmentValue = state.values.establishment.trim() || '';
+    const classInfo = CLASS_INFO[state.values.classId];
+    const classIdValue = state.values.classId;
+    const examValue = classInfo.exam; // 'bepc' | 'bac' | ''
+    const seriesValue = classIdValue === 'terminale' ? state.values.series : '';
+    const whatsappValue = normalizePhone(phoneInput.value); // E.164, validé à l'étape 4
+    const whatsappCountryValue = state.countryIso;
+    const whatsappDialValue = COUNTRY.dial;
+    const classAdminLabel = classInfo.short + ' (' + classInfo.long + ')';
 
    try {
-  // 1. Création du compte Firebase Auth
+  // 1. Création du compte Firebase Auth — UNIQUEMENT à l'étape 5
   const credential = await createUserWithEmailAndPassword(auth, emailValue, passwordValue);
   const user = credential.user;
 
@@ -1525,8 +2329,15 @@
     fullName: `${firstNameValue} ${lastNameValue}`.trim(),
     email: emailValue,
     establishment: establishmentValue,
-    classId: 'terminale_d',
-    exam: 'bac',
+    // ✅ v8.31 — la VRAIE classe choisie à l'étape 3 (fini le hardcode
+    // terminale_d) : troisieme | seconde | premiere | terminale
+    classId: classIdValue,
+    // Examen national associé : bepc (3ᵉ) | bac (terminale) | '' (2ᵉ, 1ʳᵉ)
+    exam: examValue,
+    // ✅ v8.31 — étape WhatsApp intégrée : numéro E.164 + pays + indicatif
+    whatsapp: whatsappValue,
+    whatsappCountry: whatsappCountryValue,
+    whatsappDial: whatsappDialValue,
     role: 'student',
     onboardingCompleted: false,
     premium: false,
@@ -1537,6 +2348,8 @@
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
+  // Série uniquement pour la Terminale (A | C | D)
+  if (seriesValue) profileData.series = seriesValue;
 
   // ⚡ Retry : si Firestore échoue, on réessaie 2 fois avant d'abandonner
   let profileSaved = false;
@@ -1585,12 +2398,15 @@ try {
       uid: user.uid,
       userName: `${firstNameValue} ${lastNameValue}`.trim(),
       userEmail: emailValue,
-      establishment: establishmentValue || ''
+      establishment: establishmentValue || '',
+      classId: classIdValue,
+      className: classAdminLabel,
+      exam: examValue
     })
   });
 
   if (response.ok) {
-    console.log('✅ Notification admin envoyée');
+    console.log('Notification admin envoyée');
   } else {
     console.warn('Notification admin échouée (HTTP ' + response.status + ')');
   }
@@ -1602,12 +2418,15 @@ try {
 try {
   await addDoc(collection(db, 'admin_notifications'), {
     kind: 'new_signup',
-    title: '🎉 Nouvelle inscription',
-    message: `${firstNameValue} ${lastNameValue}`.trim() + (establishmentValue ? ' · ' + establishmentValue : ''),
+    title: 'Nouvelle inscription',
+    message: `${firstNameValue} ${lastNameValue}`.trim() + ' · ' + classAdminLabel
+      + (establishmentValue ? ' · ' + establishmentValue : ''),
     userUid: user.uid,
     userEmail: emailValue,
     userName: `${firstNameValue} ${lastNameValue}`.trim(),
     establishment: establishmentValue || '',
+    classId: classIdValue,
+    exam: examValue,
     type: 'success',
     read: false,
     createdAt: serverTimestamp()
@@ -1615,7 +2434,7 @@ try {
 } catch (e) {
   console.warn('Erreur création notif admin:', e.message);
 }
-      
+
       // 3. Sauvegarder la session AVANT redirection
       try {
         localStorage.setItem('arvexa_session', JSON.stringify({
@@ -1671,10 +2490,18 @@ try {
       // 4. Nettoyer le draft
       clearDraft();
 
+      try {
+        if (window.arvexaAnalytics && window.arvexaAnalytics.trackFeature) {
+          window.arvexaAnalytics.trackFeature('inscription_complete_' + classIdValue);
+        }
+      } catch (e) {}
+
       showToast('Compte créé avec succès !', 'success');
 
       setTimeout(() => {
-        window.location.replace('whatsapp.html'); // v7.0 — étape WhatsApp (numéro + groupe) avant l'onboarding
+        // ✅ v8.31 — l'étape WhatsApp est DÉJÀ FAITE (étape 4 du wizard) :
+        // on va directement à l'onboarding.
+        window.location.replace('onboarding.html');
       }, 1200);
 
     } catch (error) {
@@ -1718,18 +2545,12 @@ try {
 
       setTimeout(() => {
         state.isSubmitting = false;
-        submitBtn.disabled = false;
         submitBtn.classList.remove('loading');
-        updateSubmitButton();
+        updateSubmitDisabled();
       }, 3000);
 
       return;
     }
-
-    state.isSubmitting = false;
-    submitBtn.disabled = false;
-    submitBtn.classList.remove('loading');
-    updateSubmitButton();
   });
 
   // ================================================================
@@ -1744,10 +2565,31 @@ try {
     }
   });
 
-  updateSubmitButton();
-  if (state.values.password) renderPasswordStrength(state.values.password);
+  buildCountrySelect();
+  renderDialChip();
+  if (state.values.phone) validatePhoneField();
+  // Restaure la sélection de classe depuis un éventuel aller-retour
+  if (state.values.classId) {
+    const input = classInputs.find((r) => r.value === state.values.classId);
+    if (input) {
+      input.checked = true;
+      input.dispatchEvent(new Event('change'));
+    }
+  }
+  // Restaure la série si l'élève était en Terminale
+  if (state.values.classId === 'terminale' && state.values.series) {
+    const sInput = serieInputs.find((r) => r.value === state.values.series);
+    if (sInput) {
+      sInput.checked = true;
+      sInput.dispatchEvent(new Event('change'));
+    }
+  }
 
-  console.log('🚀 ARVEXA School — Inscription (version robuste)');
+  // Restaure l'étape du brouillon (recharge de page au milieu du wizard) :
+  // les champs 1-4 et le pays reviennent du draft, on repart où l'élève était.
+  goToStep(Math.min(Math.max(state.currentStep, 1), 5));
+
+  console.log('ARVEXA School — Inscription v8.31 (wizard 5 étapes)');
   </script>
 </body>
 </html>

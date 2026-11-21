@@ -188,7 +188,9 @@ async function buildStudentContext(uid) {
       context.profile = {
         firstName: u.firstName || '',
         lastName: u.lastName || '',
+        // ✅ v8.31 — vraie classe (3ᵉ → Terminale) + examen visé (BEPC/BAC/'')
         classId: u.classId || 'terminale_d',
+        exam: u.exam || '',
         establishment: u.establishment || ''
       };
     }
@@ -273,7 +275,8 @@ async function buildStudentContext(uid) {
 function buildSystemPrompt(context) {
   const lines = [];
   lines.push('Tu es ARV Assistant, le tuteur personnel IA d\'ARVEXA School.');
-  lines.push('Tu aides des élèves de Terminale D en Afrique francophone à préparer le BAC.');
+  // ✅ v8.31 — ARV accompagne maintenant de la 3ᵉ au BAC (BEPC inclus)
+  lines.push('Tu aides des élèves d\'Afrique francophone, de la 3ᵉ à la Terminale, à préparer le BEPC et le BAC.');
   lines.push('');
   lines.push('═══ TON RÔLE ═══');
   lines.push('- Expliquer clairement, avec pédagogie, sans jargon inutile');
@@ -287,8 +290,17 @@ function buildSystemPrompt(context) {
 
   if (context.profile) {
     const p = context.profile;
+    // ✅ v8.31 — registre des classes (miroir serveur d'arvexa-classes.js)
+    const CLASS_LABELS = {
+      troisieme: '3ᵉ (Troisième) — examen visé : BEPC',
+      seconde: '2ᵉ (Seconde) — préparation du BAC',
+      premiere: '1ʳᵉ (Première) — préparation du BAC',
+      terminale: 'Terminale — examen visé : BAC',
+      terminale_d: 'Terminale D — examen visé : BAC'
+    };
     lines.push(`Prénom : ${p.firstName || 'élève'}`);
-    if (p.classId) lines.push(`Classe : ${p.classId === 'terminale_d' ? 'Terminale D' : p.classId}`);
+    lines.push(`Classe : ${CLASS_LABELS[p.classId] || p.classId}`);
+    if (p.exam) lines.push(`Examen : ${p.exam === 'bepc' ? 'BEPC' : 'BAC'}`);
     if (p.establishment) lines.push(`Établissement : ${p.establishment}`);
   }
 

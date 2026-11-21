@@ -56,12 +56,27 @@ service cloud.firestore {
 
       // ─── Création : propriétaire uniquement, profil "étudiant gratuit" imposé
       // 🔒 Empêche de créer un compte déjà premium/admin.
+      // ✅ v8.31 — classId (3ᵉ → Terminale), exam (bepc/bac/'') et série (A/C/D)
+      // bornés QUAND PRÉSENTS : register.html les écrit toujours à l'inscription,
+      // mais les créations minimales legacy (arvexa-country.js persistCountry,
+      // whatsapp.html si profil absent) restent valides. 'terminale_d' est
+      // conservé pour la compatibilité des comptes v ≤ 8.30 (login.html).
       allow create: if isOwner(userId)
         && request.resource.data.role == 'student'
         && request.resource.data.premium == false
         && request.resource.data.isUnlocked == false
         && request.resource.data.hasDeposited == false
-        && request.resource.data.accountStatus == 'active';
+        && request.resource.data.accountStatus == 'active'
+        && (!('classId' in request.resource.data)
+            || (request.resource.data.classId is string
+                && request.resource.data.classId.matches('^(troisieme|seconde|premiere|terminale|terminale_d)$')))
+        && (!('exam' in request.resource.data)
+            || request.resource.data.exam in ['bepc', 'bac', ''])
+        && (!('series' in request.resource.data)
+            || request.resource.data.series in ['A', 'C', 'D'])
+        && (!('whatsapp' in request.resource.data)
+            || (request.resource.data.whatsapp is string
+                && request.resource.data.whatsapp.matches('^\\+\\d{8,15}$')));
 
       // ─── Update : propriétaire SAUF champs sensibles ────────────
       // 🔒 Les champs d'abonnement et de paiement ne sont modifiables
@@ -104,7 +119,26 @@ service cloud.firestore {
                 && request.resource.data.country == resource.data.country))
         && (!('countryConfirmedAt' in resource.data)
             || (('countryConfirmedAt' in request.resource.data)
-                && request.resource.data.countryConfirmedAt == resource.data.countryConfirmedAt));
+                && request.resource.data.countryConfirmedAt == resource.data.countryConfirmedAt))
+
+      // ✅ v8.31 — classe/examen/série/WhatsApp bornés aussi en update :
+      // l'élève peut corriger sa classe, jamais écrire n'importe quoi.
+        && (!('classId' in request.resource.data)
+            || (request.resource.data.classId is string
+                && request.resource.data.classId.matches('^(troisieme|seconde|premiere|terminale|terminale_d)$')))
+        && (!('exam' in request.resource.data)
+            || request.resource.data.exam in ['bepc', 'bac', ''])
+        && (!('series' in request.resource.data)
+            || request.resource.data.series in ['A', 'C', 'D', ''])
+        && (!('whatsapp' in request.resource.data)
+            || (request.resource.data.whatsapp is string
+                && request.resource.data.whatsapp.matches('^\\+\\d{8,15}$')))
+        && (!('whatsappCountry' in request.resource.data)
+            || (request.resource.data.whatsappCountry is string
+                && request.resource.data.whatsappCountry.matches('^[A-Z]{2}$')))
+        && (!('whatsappDial' in request.resource.data)
+            || (request.resource.data.whatsappDial is string
+                && request.resource.data.whatsappDial.matches('^\\+\\d{1,5}$')));
 
       // ─── Suppression : admin uniquement ─────────────────────────
       allow delete: if isAdmin();

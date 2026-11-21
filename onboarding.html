@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-classes.js" defer></script><script src="arvexa-i18n.js" defer></script>
   <meta name="description" content="ARVEXA School - Bienvenue">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.png">
@@ -1109,12 +1109,18 @@
     userName.textContent = fullName;
     userEmail.textContent = email;
 
-    const classLabel = data.classId === 'terminale_d' || !data.classId
-      ? 'Terminale D'
-      : data.classId;
+    // ✅ v8.31 — affichage dynamique : la VRAIE classe (3ᵉ → Terminale)
+    // et le VRAI objectif (BEPC pour la 3ᵉ, BAC pour la Terminale).
+    // Legacy : 'terminale_d' (comptes v ≤ 8.30) reste affiché « Terminale D ».
+    const CL = window.ARVEXA_CLASSES;
+    const classLabel = CL
+      ? `${CL.label(data.classId)} (${CL.long(data.classId)})`
+      : (data.classId || 'Terminale D');
     userClass.textContent = classLabel;
 
-    userGoal.textContent = `BAC ${getBacYear()}`;
+    userGoal.textContent = CL
+      ? CL.goal(data.classId, getBacYear())
+      : `BAC ${getBacYear()}`;
 
     skeletonLoading.style.display = 'none';
     dynamicContent.style.display = 'block';
