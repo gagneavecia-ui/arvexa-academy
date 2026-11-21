@@ -74,6 +74,12 @@ service cloud.firestore {
             || request.resource.data.exam in ['bepc', 'bac', ''])
         && (!('series' in request.resource.data)
             || request.resource.data.series in ['A', 'C', 'D'])
+        // ✅ v8.32 — session d'examen (année civile, BEPC/BAC vers juin) :
+        // présente uniquement pour 3ᵉ et Terminale, bornée 2026-2050.
+        && (!('examYear' in request.resource.data)
+            || (request.resource.data.examYear is number
+                && request.resource.data.examYear >= 2026
+                && request.resource.data.examYear <= 2050))
         && (!('whatsapp' in request.resource.data)
             || (request.resource.data.whatsapp is string
                 && request.resource.data.whatsapp.matches('^\\+\\d{8,15}$')));
@@ -130,6 +136,11 @@ service cloud.firestore {
             || request.resource.data.exam in ['bepc', 'bac', ''])
         && (!('series' in request.resource.data)
             || request.resource.data.series in ['A', 'C', 'D', ''])
+        // ✅ v8.32 — session d'examen bornée aussi en update (2026-2050)
+        && (!('examYear' in request.resource.data)
+            || (request.resource.data.examYear is number
+                && request.resource.data.examYear >= 2026
+                && request.resource.data.examYear <= 2050))
         && (!('whatsapp' in request.resource.data)
             || (request.resource.data.whatsapp is string
                 && request.resource.data.whatsapp.matches('^\\+\\d{8,15}$')))

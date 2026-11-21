@@ -1594,6 +1594,15 @@
     "Tout est prêt ?": "All set?",
     "Vérifie tes informations, accepte les conditions et crée ton compte.": "Review your details, accept the terms and create your account.",
     "Tu peux revenir en arrière pour modifier une information.": "You can go back to edit any information.",
+    /* ── Inscription wizard v8.32 : session d'examen + modale custom ── */
+    "Temps restant avant l'examen": "Time left before your exam",
+    "Choisis ta session d'examen": "Choose your exam session",
+    "Choisis ta session d'examen pour continuer.": "Choose your exam session to continue.",
+    "Objectif : BAC — choisis ta série et ta session ci-dessous pour un accompagnement adapté.": "Goal: BAC — choose your stream and exam session below for tailored support.",
+    "Quand passes-tu ton examen ?": "When do you take your exam?",
+    "Rechercher un pays…": "Search a country…",
+    "Aucun pays trouvé": "No country found",
+    "BAC en vue": "BAC ahead",
   };
 
   /* ── Normalisation + expansion des variantes ── */

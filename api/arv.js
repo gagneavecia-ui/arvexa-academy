@@ -189,8 +189,10 @@ async function buildStudentContext(uid) {
         firstName: u.firstName || '',
         lastName: u.lastName || '',
         // ✅ v8.31 — vraie classe (3ᵉ → Terminale) + examen visé (BEPC/BAC/'')
+        // ✅ v8.32 — + session d'examen choisie à l'inscription (examYear)
         classId: u.classId || 'terminale_d',
         exam: u.exam || '',
+        examYear: Number.isInteger(u.examYear) ? u.examYear : null,
         establishment: u.establishment || ''
       };
     }
@@ -300,7 +302,17 @@ function buildSystemPrompt(context) {
     };
     lines.push(`Prénom : ${p.firstName || 'élève'}`);
     lines.push(`Classe : ${CLASS_LABELS[p.classId] || p.classId}`);
-    if (p.exam) lines.push(`Examen : ${p.exam === 'bepc' ? 'BEPC' : 'BAC'}`);
+    if (p.exam) {
+      lines.push(`Examen : ${p.exam === 'bepc' ? 'BEPC' : 'BAC'}`);
+      // ✅ v8.32 — temps restant avant l'examen (session choisie à l'inscription,
+      // examens du Niger vers juin). ARV adapte son plan à l'échéance.
+      if (Number.isInteger(p.examYear)) {
+        const now = new Date();
+        const months = (p.examYear - now.getFullYear()) * 12 + (5 - now.getMonth());
+        const duree = months < 1 ? 'imminent' : months === 1 ? 'dans environ 1 mois' : 'dans environ ' + months + ' mois';
+        lines.push(`Session : ${p.examYear} — examen ${duree} (juin)`);
+      }
+    }
     if (p.establishment) lines.push(`Établissement : ${p.establishment}`);
   }
 

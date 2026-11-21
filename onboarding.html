@@ -1118,9 +1118,12 @@
       : (data.classId || 'Terminale D');
     userClass.textContent = classLabel;
 
+    // ✅ v8.32 — la session choisie à l'inscription (examYear : 2027…) prime.
+    // Les comptes sans session (anciens ou 2ᵉ/1ʳᵉ) retombent sur l'année
+    // BAC calculée (bac-date.js) ou sur « Préparer le BAC » (CL.goal).
     userGoal.textContent = CL
-      ? CL.goal(data.classId, getBacYear())
-      : `BAC ${getBacYear()}`;
+      ? CL.goal(data.classId, data.examYear || getBacYear())
+      : `BAC ${data.examYear || getBacYear()}`;
 
     skeletonLoading.style.display = 'none';
     dynamicContent.style.display = 'block';

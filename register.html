@@ -470,21 +470,269 @@
       margin-top: 2px;
     }
 
-    /* Pays + indicatif intelligent (étape 4) */
-    .country-wrap select { cursor: pointer; }
-    .country-wrap select option {
-      background: #141414;
-      color: #F5F0E8;
-    }
-    .country-chevron {
-      position: absolute;
-      right: 14px;
-      color: var(--text-muted);
-      font-size: 12px;
-      pointer-events: none;
+    /* ============================================================
+       BOUTONS DE SÉLECTION CUSTOM (pays, session d'examen) — v8.32
+       AUCUN select natif : la popup du navigateur ne respecte pas les
+       couleurs du site. Tout passe par une modale maison (plus bas).
+       ============================================================ */
+    .picker-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 16px;
+      min-height: 54px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius);
+      color: var(--text-light);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
       transition: var(--transition-fast);
     }
-    .country-wrap:focus-within .country-chevron { color: var(--accent-bright); }
+    .picker-btn:hover { border-color: rgba(224, 184, 74, 0.4); }
+    .picker-btn:focus-visible {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 3px;
+    }
+    .picker-btn .picker-icon {
+      color: var(--text-muted);
+      font-size: 14px;
+      flex-shrink: 0;
+      transition: var(--transition-fast);
+    }
+    .picker-btn:hover .picker-icon { color: var(--accent-bright); }
+    .picker-btn .picker-flag {
+      font-size: 19px;
+      line-height: 1;
+      flex-shrink: 0;
+      width: 26px;
+      text-align: center;
+    }
+    .picker-btn .picker-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .picker-btn .picker-label.is-placeholder {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+    .picker-btn .picker-dial {
+      color: var(--accent-bright);
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
+    .picker-btn .picker-chevron {
+      color: var(--text-muted);
+      font-size: 12px;
+      flex-shrink: 0;
+      transition: var(--transition-fast);
+    }
+    .picker-btn:hover .picker-chevron { color: var(--accent-bright); }
+
+    /* Session d'examen (étape 3) — visible UNIQUEMENT pour 3ᵉ (BEPC) et
+       Terminale (BAC) : « en bas il y aura le champ de choisir combien de
+       temps il reste pour l'examen pour les deux classes, mais pour les
+       autres ça s'ouvre pas » (consigne propriétaire v8.32). */
+    .session-block { margin-bottom: 16px; }
+
+    /* ============================================================
+       MODALE DE SÉLECTION UNIFORME (pays, session, …) — v8.32
+       Feuille montant du bas sur mobile, fenêtre centrée ≥ 768px.
+       100 % tokens du site : zéro style navigateur.
+       ============================================================ */
+    .picker-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      background: rgba(6, 6, 6, 0.72);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      transition: opacity 0.26s ease;
+    }
+    .picker-overlay.open { opacity: 1; }
+    .picker-overlay[hidden] { display: none; }
+    .picker-sheet {
+      width: 100%;
+      max-width: 540px;
+      max-height: min(78dvh, 620px);
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-surface);
+      border: 1px solid var(--card-border-hover);
+      border-bottom: none;
+      border-radius: 22px 22px 0 0;
+      box-shadow: var(--shadow-lg);
+      padding-bottom: var(--safe-bottom);
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
+      overflow: hidden;
+    }
+    .picker-overlay.open .picker-sheet { transform: translateY(0); }
+    .picker-handle {
+      width: 44px;
+      height: 4px;
+      border-radius: 8px;
+      background: rgba(224, 184, 74, 0.35);
+      margin: 12px auto 2px;
+      flex-shrink: 0;
+    }
+    .picker-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 18px 6px;
+      flex-shrink: 0;
+    }
+    .picker-title {
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--text-light);
+      font-family: inherit;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .picker-close {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      background: var(--input-bg);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 14px;
+      transition: var(--transition-fast);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .picker-close:hover {
+      color: var(--text-light);
+      border-color: rgba(224, 184, 74, 0.4);
+    }
+    .picker-close:focus-visible {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 2px;
+    }
+    .picker-search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 6px 18px 4px;
+      padding: 11px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      transition: var(--transition-fast);
+      flex-shrink: 0;
+    }
+    .picker-search-wrap:focus-within {
+      border-color: var(--input-border-focus);
+      box-shadow: 0 0 0 3px rgba(224, 184, 74, 0.10);
+    }
+    .picker-search-wrap i { color: var(--text-muted); font-size: 13px; }
+    .picker-search-wrap input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-light);
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .picker-search-wrap input::placeholder { color: var(--text-muted); }
+    .picker-search-wrap[hidden] { display: none; }
+    .picker-list {
+      list-style: none;
+      overflow-y: auto;
+      margin: 6px 0 12px;
+      padding: 4px 10px;
+      flex: 1;
+      overscroll-behavior: contain;
+    }
+    .picker-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: background 0.15s ease;
+      user-select: none;
+    }
+    .picker-item:hover { background: rgba(224, 184, 74, 0.06); }
+    .picker-item.selected {
+      background: rgba(224, 184, 74, 0.09);
+      border-color: rgba(224, 184, 74, 0.28);
+    }
+    .picker-item:focus-visible {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: 2px;
+    }
+    .picker-item .pi-flag {
+      font-size: 20px;
+      line-height: 1;
+      flex-shrink: 0;
+      width: 26px;
+      text-align: center;
+    }
+    .picker-item .pi-name {
+      flex: 1;
+      min-width: 0;
+      font-size: 14.5px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .picker-item .pi-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .picker-item .pi-check {
+      color: var(--accent-bright);
+      font-size: 14px;
+      flex-shrink: 0;
+      width: 18px;
+      text-align: center;
+    }
+    .picker-empty {
+      padding: 26px 12px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    @media (min-width: 768px) {
+      .picker-overlay { align-items: center; padding: 24px; }
+      .picker-sheet {
+        border-radius: 22px;
+        border-bottom: 1px solid var(--card-border-hover);
+        max-width: 460px;
+        max-height: min(72vh, 560px);
+      }
+      .picker-handle { display: none; }
+    }
 
     .dial-chip {
       flex-shrink: 0;
@@ -647,8 +895,7 @@
       color: var(--danger);
     }
 
-    .field-input-wrap input,
-    .field-input-wrap select {
+    .field-input-wrap input {
       flex: 1;
       min-width: 0;
       padding: 14px 14px 14px 10px;
@@ -1077,14 +1324,16 @@
       .pwd-strength,
       .pwd-strength-segment,
       .btn-submit,
-      .toast {
+      .toast,
+      .picker-overlay,
+      .picker-sheet {
         animation: none !important;
         transition: none !important;
       }
       html { scroll-behavior: auto; }
     }
 
-    a:focus-visible, button:focus-visible, input:focus-visible, label:focus-visible, select:focus-visible {
+    a:focus-visible, button:focus-visible, input:focus-visible, label:focus-visible {
       outline: 2px solid var(--accent-bright);
       outline-offset: 3px;
     }
@@ -1340,6 +1589,20 @@
 
           <div class="exam-note" id="examNote">Choisis ta classe pour continuer.</div>
 
+          <!-- v8.32 — Temps restant avant l'examen : visible UNIQUEMENT pour
+               la 3ᵉ (BEPC) et la Terminale (BAC). Les 2ᵉ et 1ʳᵉ n'ont pas
+               d'examen national : ce champ ne s'ouvre pas pour elles. -->
+          <div class="session-block" id="sessionBlock" hidden>
+            <label class="field-label" for="sessionPickerBtn" id="sessionLabel">
+              Temps restant avant l'examen
+            </label>
+            <button type="button" class="picker-btn" id="sessionPickerBtn" aria-haspopup="dialog">
+              <span class="picker-icon"><i class="fas fa-hourglass-half"></i></span>
+              <span class="picker-label is-placeholder" id="sessionPickerLabel">Choisis ta session d'examen</span>
+              <i class="fas fa-chevron-down picker-chevron" aria-hidden="true"></i>
+            </button>
+          </div>
+
           <div class="serie-block" id="serieBlock" hidden>
             <div class="field-label">Série du BAC</div>
             <div class="serie-chips" role="radiogroup" aria-label="Choisis ta série du BAC">
@@ -1367,13 +1630,17 @@
           <div class="step-title"><i class="fab fa-whatsapp"></i> Ton numéro WhatsApp</div>
           <p class="step-desc">Pour recevoir les informations importantes : cours, épreuves, annonces.</p>
 
+          <!-- v8.32 — Choix du pays EN PREMIER via une modale 100 % custom
+               aux couleurs du site (aucune popup native du navigateur). -->
           <div class="field">
-            <label class="field-label" for="countrySelect">Pays</label>
-            <div class="field-input-wrap country-wrap" id="countryWrap">
-              <span class="icon"><i class="fas fa-globe-africa"></i></span>
-              <select id="countrySelect" name="country" aria-label="Choisis ton pays"></select>
-              <span class="country-chevron"><i class="fas fa-chevron-down"></i></span>
-            </div>
+            <label class="field-label" for="countryPickerBtn">Pays</label>
+            <button type="button" class="picker-btn" id="countryPickerBtn" aria-haspopup="dialog">
+              <span class="picker-icon"><i class="fas fa-globe-africa"></i></span>
+              <span class="picker-flag" id="countryFlag">🇳🇪</span>
+              <span class="picker-label" id="countryName">Niger</span>
+              <span class="picker-dial" id="countryDial">+227</span>
+              <i class="fas fa-chevron-down picker-chevron" aria-hidden="true"></i>
+            </button>
           </div>
 
           <div class="field">
@@ -1480,6 +1747,29 @@
     </footer>
   </main>
 
+  <!-- ============================================================
+       MODALE DE SÉLECTION UNIFORME (v8.32) — ouverte par les boutons
+       .picker-btn : choix du pays (étape 4) et de la session d'examen
+       (étape 3), et tout futur choix. Styles 100 % maison : la popup
+       native du navigateur ne prend JAMAIS le dessus.
+       ============================================================ -->
+  <div class="picker-overlay" id="pickerOverlay" role="dialog" aria-modal="true" aria-labelledby="pickerTitle" hidden>
+    <div class="picker-sheet">
+      <div class="picker-handle" aria-hidden="true"></div>
+      <div class="picker-head">
+        <h2 class="picker-title" id="pickerTitle">Choisis ton pays</h2>
+        <button type="button" class="picker-close" id="pickerClose" aria-label="Fermer">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="picker-search-wrap" id="pickerSearchWrap">
+        <i class="fas fa-search"></i>
+        <input type="text" id="pickerSearch" placeholder="Rechercher un pays…" autocomplete="off">
+      </div>
+      <ul class="picker-list" id="pickerList" role="listbox"></ul>
+    </div>
+  </div>
+
   <!-- ===== TOASTS ===== -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
@@ -1498,9 +1788,16 @@
 
   <script type="module">
   // ================================================================
-  // REGISTER — v8.31 : inscription guidée en 5 étapes
-  // 1 Identité → 2 Compte → 3 Classe (BEPC/BAC) → 4 WhatsApp
-  //   (pays + indicatif intelligent) → 5 Récapitulatif + création
+  // REGISTER — v8.32 : inscription guidée en 5 étapes
+  // 1 Identité → 2 Compte → 3 Classe (BEPC/BAC) + SESSION D'EXAMEN
+  //   (temps restant — 3ᵉ et Terminale SEULEMENT) → 4 WhatsApp
+  //   (pays + indicatif intelligent, modale custom) → 5 Récapitulatif.
+  // v8.32 (consigne propriétaire) : (a) sous le choix de classe, un champ
+  //   « Temps restant avant l'examen » s'ouvre UNIQUEMENT pour les deux
+  //   classes qui ont un examen national (3ᵉ → BEPC, Terminale → BAC) ;
+  //   pour la 2ᵉ et la 1ʳᵉ il ne s'ouvre pas. (b) ZÉRO style navigateur :
+  //   le choix du pays et tout autre sélecteur ouvrent une MODALE 100 %
+  //   custom aux couleurs du site (fini la popup native des selects).
   // Le compte Firebase Auth n'est créé QU'À L'ÉTAPE 5 : zéro compte
   // orphelin si l'élève abandonne en route. Une seule écriture Firestore.
   // ================================================================
@@ -1566,7 +1863,20 @@
   const panels = Array.from(document.querySelectorAll('.step-panel'));
   const examNote = $('examNote');
   const serieBlock = $('serieBlock');
-  const countrySelect = $('countrySelect');
+  // v8.32 — session d'examen (étape 3) + modale de sélection uniforme
+  const sessionBlock = $('sessionBlock');
+  const sessionPickerBtn = $('sessionPickerBtn');
+  const sessionPickerLabel = $('sessionPickerLabel');
+  const countryPickerBtn = $('countryPickerBtn');
+  const countryFlag = $('countryFlag');
+  const countryName = $('countryName');
+  const countryDial = $('countryDial');
+  const pickerOverlay = $('pickerOverlay');
+  const pickerTitle = $('pickerTitle');
+  const pickerClose = $('pickerClose');
+  const pickerSearchWrap = $('pickerSearchWrap');
+  const pickerSearch = $('pickerSearch');
+  const pickerList = $('pickerList');
   const dialChip = $('dialChip');
   const phoneInput = $('phoneInput');
   const phoneWrap = $('phoneWrap');
@@ -1590,6 +1900,7 @@
       confirmPassword: '',
       classId: '',
       series: '',
+      examYear: null, // v8.32 — session d'examen (3ᵉ/Tle) : 2027, 2028…
       phone: ''
     },
     countryIso: 'NE',
@@ -1620,7 +1931,7 @@
     premiere: { short: '1ʳᵉ', long: 'Première', exam: '', examLabel: 'BAC plus tard',
       note: "Pas d'examen national cette année : tu prends de l'avance pour aborder le BAC sereinement." },
     terminale: { short: 'Tle', long: 'Terminale', exam: 'bac', examLabel: 'BAC',
-      note: 'Objectif : BAC — choisis ta série ci-dessous pour un accompagnement adapté.' }
+      note: 'Objectif : BAC — choisis ta série et ta session ci-dessous pour un accompagnement adapté.' }
   };
   const SERIES_INFO = { A: 'Lettres', C: 'Sciences maths', D: 'Sciences exp' };
 
@@ -1689,6 +2000,65 @@
 
   function countryByIso(iso) { return AFRIQUE.find((c) => c.iso === iso) || null; }
 
+  // ================================================================
+  // LANGUE + LIBELLÉS DYNAMIQUES (v8.32) — même approche que
+  // whatsapp.html : les textes construits en JS suivent la langue
+  // choisie (window.ARVEXA_LANG.get(), posé par arvexa-i18n.js).
+  // ================================================================
+  const LANG = (function () {
+    try {
+      if (window.ARVEXA_LANG && typeof window.ARVEXA_LANG.get === 'function') {
+        return window.ARVEXA_LANG.get() === 'en' ? 'en' : 'fr';
+      }
+    } catch (e) {}
+    try { return localStorage.getItem('arvexa-lang') === 'en' ? 'en' : 'fr'; } catch (e) { return 'fr'; }
+  })();
+
+  const L = {
+    sessionPlaceholder: { fr: "Choisis ta session d'examen", en: 'Choose your exam session' },
+    whenExam: { fr: 'Quand passes-tu ton examen ?', en: 'When do you take your exam?' },
+    chooseCountry: { fr: 'Choisis ton pays', en: 'Choose your country' },
+    searchCountry: { fr: 'Rechercher un pays…', en: 'Search a country…' },
+    noCountry: { fr: 'Aucun pays trouvé', en: 'No country found' },
+    sessionWord: { fr: 'Session', en: 'Session' }
+  };
+  const T = (o) => (LANG === 'en' ? o.en : o.fr);
+
+  function normSearch(s) {
+    return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/['’`]/g, '').toLowerCase();
+  }
+
+  // Mois restants avant l'examen (les BEPC/BAC du Niger ont lieu vers juin).
+  function monthsUntil(year) {
+    const now = new Date();
+    return (year - now.getFullYear()) * 12 + (5 - now.getMonth());
+  }
+
+  function monthsLabel(m) {
+    if (LANG === 'en') {
+      if (m <= 1) return 'in ~1 month';
+      if (m < 12) return 'in ~' + m + ' months';
+      const y = Math.floor(m / 12);
+      const r = m % 12;
+      if (!r) return y === 1 ? 'in ~1 year' : 'in ~' + y + ' years';
+      return 'in ~' + y + (y > 1 ? ' years ' : ' year ') + r + ' mo';
+    }
+    if (m <= 1) return 'dans ~1 mois';
+    if (m < 12) return 'dans ~' + m + ' mois';
+    const y = Math.floor(m / 12);
+    const r = m % 12;
+    if (!r) return y === 1 ? 'dans ~1 an' : 'dans ~' + y + ' ans';
+    return 'dans ~' + y + ' an' + (y > 1 ? 's' : '') + ' ' + r + ' mois';
+  }
+
+  // Sessions proposées : l'année civile est valable tant que l'examen
+  // (juin) n'a pas eu lieu — sinon on démarre à l'année suivante.
+  function sessionOptions() {
+    const now = new Date();
+    const first = now.getMonth() < 5 ? now.getFullYear() : now.getFullYear() + 1;
+    return [first, first + 1, first + 2];
+  }
+
   // Indicatif intelligent : détecte le pays d'un numéro international tapé
   // avec « + » par préfixe d'indicatif LE PLUS LONG (indicatifs uniques).
   function detectCountryFromDigits(digits) {
@@ -1722,6 +2092,7 @@
       const draft = {};
       DRAFT_KEYS.forEach((k) => { draft[k] = state.values[k]; });
       draft.countryIso = state.countryIso;
+      draft.examYear = state.values.examYear || null; // v8.32
       draft.step = state.currentStep;
       localStorage.setItem(SAVE_KEY, JSON.stringify(draft));
     } catch (e) {}
@@ -1743,6 +2114,9 @@
       if (draft.countryIso && countryByIso(draft.countryIso)) {
         state.countryIso = draft.countryIso;
         COUNTRY = countryByIso(draft.countryIso);
+      }
+      if (Number.isInteger(draft.examYear)) {
+        state.values.examYear = draft.examYear; // v8.32
       }
       if (Number.isInteger(draft.step) && draft.step >= 1 && draft.step <= 5) {
         state.currentStep = draft.step;
@@ -1980,6 +2354,17 @@
       }
       return false;
     }
+    // ✅ v8.32 — session d'examen obligatoire pour les DEUX classes qui
+    // passent un examen national (3ᵉ → BEPC, Terminale → BAC) ; les 2ᵉ
+    // et 1ʳᵉ passent sans ce champ.
+    if ((state.values.classId === 'troisieme' || state.values.classId === 'terminale')
+      && !Number.isInteger(state.values.examYear)) {
+      if (markError) {
+        examNote.classList.add('error');
+        examNote.textContent = "Choisis ta session d'examen pour continuer.";
+      }
+      return false;
+    }
     return true;
   }
 
@@ -2049,7 +2434,7 @@
     // Focus du premier champ utile (sans scroll agressif)
     setTimeout(() => {
       const panel = panels[stepId - 1];
-      const focusable = panel && panel.querySelector('input, select');
+      const focusable = panel && panel.querySelector('input, .picker-btn');
       if (focusable && window.matchMedia('(min-width: 480px)').matches) {
         try { focusable.focus({ preventScroll: true }); } catch (e) {}
       }
@@ -2063,7 +2448,14 @@
       `${state.values.firstName.trim()} ${state.values.lastName.trim()}`.trim() || '—';
     $('recapEmail').textContent = state.values.email.trim() || '—';
     $('recapClass').textContent = info ? `${info.short} (${info.long})` : '—';
-    $('recapExam').textContent = info ? (EXAM_DISPLAY[info.exam] || 'BAC en vue') : '—';
+    // ✅ v8.32 — objectif = examen + session choisie + temps restant
+    // (« BEPC 2027 · dans ~7 mois ») ; 2ᵉ/1ʳᵉ : « BAC en vue ».
+    $('recapExam').textContent = info
+      ? (EXAM_DISPLAY[info.exam]
+        ? EXAM_DISPLAY[info.exam] + ' ' + state.values.examYear
+          + ' · ' + monthsLabel(monthsUntil(state.values.examYear))
+        : 'BAC en vue')
+      : '—';
     const serieRow = $('recapSerieRow');
     if (state.values.classId === 'terminale' && state.values.series) {
       serieRow.style.display = 'flex';
@@ -2110,6 +2502,20 @@
       const info = CLASS_INFO[input.value];
       examNote.classList.remove('error');
       examNote.textContent = info.note;
+      // ✅ v8.32 — « Temps restant avant l'examen » : le champ s'ouvre
+      // UNIQUEMENT pour les deux classes avec examen national (3ᵉ → BEPC,
+      // Terminale → BAC) ; pour la 2ᵉ et la 1ʳᵉ il ne s'ouvre pas.
+      sessionBlock.hidden = !info.exam;
+      if (!info.exam) {
+        // 2ᵉ/1ʳᵉ : pas de session d'examen — on la remise à zéro.
+        state.values.examYear = null;
+        state.touched.examYear = false;
+        renderSessionButton();
+      } else {
+        // 3ᵉ ↔ Terminale : l'année de session choisie reste valable
+        // (même année civile), seul l'examen change (BEPC ↔ BAC).
+        renderSessionButton();
+      }
       // La série n'existe que pour la Terminale (BAC)
       serieBlock.hidden = input.value !== 'terminale';
       if (input.value !== 'terminale') {
@@ -2124,6 +2530,7 @@
           window.arvexaAnalytics.trackFeature('inscription_classe_' + input.value);
         }
       } catch (e) {}
+      saveDraft();
     });
   });
 
@@ -2140,42 +2547,204 @@
   });
 
   // ================================================================
-  // ÉTAPE 4 — PAYS (choix en premier) + INDICATIF INTELLIGENT
+  // MODALE DE SÉLECTION UNIFORME (v8.32) — UN SEUL composant pour le
+  // choix du pays, de la session d'examen et tout futur choix : feuille
+  // custom aux couleurs du site, JAMAIS la popup native du navigateur.
   // ================================================================
-  function buildCountrySelect() {
-    const frag = document.createDocumentFragment();
-    AFRIQUE.forEach((c) => {
-      const opt = document.createElement('option');
-      opt.value = c.iso;
-      opt.textContent = `${c.flag} ${c.fr} (${c.dial})`;
-      frag.appendChild(opt);
+  let pickerCtx = null;
+  let pickerTrigger = null;
+
+  function renderPickerItems(filter) {
+    const f = normSearch(filter);
+    const items = ((pickerCtx && pickerCtx.items) || []).filter((it) =>
+      !f || normSearch(it.name).includes(f)
+        || normSearch(it.sub || '').includes(f)
+        || (it.dial || '').includes(f)
+    );
+    pickerList.innerHTML = '';
+    if (!items.length) {
+      const li = document.createElement('li');
+      li.className = 'picker-empty';
+      li.textContent = (pickerCtx && pickerCtx.emptyText) || '—';
+      pickerList.appendChild(li);
+      return;
+    }
+    items.forEach((it) => {
+      const li = document.createElement('li');
+      li.className = 'picker-item' + (it.selected ? ' selected' : '');
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', it.selected ? 'true' : 'false');
+      const flag = document.createElement('span');
+      flag.className = 'pi-flag';
+      flag.textContent = it.flag || '';
+      const name = document.createElement('span');
+      name.className = 'pi-name';
+      name.textContent = it.name;
+      li.appendChild(flag);
+      li.appendChild(name);
+      if (it.sub) {
+        const sub = document.createElement('span');
+        sub.className = 'pi-sub';
+        sub.textContent = it.sub;
+        li.appendChild(sub);
+      }
+      const check = document.createElement('i');
+      check.className = 'fas fa-check pi-check';
+      check.style.visibility = it.selected ? 'visible' : 'hidden';
+      li.appendChild(check);
+      li.addEventListener('click', () => {
+        const ctx = pickerCtx;
+        closePicker();
+        if (ctx && ctx.onPick) ctx.onPick(it.value);
+      });
+      pickerList.appendChild(li);
     });
-    countrySelect.appendChild(frag);
-    countrySelect.value = state.countryIso;
   }
 
-  function renderDialChip() {
+  function openPicker(opts) {
+    // opts : { title, searchable, searchPlaceholder, emptyText, items, onPick, trigger }
+    // items : [{ value, flag, name, sub, dial, selected }]
+    pickerCtx = opts;
+    pickerTrigger = opts.trigger || null;
+    pickerTitle.textContent = opts.title;
+    pickerSearchWrap.hidden = !opts.searchable;
+    pickerSearch.value = '';
+    pickerSearch.placeholder = opts.searchPlaceholder || '';
+    renderPickerItems('');
+    pickerOverlay.hidden = false;
+    requestAnimationFrame(() => pickerOverlay.classList.add('open'));
+    document.body.style.overflow = 'hidden'; // pas de scroll du fond derrière la modale
+    setTimeout(() => {
+      const target = opts.searchable ? pickerSearch : pickerClose;
+      try { target.focus({ preventScroll: true }); } catch (e) {}
+    }, 80);
+  }
+
+  function closePicker() {
+    pickerOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+    setTimeout(() => { pickerOverlay.hidden = true; }, 320);
+    pickerCtx = null;
+    if (pickerTrigger) {
+      try { pickerTrigger.focus({ preventScroll: true }); } catch (e) {}
+      pickerTrigger = null;
+    }
+  }
+
+  pickerClose.addEventListener('click', closePicker);
+  pickerOverlay.addEventListener('click', (e) => {
+    if (e.target === pickerOverlay) closePicker();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !pickerOverlay.hidden) closePicker();
+  });
+  pickerSearch.addEventListener('input', () => renderPickerItems(pickerSearch.value));
+
+  // ================================================================
+  // ÉTAPE 3 — SESSION D'EXAMEN (temps restant avant l'examen)
+  // ================================================================
+  function sessionExamLabel() {
+    return state.values.classId === 'troisieme' ? 'BEPC' : 'BAC';
+  }
+
+  function renderSessionButton() {
+    const y = state.values.examYear;
+    if (!Number.isInteger(y)) {
+      sessionPickerLabel.textContent = T(L.sessionPlaceholder);
+      sessionPickerLabel.classList.add('is-placeholder');
+    } else {
+      sessionPickerLabel.textContent =
+        sessionExamLabel() + ' ' + y + ' · ' + monthsLabel(monthsUntil(y));
+      sessionPickerLabel.classList.remove('is-placeholder');
+    }
+  }
+
+  sessionPickerBtn.addEventListener('click', () => {
+    if (!state.values.classId) return;
+    openPicker({
+      title: T(L.whenExam),
+      searchable: false,
+      trigger: sessionPickerBtn,
+      items: sessionOptions().map((y) => ({
+        value: y,
+        flag: '📅',
+        name: T(L.sessionWord) + ' ' + y,
+        sub: sessionExamLabel() + ' · ' + monthsLabel(monthsUntil(y)),
+        selected: y === state.values.examYear
+      })),
+      onPick: (y) => {
+        state.values.examYear = y;
+        state.touched.examYear = true;
+        renderSessionButton();
+        if (examNote.classList.contains('error')) {
+          examNote.classList.remove('error');
+          examNote.textContent = CLASS_INFO[state.values.classId].note;
+        }
+        try {
+          if (window.arvexaAnalytics && window.arvexaAnalytics.trackFeature) {
+            window.arvexaAnalytics.trackFeature('inscription_session_' + y);
+          }
+        } catch (e) {}
+        saveDraft();
+      }
+    });
+  });
+
+  // ================================================================
+  // ÉTAPE 4 — PAYS D'ABORD (modale custom 54 pays + recherche) puis
+  // INDICATIF INTELLIGENT (le chip suit le pays ; si « + » tapé, le pays
+  // est détecté par le préfixe le plus long — logique whatsapp.html v8.3)
+  // ================================================================
+  function renderCountryButton() {
+    const name = LANG === 'en' ? COUNTRY.en : COUNTRY.fr;
+    countryFlag.textContent = COUNTRY.flag;
+    countryName.textContent = name;
+    countryDial.textContent = COUNTRY.dial;
+    countryPickerBtn.setAttribute('aria-label',
+      T(L.chooseCountry) + ' — ' + name + ' ' + COUNTRY.dial);
     dialChip.textContent = COUNTRY.dial;
     phoneInput.placeholder = COUNTRY.dial.replace('+', '') === '227'
       ? '70 12 34 56'
       : COUNTRY.dial + ' …';
   }
 
-  countrySelect.addEventListener('change', () => {
-    const c = countryByIso(countrySelect.value);
-    if (!c) return;
-    COUNTRY = c;
-    state.countryIso = c.iso;
-    try { localStorage.setItem('arvexa-dial', c.iso); } catch (e) {}
-    renderDialChip();
-    if (phoneInput.value.trim()) validatePhoneField(); // revalide avec le nouvel indicatif
+  countryPickerBtn.addEventListener('click', () => {
+    openPicker({
+      title: T(L.chooseCountry),
+      searchable: true,
+      searchPlaceholder: T(L.searchCountry),
+      emptyText: T(L.noCountry),
+      trigger: countryPickerBtn,
+      items: AFRIQUE.map((c) => ({
+        value: c.iso,
+        flag: c.flag,
+        name: LANG === 'en' ? c.en : c.fr,
+        sub: c.dial,
+        dial: c.dial,
+        selected: c.iso === COUNTRY.iso
+      })),
+      onPick: (iso) => {
+        const c = countryByIso(iso);
+        if (!c || c.iso === COUNTRY.iso) return;
+        COUNTRY = c;
+        state.countryIso = c.iso;
+        try { localStorage.setItem('arvexa-dial', c.iso); } catch (e) {}
+        renderCountryButton();
+        if (phoneInput.value.trim()) validatePhoneField(); // revalide avec le nouvel indicatif
+        try {
+          if (window.arvexaAnalytics && window.arvexaAnalytics.trackFeature) {
+            window.arvexaAnalytics.trackFeature('inscription_pays_' + c.iso);
+          }
+        } catch (e) {}
+      }
+    });
   });
 
   phoneInput.addEventListener('input', () => {
     state.values.phone = phoneInput.value;
     // Indicatif intelligent : si l'élève tape « + » (numéro international
     // complet), on détecte le pays par le préfixe le plus long et on
-    // aligne le sélecteur — l'indicatif reste juste dans le champ.
+    // aligne le bouton pays — l'indicatif reste juste dans le champ.
     const raw = phoneInput.value.trim();
     if (raw.startsWith('+')) {
       const digits = raw.replace(/\D/g, '');
@@ -2183,9 +2752,8 @@
       if (detected && detected.iso !== COUNTRY.iso) {
         COUNTRY = detected;
         state.countryIso = detected.iso;
-        countrySelect.value = detected.iso;
+        renderCountryButton();
         try { localStorage.setItem('arvexa-dial', detected.iso); } catch (e) {}
-        renderDialChip();
       }
     }
     validatePhoneField();
@@ -2310,6 +2878,9 @@
     const classInfo = CLASS_INFO[state.values.classId];
     const classIdValue = state.values.classId;
     const examValue = classInfo.exam; // 'bepc' | 'bac' | ''
+    // ✅ v8.32 — session d'examen choisie à l'étape 3 (3ᵉ et Terminale)
+    const examYearValue = (examValue && Number.isInteger(state.values.examYear))
+      ? state.values.examYear : null;
     const seriesValue = classIdValue === 'terminale' ? state.values.series : '';
     const whatsappValue = normalizePhone(phoneInput.value); // E.164, validé à l'étape 4
     const whatsappCountryValue = state.countryIso;
@@ -2350,6 +2921,8 @@
   };
   // Série uniquement pour la Terminale (A | C | D)
   if (seriesValue) profileData.series = seriesValue;
+  // ✅ v8.32 — session d'examen (année) uniquement pour 3ᵉ et Terminale
+  if (examYearValue) profileData.examYear = examYearValue;
 
   // ⚡ Retry : si Firestore échoue, on réessaie 2 fois avant d'abandonner
   let profileSaved = false;
@@ -2401,7 +2974,8 @@ try {
       establishment: establishmentValue || '',
       classId: classIdValue,
       className: classAdminLabel,
-      exam: examValue
+      exam: examValue,
+      examYear: examYearValue || null
     })
   });
 
@@ -2427,6 +3001,7 @@ try {
     establishment: establishmentValue || '',
     classId: classIdValue,
     exam: examValue,
+    examYear: examYearValue || null,
     type: 'success',
     read: false,
     createdAt: serverTimestamp()
@@ -2565,8 +3140,7 @@ try {
     }
   });
 
-  buildCountrySelect();
-  renderDialChip();
+  renderCountryButton();
   if (state.values.phone) validatePhoneField();
   // Restaure la sélection de classe depuis un éventuel aller-retour
   if (state.values.classId) {
@@ -2584,12 +3158,14 @@ try {
       sInput.dispatchEvent(new Event('change'));
     }
   }
+  // ✅ v8.32 — restaure la session d'examen choisie (si classe à examen)
+  renderSessionButton();
 
   // Restaure l'étape du brouillon (recharge de page au milieu du wizard) :
   // les champs 1-4 et le pays reviennent du draft, on repart où l'élève était.
   goToStep(Math.min(Math.max(state.currentStep, 1), 5));
 
-  console.log('ARVEXA School — Inscription v8.31 (wizard 5 étapes)');
+  console.log('ARVEXA School — Inscription v8.32 (wizard 5 étapes · session examen · modales custom)');
   </script>
 </body>
 </html>
