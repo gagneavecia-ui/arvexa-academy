@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
 <script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="arvx-ai.js" defer></script><!-- ✅ v8.38 — kit IA (OCR photos, pages PDF) pour le bouton Ajouter -->
 <script src="arvexa-sync.js" defer></script><!-- ✅ v8.0 sync Firebase des progressions (par compte) -->
 <title>ARVEXA — Résumé</title>
 <link rel="manifest" href="manifest.json">
@@ -234,30 +235,6 @@ main {
 }
 .greeting h1 em { color: var(--accent-bright); font-style: italic; }
 .greeting p { color: var(--text-dim); font-size: 14px; }
-
-.streak-card {
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px 20px; border-radius: 16px;
-  background: linear-gradient(135deg, rgba(224, 184, 74, 0.08), rgba(184, 134, 11,  0.05));
-  border: 1px solid rgba(224, 184, 74, 0.22);
-  margin-bottom: 26px;
-  position: relative; overflow: hidden;
-}
-.streak-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--accent-bright), transparent);
-}
-.streak-icon {
-  font-size: 32px; line-height: 1;
-  filter: drop-shadow(0 2px 6px rgba(224, 184, 74, 0.3));
-}
-.streak-content { flex: 1; min-width: 0; }
-.streak-value {
-  font-family: 'Playfair Display', serif;
-  font-size: 22px; font-weight: 700;
-  color: var(--accent-bright); line-height: 1.1;
-}
-.streak-label { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
 
 .section-title {
   display: flex; align-items: center; gap: 10px;
@@ -953,8 +930,8 @@ main {
 @media (max-width: 480px) {
   .progress-row { grid-template-columns: 1fr; }
 }
-/* ── MA PROGRESSION (révisions officielles) ── */
-.official-progress {
+/* ── CARTE STATISTIQUES (v8.38 — remplace la carte révisions officielles) ── */
+.stat-card {
   margin-bottom: 20px;
   padding: 18px;
   border-radius: var(--radius, 16px);
@@ -963,58 +940,58 @@ main {
   position: relative;
   overflow: hidden;
 }
-.official-progress::before {
+.stat-card::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--accent, #B8860B), var(--accent-bright, var(--accent-bright)), var(--accent, #B8860B));
+  background: linear-gradient(90deg, var(--accent, #B8860B), var(--accent-bright), var(--accent, #B8860B));
 }
-.op-head {
+.stat-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
 }
-.op-eyebrow {
+.stat-eyebrow {
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 1.4px;
   text-transform: uppercase;
-  color: var(--accent-bright, var(--accent-bright));
+  color: var(--accent-bright);
 }
-.op-scope {
+.stat-period {
   font-size: 9.5px;
   font-weight: 600;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   color: var(--text-dim, #8A8A7A);
 }
-.op-metrics {
+.stat-metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin: 12px 0 14px;
 }
-.op-metric {
+.stat-metric {
   background: var(--block-bg);
   border: 1px solid rgba(var(--rgb-soft), 0.04);
   border-radius: 12px;
   padding: 12px 8px;
   text-align: center;
 }
-.op-num {
+.stat-num {
   display: block;
   font-family: 'Playfair Display', Georgia, serif;
   font-size: clamp(20px, 3vw, 26px);
   font-weight: 700;
-  color: var(--text-light, var(--text-light));
+  color: var(--text-light);
   line-height: 1.1;
 }
-.op-lbl {
+.stat-lbl {
   display: block;
   font-size: 10px;
   text-transform: uppercase;
@@ -1023,82 +1000,217 @@ main {
   margin-top: 4px;
   font-weight: 600;
 }
-.op-track {
-  height: 6px;
-  background: rgba(var(--rgb-soft), 0.05);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-bottom: 14px;
+.stat-chart-wrap {
+  background: var(--block-bg);
+  border: 1px solid rgba(var(--rgb-soft), 0.04);
+  border-radius: 12px;
+  padding: 12px 10px 6px;
 }
-.op-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent, #B8860B), var(--accent-bright, var(--accent-bright)));
-  border-radius: 999px;
-  transition: width 0.6s ease;
+.stat-chart-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 2px 8px;
 }
-.op-cta {
+.stat-chart { display: block; width: 100%; height: auto; }
+.stat-chart-days {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 2px 2px;
+}
+.stat-chart-days span {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.stat-empty-hint {
+  font-size: 12px;
+  color: var(--text-dim, #8A8A7A);
+  text-align: center;
+  padding: 10px 0 6px;
+}
+@media (max-width: 480px) {
+  .stat-metrics { gap: 6px; }
+  .stat-metric { padding: 10px 4px; }
+}
+
+/* ── BOUTON AJOUTER (+) — lancement du flux intelligent (v8.38) ── */
+.add-course-btn {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, rgba(224, 184, 74, 0.14), rgba(184, 134, 11, 0.06));
-  border: 1px solid rgba(224, 184, 74, 0.32);
-  border-radius: var(--radius, 16px);
-  text-decoration: none;
-  color: var(--text-light, var(--text-light));
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.op-cta:hover {
-  transform: translateY(-2px);
-  border-color: rgba(224, 184, 74, 0.55);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-.op-cta:active { transform: scale(0.99); }
-.op-cta-icon {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--accent-bright, var(--accent-bright)), var(--accent, #B8860B));
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--accent-bright), var(--accent));
   color: var(--on-gold);
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  margin-bottom: 24px;
+  transition: var(--transition);
+  box-shadow: 0 4px 16px rgba(184, 134, 11, 0.25);
+}
+.add-course-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(184, 134, 11, 0.4); }
+.add-course-btn:active { transform: scale(0.97); }
+.add-course-btn .add-plus {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(10, 10, 10, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.add-course-btn .add-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-top: 1px;
+}
+
+/* ── MODALE AJOUTER — 4 modes de saisie (v8.38) ── */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 10px 14px;
+  border-radius: 14px;
+  background: var(--block-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-light);
+  transition: var(--transition);
+  text-align: center;
+  min-width: 0;
+}
+.mode-card:hover { border-color: rgba(224, 184, 74, 0.35); transform: translateY(-2px); }
+.mode-card:active { transform: scale(0.97); }
+.mode-card .mode-ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(224, 184, 74, 0.10);
+  border: 1px solid rgba(224, 184, 74, 0.18);
+  color: var(--accent-bright);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 17px;
 }
-.op-cta-body { flex: 1; min-width: 0; }
-.op-cta-eyebrow {
-  display: block;
-  font-size: 10px;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: var(--accent-bright, var(--accent-bright));
-  font-weight: 700;
-  margin-bottom: 2px;
+.mode-card .mode-name { font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; }
+.mode-card .mode-desc { font-size: 11px; color: var(--text-muted); line-height: 1.45; }
+
+.verify-stage .form-field { margin-bottom: 12px; }
+.verify-stage .form-textarea { min-height: 180px; }
+/* La modale Ajouter hérite du gabarit .dicta-modal (88vh, flex, overflow hidden)
+   → #acBody devient la zone scrollable de tous ses écrans. */
+#addCourseModal #acBody {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
-.op-cta-title {
-  display: block;
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--text-light, var(--text-light));
-  line-height: 1.3;
-}
-.op-cta-desc {
-  display: block;
+#addCourseModal #acBody::-webkit-scrollbar { display: none; }
+.mode-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 auto 12px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--rgb-soft), 0.08);
+  background: transparent;
+  color: var(--text-dim);
   font-size: 12px;
-  color: var(--text-dim, #8A8A7A);
-  margin-top: 2px;
+  font-weight: 600;
+  transition: var(--transition);
 }
-.op-cta-arrow {
-  color: var(--accent-bright, var(--accent-bright));
-  font-size: 16px;
+.mode-back:hover { color: var(--accent-bright); border-color: rgba(224, 184, 74, 0.3); }
+.extract-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(224, 184, 74, 0.07);
+  border: 1px dashed rgba(224, 184, 74, 0.25);
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.extract-progress i { color: var(--accent-bright); }
+.extract-progress .mini-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(224, 184, 74, 0.25);
+  border-top-color: var(--accent-bright);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
   flex-shrink: 0;
 }
-@media (max-width: 480px) {
-  .op-metrics { gap: 6px; }
-  .op-metric { padding: 10px 4px; }
-  .op-cta { padding: 12px 14px; gap: 12px; }
+.extract-note {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin: -6px 0 12px;
+  line-height: 1.5;
 }
+
+/* ── RENOMMAGE (v8.38 — ajuster la proposition IA) ── */
+.hero-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.hero-title-row h1 { flex: 1; min-width: 0; }
+.rename-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--rgb-soft), 0.08);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+.rename-btn:hover {
+  color: var(--accent-bright);
+  border-color: rgba(224, 184, 74, 0.35);
+  background: rgba(224, 184, 74, 0.06);
+}
+.ai-proposal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(224, 184, 74, 0.10);
+  border: 1px solid rgba(224, 184, 74, 0.25);
+  color: var(--accent-bright);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .progress-card {
   padding: 16px 18px;
@@ -1826,9 +1938,6 @@ main, .content-section, .block, .part, .qa-item, .qcm-item, .formula-block,
   .header { padding: calc(8px + var(--safe-top)) 14px 8px; }
   main { padding: 18px 14px 55px; }
   .greeting h1 { font-size: 24px; }
-  .streak-card { padding: 15px 18px; }
-  .streak-icon { font-size: 30px; }
-  .streak-value { font-size: 21px; }
   .section-title { font-size: 16px; margin: 22px 0 12px; }
   .subjects-grid { gap: 10px; }
   .subject-card { padding: 17px 15px; }
@@ -1839,9 +1948,6 @@ main, .content-section, .block, .part, .qa-item, .qcm-item, .formula-block,
 @media (max-width: 520px) {
   main { padding: 16px 12px 50px; }
   .greeting h1 { font-size: 22px; }
-  .streak-card { padding: 14px 16px; }
-  .streak-icon { font-size: 28px; }
-  .streak-value { font-size: 20px; }
   .subject-card { padding: 16px 14px; }
   .list-item { padding: 13px 14px; }
   .block { padding: 13px 15px; }
@@ -2415,7 +2521,8 @@ const state = {
   isPremium: false,
   view: 'notebooks',
   params: {},
-  cache: { dashboard: null, chapters: {}, chapter: {} }
+  cache: { dashboard: null, chapters: {}, chapter: {} },
+  autoAdded: null // ✅ v8.38 — dernière section créée via « Ajouter » (badge IA)
 };
 
 const localCache = {
@@ -2565,7 +2672,8 @@ function getFirstName() {
 // création de section (IA) affiche immédiatement un message calme.
 const LIGHT_PROGRESS_ACTIONS = new Set([
   'getDashboard', 'listChapters', 'getChapter', 'getSection',
-  'updateNotes', 'deleteSection', 'deleteChapter', 'getFullLesson', 'trackStudyTime'
+  'updateNotes', 'deleteSection', 'deleteChapter', 'getFullLesson', 'trackStudyTime',
+  'renameSection', 'renameChapter'
 ]);
 
 async function callApi(action, params = {}, _attempt = 1, _rateRetried = false) {
@@ -2770,74 +2878,85 @@ function renderRecommendationsBlock() {
   `;
 }
 
-// ── MA PROGRESSION (révisions officielles) — carte héritée de l'accueil ──
-const OFFICIAL_READ_KEY = 'arvexa_read_parts';
-const OFFICIAL_SUBJECTS = [
-  { key: 'mathematiques', name: 'Mathématiques', chapters: 11 },
-  { key: 'physique', name: 'Physique', chapters: 17 },
-  { key: 'chimie', name: 'Chimie', chapters: 9 },
-  { key: 'svt', name: 'SVT', chapters: 20 }
-];
+// ── CARTE STATISTIQUES (v8.38) — remplace la carte « révisions officielles » ──
+// Métriques du cahier + courbe des sections ajoutées sur 14 jours
+// (données dailyActivity via getDashboard.activity).
+function renderStatsCard(data) {
+  const summary = data.summary || {};
+  const studyTime = data.studyTime || { formatted: { total: '0 min' } };
+  const activity = safeArray(data.activity);
+  const hasSections = (summary.totalSections || 0) > 0;
 
-function renderOfficialProgress() {
-  let readParts = [];
-  try { readParts = JSON.parse(localStorage.getItem(OFFICIAL_READ_KEY) || '[]'); } catch (e) { readParts = []; }
-  const perSubject = {};
-  OFFICIAL_SUBJECTS.forEach((s) => { perSubject[s.key] = new Set(); });
-  readParts.forEach((k) => {
-    const parts = String(k).split('_');
-    if (parts.length >= 2 && perSubject[parts[0]]) perSubject[parts[0]].add(parts[1]);
-  });
-  let totalRead = 0, touched = 0;
-  OFFICIAL_SUBJECTS.forEach((s) => {
-    const c = perSubject[s.key].size;
-    if (c > 0) { touched++; totalRead += c; }
-  });
-  const totalAll = OFFICIAL_SUBJECTS.reduce((a, s) => a + s.chapters, 0);
-  const pct = totalRead > 0 ? Math.round((totalRead / totalAll) * 100) : 0;
+  // ── Courbe SVG (aire + ligne) des sections ajoutées / jour ──
+  const W = 640, H = 150, PAD_L = 10, PAD_R = 10, PAD_T = 16, PAD_B = 10;
+  const innerW = W - PAD_L - PAD_R;
+  const innerH = H - PAD_T - PAD_B;
+  const values = activity.map((a) => Math.max(0, Number(a.sections) || 0));
+  const maxVal = Math.max(1, ...values);
+  const n = values.length;
+  const stepX = n > 1 ? innerW / (n - 1) : innerW;
 
-  // Action intelligente : la matière la plus avancée mais incomplète
-  let best = null, bestRead = 0;
-  OFFICIAL_SUBJECTS.forEach((s) => {
-    const c = perSubject[s.key].size;
-    if (c > 0 && c < s.chapters && c > bestRead) { bestRead = c; best = s; }
+  const pts = values.map((v, i) => {
+    const x = PAD_L + i * stepX;
+    const y = PAD_T + innerH - (v / maxVal) * (innerH - 6) - 3;
+    return [Math.round(x * 100) / 100, Math.round(y * 100) / 100];
   });
-  let cta;
-  if (best) {
-    cta = { href: 'matiere.html?subject=' + best.key, eyebrow: 'Continuer', icon: 'fa-play',
-            title: 'Reprendre ' + best.name,
-            desc: bestRead + ' chapitre' + (bestRead > 1 ? 's' : '') + ' déjà lu' + (bestRead > 1 ? 's' : '') + '.' };
-  } else if (totalRead === 0) {
-    cta = { href: 'matiere.html?subject=mathematiques', eyebrow: 'Commencer', icon: 'fa-book-open',
-            title: 'Commencer une révision', desc: 'Choisis une matière pour démarrer.' };
-  } else {
-    cta = { href: 'lecture.html', eyebrow: 'Progresser', icon: 'fa-chart-line',
-            title: 'Toutes tes matières sont avancées', desc: 'Continue tes révisions, chaque chapitre compte.' };
-  }
 
-  return `
-    <div class="official-progress" aria-label="Ma progression — révisions officielles">
-      <div class="op-head">
-        <span class="op-eyebrow">Ma progression</span>
-        <span class="op-scope">Révisions officielles</span>
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ');
+  const areaPath = `${linePath} L${pts[pts.length - 1][0]},${PAD_T + innerH} L${pts[0][0]},${PAD_T + innerH} Z`;
+
+  const dots = pts.map((p, i) =>
+    `<circle cx="${p[0]}" cy="${p[1]}" r="${values[i] > 0 ? 3.4 : 1.6}" fill="${values[i] > 0 ? 'var(--accent-bright)' : 'rgba(160,160,144,0.5)'}"></circle>`
+  ).join('');
+
+  const total14 = values.reduce((a, b) => a + b, 0);
+
+  const chart = `
+    <div class="stat-chart-wrap">
+      <div class="stat-chart-title">Sections ajoutées — 14 derniers jours (${total14})</div>
+      <svg class="stat-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Courbe des sections ajoutées sur 14 jours">
+        <defs>
+          <linearGradient id="statArea" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(224, 184, 74, 0.38)"></stop>
+            <stop offset="100%" stop-color="rgba(224, 184, 74, 0.02)"></stop>
+          </linearGradient>
+        </defs>
+        <line x1="${PAD_L}" y1="${PAD_T + innerH}" x2="${W - PAD_R}" y2="${PAD_T + innerH}" stroke="rgba(160,160,144,0.25)" stroke-width="1"></line>
+        <path d="${areaPath}" fill="url(#statArea)" stroke="none"></path>
+        <path d="${linePath}" fill="none" stroke="var(--accent-bright)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+        ${dots}
+      </svg>
+      <div class="stat-chart-days">
+        <span>${dayLabel(activity[0]?.date)}</span>
+        <span>${dayLabel(activity[Math.floor(n / 2)]?.date)}</span>
+        <span>Aujourd'hui</span>
       </div>
-      <div class="op-metrics">
-        <div class="op-metric"><span class="op-num">${totalRead}</span><span class="op-lbl">Chapitres lus</span></div>
-        <div class="op-metric"><span class="op-num">${touched}/4</span><span class="op-lbl">Matières travaillées</span></div>
-        <div class="op-metric"><span class="op-num">${totalRead > 0 ? pct + '%' : '—'}</span><span class="op-lbl">Avancement</span></div>
-      </div>
-      <div class="op-track"><div class="op-fill" style="width:${pct}%"></div></div>
-      <a class="op-cta" href="${cta.href}">
-        <span class="op-cta-icon"><i class="fas ${cta.icon}"></i></span>
-        <span class="op-cta-body">
-          <span class="op-cta-eyebrow">${cta.eyebrow}</span>
-          <span class="op-cta-title">${cta.title}</span>
-          <span class="op-cta-desc">${cta.desc}</span>
-        </span>
-        <i class="fas fa-arrow-right op-cta-arrow"></i>
-      </a>
+      ${!hasSections ? '<div class="stat-empty-hint">Ajoute ta première section avec le bouton « Ajouter » pour voir ta courbe monter.</div>' : ''}
     </div>
   `;
+
+  return `
+    <div class="stat-card" aria-label="Mes statistiques">
+      <div class="stat-head">
+        <span class="stat-eyebrow">📊 Mes statistiques</span>
+        <span class="stat-period">Cahier Résumé</span>
+      </div>
+      <div class="stat-metrics">
+        <div class="stat-metric"><span class="stat-num">${summary.totalSections || 0}</span><span class="stat-lbl">Sections</span></div>
+        <div class="stat-metric"><span class="stat-num">${summary.totalChapters || 0}</span><span class="stat-lbl">Chapitres</span></div>
+        <div class="stat-metric"><span class="stat-num">${escapeHtml(studyTime.formatted?.total || '0 min')}</span><span class="stat-lbl">Temps d'étude</span></div>
+      </div>
+      ${chart}
+    </div>
+  `;
+}
+
+function dayLabel(dateKey) {
+  if (!dateKey) return '';
+  try {
+    const d = new Date(dateKey + 'T12:00:00');
+    return ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][d.getDay()] + ' ' + d.getDate();
+  } catch (e) { return ''; }
 }
 
 function renderQuotaBadge() {
@@ -2925,10 +3044,6 @@ async function renderNotebooksView() {
     const safeSubjectsList = safeArray(data.subjects);
     const safeActivityList = safeArray(data.recentActivity);
     const totalSections = data.summary?.totalSections || 0;
-    const studyTime = data.studyTime || {
-      formatted: { total: '0 min', week: '0 min', today: '0 min' },
-      totalMinutes: 0, todayMinutes: 0, weekMinutes: 0, bySubject: {}
-    };
 
     const subjectCards = ALL_SUBJECT_KEYS.map((key) => {
       const info = SUBJECTS[key];
@@ -2974,19 +3089,15 @@ async function renderNotebooksView() {
         <p>${totalSections > 0 ? 'Continue là où tu t\'es arrêté.' : 'Commence ton premier cahier.'}</p>
       </div>
 
-      ${renderOfficialProgress()}
+      ${renderStatsCard(data)}
 
-      <div class="streak-card">
-        <div class="streak-icon">🔥</div>
-        <div class="streak-content">
-          <div class="streak-value">${studyTime.formatted.total} d'étude</div>
-          <div class="streak-label">
-            ${studyTime.formatted.week} cette semaine
-            ${studyTime.todayMinutes > 0 ? `· ${studyTime.formatted.today} aujourd'hui` : ''}
-            · ${totalSections} section${totalSections > 1 ? 's' : ''}
-          </div>
-        </div>
-      </div>
+      <button class="add-course-btn" id="addCourseBtn" aria-label="Ajouter un cours">
+        <span class="add-plus"><i class="fas fa-plus"></i></span>
+        <span>
+          Ajouter
+          <span class="add-sub">Texte · Photos · Vocal · PDF — l'IA classe ta leçon</span>
+        </span>
+      </button>
 
       <div class="section-title"><i class="fas fa-book"></i> Mes matières <span class="count">${ALL_SUBJECT_KEYS.length}</span></div>
       <div class="subjects-grid">${subjectCards}</div>
@@ -3003,6 +3114,8 @@ async function renderNotebooksView() {
         else navigate('notebook', { subject });
       });
     });
+
+    $('addCourseBtn')?.addEventListener('click', () => openAddCourseModal());
 
   } catch (err) {
     showEmptyState(el, 'fa-exclamation-triangle', 'Impossible de charger', err.message || 'Erreur réseau.');
@@ -3158,7 +3271,12 @@ async function renderChapterView(params) {
     el.innerHTML = `
       <div class="page-hero">
         <div class="hero-sub" style="margin-bottom:6px;">${info.emoji} ${escapeHtml(info.label)}</div>
-        <h1>${escapeHtml(ch.title)}</h1>
+        <div class="hero-title-row">
+          <h1>${escapeHtml(ch.title)}</h1>
+          <button class="rename-btn" id="renameChapterBtn" title="Renommer le chapitre" aria-label="Renommer le chapitre">
+            <i class="fas fa-pen"></i>
+          </button>
+        </div>
         <div class="hero-sub">${sections.length} section${sections.length > 1 ? 's' : ''} · ${ch.sectionsStudied || 0} étudiée${ch.sectionsStudied > 1 ? 's' : ''}</div>
         ${masteryBadge}
       </div>
@@ -3212,6 +3330,21 @@ async function renderChapterView(params) {
     $('viewLessonBtn')?.addEventListener('click', () => navigate('lesson', { subject, chapterId }));
     $('addSectionBtn')?.addEventListener('click', () => openAddSectionModal(subject, chapterId));
 
+    // ✅ v8.38 — renommer le chapitre
+    $('renameChapterBtn')?.addEventListener('click', () => {
+      openRenameModal({
+        heading: 'Renommer le chapitre',
+        title: ch.title,
+        onSave: async (t) => {
+          await callApi('renameChapter', { subject, chapterId, title: t });
+          showToast('Chapitre renommé', 'success');
+          delete state.cache.chapters[subject];
+          delete state.cache.chapter[`${subject}/${chapterId}`];
+          applyRoute({ view: 'chapter', params: { subject, chapterId } });
+        }
+      });
+    });
+
   } catch (err) {
     if (err.status === 404) showEmptyState(el, 'fa-book', 'Chapitre introuvable', 'Ce chapitre n\'existe plus.');
     else showEmptyState(el, 'fa-exclamation-triangle', 'Erreur', err.message || 'Erreur réseau.');
@@ -3242,8 +3375,16 @@ async function renderSectionView(params) {
           <span>${info.emoji} ${escapeHtml(info.label)}</span>
           ${chapterTitle ? `<span class="sep">›</span><span>${escapeHtml(chapterTitle)}</span>` : ''}
         </div>
-        <h1>${escapeHtml(s.title)}</h1>
+        <div class="hero-title-row">
+          <h1>${escapeHtml(s.title)}</h1>
+          <button class="rename-btn" id="renameSectionBtn" title="Renommer la section" aria-label="Renommer la section">
+            <i class="fas fa-pen"></i>
+          </button>
+        </div>
         <div class="sub">${escapeHtml(s.time || '')}</div>
+        ${state.autoAdded && state.autoAdded.sectionId === sectionId ? `
+          <span class="ai-proposal-badge"><i class="fas fa-wand-magic-sparkles"></i> Classé par l'IA — touche ✏️ pour renommer</span>
+        ` : ''}
       </div>
 
       <div class="content-section">
@@ -3292,6 +3433,21 @@ async function renderSectionView(params) {
       raw.classList.toggle('expanded');
       const span = $('expandRawBtn').querySelector('span');
       span.textContent = raw.classList.contains('expanded') ? 'Réduire' : 'Voir tout';
+    });
+
+    // ✅ v8.38 — renommer la section (ajuster la proposition IA)
+    $('renameSectionBtn')?.addEventListener('click', () => {
+      openRenameModal({
+        heading: 'Renommer la section',
+        title: s.title,
+        onSave: async (t) => {
+          await callApi('renameSection', { subject, chapterId, sectionId, title: t });
+          showToast('Section renommée', 'success');
+          state.autoAdded = null;
+          delete state.cache.chapter[`${subject}/${chapterId}`];
+          applyRoute({ view: 'section', params: { subject, chapterId, sectionId } });
+        }
+      });
     });
 
     el.querySelectorAll('.qa-item').forEach((item) => {
@@ -4552,6 +4708,701 @@ function openAddSectionModal(subject, chapterId) {
   setTimeout(() => body.focus(), 200);
 }
 
+// ══════════════════════════════════════════════════════════════
+// ✅ v8.38 — AJOUTER : modale 4 modes (Texte · Photos · Vocal · PDF)
+// L'élève n'a PAS à choisir la matière ni le chapitre : il donne sa leçon,
+// l'IA la lit, détecte la matière, classe la section et propose les noms
+// (l'élève peut renommer ensuite). 100 % style maison, zéro style natif.
+// ══════════════════════════════════════════════════════════════
+
+// ── Helpers de dictée (déduplication anti-chevauchement, partagés) ──
+const AC_STUTTER_KEEP = { oui: 1, non: 1, tres: 1, bien: 1, jamais: 1, encore: 1, toujours: 1 };
+function acNormTok(w) {
+  let s = String(w || '').toLowerCase().replace(/\u0153/g, 'oe');
+  try { s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) {}
+  return s.replace(/[^a-z0-9']+/g, '');
+}
+function acWordsOf(t) { return String(t || '').split(/\s+/).filter(Boolean); }
+function acWithoutOverlap(base, txt) {
+  if (!base || !txt) return txt || '';
+  const bw = acWordsOf(base); const tw = acWordsOf(txt);
+  const twN = tw.map(acNormTok).join(' ');
+  const winN = bw.slice(Math.max(0, bw.length - tw.length - 8)).map(acNormTok).join(' ');
+  if (twN && winN.indexOf(twN) !== -1) return '';
+  const maxK = Math.min(bw.length, tw.length, 60);
+  for (let k = maxK; k >= 1; k--) {
+    let ok = true;
+    for (let i = 0; i < k; i++) {
+      if (acNormTok(bw[bw.length - k + i]) !== acNormTok(tw[i])) { ok = false; break; }
+    }
+    if (ok) return tw.slice(k).join(' ');
+  }
+  return txt;
+}
+function acMergeNoOverlap(prev, next) {
+  if (!prev) return next || '';
+  if (!next) return prev;
+  const kept = acWithoutOverlap(prev, next);
+  return kept ? prev + ' ' + kept : prev;
+}
+function acCollapseStutter(text) {
+  const w = acWordsOf(text);
+  const out = [];
+  let i = 0;
+  while (i < w.length) {
+    let consumed = 1;
+    for (let n = 4; n >= 2; n--) {
+      if (i + 2 * n > w.length) continue;
+      let ok = true;
+      for (let j = 0; j < n; j++) {
+        if (acNormTok(w[i + j]) !== acNormTok(w[i + n + j])) { ok = false; break; }
+      }
+      if (ok) { consumed = n; break; }
+    }
+    if (consumed === 1) {
+      out.push(w[i]);
+      const tok = acNormTok(w[i]);
+      let j = i + 1;
+      while (j < w.length && acNormTok(w[j]) === tok) {
+        if (AC_STUTTER_KEEP[tok]) out.push(w[j]);
+        j++;
+      }
+      i = j;
+    } else {
+      for (let j = 0; j < consumed; j++) out.push(w[i + j]);
+      i += consumed;
+      while (i + consumed <= w.length) {
+        let same = true;
+        for (let j = 0; j < consumed; j++) {
+          if (acNormTok(w[i + j]) !== acNormTok(w[i - consumed + j])) { same = false; break; }
+        }
+        if (!same) break;
+        i += consumed;
+      }
+    }
+  }
+  return out.join(' ');
+}
+
+// ── pdf.js LOCAL (assets/pdfjs, même origine — pattern lecture.html) ──
+let __acPdfJsLoading = null;
+function acEnsurePdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (__acPdfJsLoading) return __acPdfJsLoading;
+  __acPdfJsLoading = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'assets/pdfjs/pdf.min.js';
+    s.onload = () => {
+      if (!window.pdfjsLib) { reject(new Error('pdfjs')); return; }
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdfjs/pdf.worker.min.js';
+      resolve(window.pdfjsLib);
+    };
+    s.onerror = () => { __acPdfJsLoading = null; reject(new Error('pdfjs')); };
+    document.head.appendChild(s);
+  });
+  return __acPdfJsLoading;
+}
+
+// Extraction de la couche TEXTE du PDF (rapide, exacte). Si le PDF est un
+// scan (presque aucun texte) → retour scanned:true et la page passera par l'OCR.
+async function acExtractPdfText(file, onProgress) {
+  let lib;
+  try { lib = await acEnsurePdfJs(); } catch (e) { throw new Error('Impossible de charger le lecteur PDF.'); }
+  let pdf;
+  try { pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise; }
+  catch (e) { throw new Error('Impossible de lire ce PDF — essaie un autre fichier.'); }
+
+  const maxPages = Math.min(pdf.numPages, 10);
+  let text = '';
+  for (let p = 1; p <= maxPages; p++) {
+    if (onProgress) onProgress(p, maxPages, pdf.numPages);
+    try {
+      const page = await pdf.getPage(p);
+      const tc = await page.getTextContent();
+      let lastY = null, pageText = '';
+      for (const it of tc.items) {
+        if (!it.str) continue;
+        const y = it.transform ? Math.round(it.transform[5]) : null;
+        if (lastY !== null && y !== null && Math.abs(y - lastY) > 2) pageText += '\n';
+        else if (pageText && !/\s$/.test(pageText) && !/^\s/.test(it.str)) pageText += ' ';
+        pageText += it.str;
+        if (y !== null) lastY = y;
+      }
+      if (pageText.trim()) text += (text ? '\n\n' : '') + pageText.trim();
+    } catch (e) { /* page illisible : on continue */ }
+    if (text.length >= MAX_CONTENT_LENGTH * 2) break;
+  }
+  return {
+    text: text.trim(),
+    numPages: pdf.numPages,
+    scanned: text.trim().length < 150
+  };
+}
+
+// OCR par lots de ≤ 4 images (limite du kit IA) via /api/arv?kit=1
+async function acOcrImages(images, onProgress) {
+  const batches = [];
+  for (let i = 0; i < images.length; i += 4) batches.push(images.slice(i, i + 4));
+  let out = '';
+  for (let b = 0; b < batches.length; b++) {
+    if (onProgress) onProgress(b + 1, batches.length, images.length);
+    const r = await window.ARVX_AI.ask('image', { mode: 'ocr', images: batches[b] });
+    const t = String(r?.data?.text || '').trim();
+    if (t) out += (out ? '\n\n' : '') + t;
+  }
+  return out;
+}
+
+let __isAddCourseModalOpen = false;
+
+function openAddCourseModal() {
+  if (__isAddCourseModalOpen) return;
+  __isAddCourseModalOpen = true;
+
+  openModal(`
+    <div class="modal dicta-modal" id="addCourseModal">
+      <button class="modal-close"><i class="fas fa-times"></i></button>
+      <div class="modal-head">
+        <h2>Ajouter mon cours</h2>
+        <p id="acSubtitle">Choisis comment donner ta leçon — l'IA s'occupe du reste</p>
+      </div>
+      <div id="acBody"></div>
+    </div>
+  `);
+
+  const acBody = $('acBody');
+  let acText = '';          // texte de la leçon (source de vérité)
+  let acMode = null;        // mode actif : 'texte' | 'photos' | 'vocal' | 'pdf'
+  let stopAcDictation = () => {};
+  let acBusy = false;       // extraction OCR/PDF en cours
+
+  const releaseGarde = () => {
+    __isAddCourseModalOpen = false;
+    try { stopAcDictation(); } catch (e) {}
+  };
+  $('modalBackdrop')?.addEventListener('click', (e) => {
+    if (e.target === $('modalBackdrop')) releaseGarde();
+  });
+  $('modalBackdrop')?.querySelector('.modal-close')?.addEventListener('click', releaseGarde);
+
+  const setSubtitle = (t) => { const el = $('acSubtitle'); if (el) el.textContent = t; };
+
+  // ═══ Écran 1 — choix du mode ═══
+  function showModeChoice() {
+    if (acBusy) return;
+    stopAcDictation();
+    acMode = null;
+    setSubtitle('Choisis comment donner ta leçon — l\'IA s\'occupe du reste');
+    const resumeHtml = acText.trim().length > 0 ? `
+      <button type="button" class="btn-full secondary" id="acResumeBtn" style="margin-top:2px;">
+        <span class="btn-icon"><i class="fas fa-rotate-left"></i></span>
+        <span class="btn-text">Reprendre ma saisie en cours</span>
+      </button>
+    ` : '';
+    acBody.innerHTML = `
+      <div class="mode-grid">
+        <button type="button" class="mode-card" data-mode="texte">
+          <span class="mode-ico"><i class="fas fa-keyboard"></i></span>
+          <span class="mode-name">Texte</span>
+          <span class="mode-desc">Copie ou tape ta leçon au clavier</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="photos">
+          <span class="mode-ico"><i class="fas fa-images"></i></span>
+          <span class="mode-name">Photos</span>
+          <span class="mode-desc">L'IA lit le texte de tes images (OCR)</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="vocal">
+          <span class="mode-ico"><i class="fas fa-microphone"></i></span>
+          <span class="mode-name">Vocal</span>
+          <span class="mode-desc">Dicte ta leçon en parlant</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="pdf">
+          <span class="mode-ico"><i class="fas fa-file-pdf"></i></span>
+          <span class="mode-name">PDF</span>
+          <span class="mode-desc">Envoie ton cours PDF, l'IA extrait tout</span>
+        </button>
+      </div>
+      ${resumeHtml}
+    `;
+    acBody.querySelectorAll('.mode-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const mode = card.dataset.mode;
+        if (mode === 'texte') showTextMode();
+        else if (mode === 'photos') startPhotoPicker();
+        else if (mode === 'vocal') showVoiceMode();
+        else if (mode === 'pdf') startPdfPicker();
+      });
+    });
+    $('acResumeBtn')?.addEventListener('click', () => showVerifyMode());
+  }
+
+  // ═══ Écran 2 — vérification du texte (commun à tous les modes) ═══
+  function showVerifyMode() {
+    stopAcDictation();
+    const srcLabel = { texte: 'Texte', photos: 'Photos (OCR)', vocal: 'Dictée vocale', pdf: 'PDF' }[acMode] || 'Ta leçon';
+    setSubtitle(`${srcLabel} — vérifie et corrige ton texte avant l'analyse`);
+    acBody.innerHTML = `
+      <div class="verify-stage">
+        <button type="button" class="mode-back" id="acBackBtn"><i class="fas fa-arrow-left"></i> Changer de mode</button>
+        <div class="form-field">
+          <label class="form-label">Ta leçon (modifiable)</label>
+          <textarea class="form-textarea" id="acTextArea" placeholder="Ton cours apparaîtra ici…" maxlength="${MAX_CONTENT_LENGTH}"></textarea>
+          <div class="char-counter" id="acCounter">0 / ${MAX_CONTENT_LENGTH}</div>
+        </div>
+        <div class="extract-note">💡 L'IA lira ce texte, détectera la matière et créera la section toute seule. Tu pourras renommer chaque titre ensuite.</div>
+        <button class="btn-full primary" id="acSubmitBtn" disabled>
+          <span class="btn-icon"><i class="fas fa-wand-magic-sparkles"></i></span>
+          <span class="btn-text">Analyser avec l'IA</span>
+          <span class="spinner"></span>
+        </button>
+      </div>
+    `;
+    const ta = $('acTextArea');
+    const counter = $('acCounter');
+    ta.value = acText.slice(0, MAX_CONTENT_LENGTH);
+    const updateReady = () => {
+      if (ta.value.length > MAX_CONTENT_LENGTH) ta.value = ta.value.slice(0, MAX_CONTENT_LENGTH);
+      acText = ta.value;
+      const len = ta.value.trim().length;
+      $('acSubmitBtn').disabled = len < MIN_CONTENT_LENGTH;
+      counter.textContent = `${ta.value.length} / ${MAX_CONTENT_LENGTH}`;
+      counter.classList.toggle('limit', ta.value.length >= MAX_CONTENT_LENGTH);
+    };
+    ta.addEventListener('input', updateReady);
+    updateReady();
+    const autoGrow = () => {
+      ta.style.height = 'auto';
+      const cap = Math.round(window.innerHeight * 0.42);
+      ta.style.height = Math.min(ta.scrollHeight, cap) + 'px';
+    };
+    ta.addEventListener('input', autoGrow);
+    setTimeout(autoGrow, 30);
+    $('acBackBtn').addEventListener('click', showModeChoice);
+    $('acSubmitBtn').addEventListener('click', submitAutoAdd);
+    setTimeout(() => { try { ta.focus(); } catch (e) {} }, 200);
+  }
+
+  // ═══ Mode TEXTE ═══
+  function showTextMode() {
+    acMode = 'texte';
+    showVerifyMode();
+  }
+
+  // ═══ Mode PHOTOS — galerie / appareil → OCR ═══
+  function startPhotoPicker() {
+    acMode = 'photos';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.addEventListener('change', async () => {
+      const files = Array.from(input.files || []).slice(0, 8);
+      input.remove();
+      if (files.length === 0) { showModeChoice(); return; }
+      if (!window.ARVX_AI) { showToast('Kit IA indisponible — réessaie', 'error'); showModeChoice(); return; }
+      acBusy = true;
+      acBody.innerHTML = `
+        <div class="extract-progress"><span class="mini-spinner"></span><span id="acProgTxt">Préparation des images…</span></div>
+        <button type="button" class="mode-back" id="acCancelBtn"><i class="fas fa-times"></i> Annuler</button>
+      `;
+      $('acCancelBtn').addEventListener('click', () => { acBusy = false; showModeChoice(); });
+      const prog = (t) => { const el = $('acProgTxt'); if (el) el.textContent = t; };
+      try {
+        const images = [];
+        for (let i = 0; i < files.length; i++) {
+          prog(`Image ${i + 1}/${files.length} — préparation…`);
+          images.push(await window.ARVX_AI.compressImageFile(files[i], { maxSide: 1400, quality: 0.8 }));
+        }
+        const text = await acOcrImages(images, (b, total) => {
+          prog(`Lecture IA des images… (${b}/${total})`);
+        });
+        acBusy = false;
+        if (!text || text.trim().length === 0) {
+          showToast('Aucun texte lisible sur ces images', 'error');
+          showModeChoice();
+          return;
+        }
+        acText = clampAc(text);
+        if (text.length > MAX_CONTENT_LENGTH) showToast(`Extrait ramené à ${MAX_CONTENT_LENGTH} caractères`, 'info');
+        showVerifyMode();
+      } catch (e) {
+        acBusy = false;
+        showToast(window.ARVX_AI?.errMessage ? window.ARVX_AI.errMessage(e?.code || '') : (e.message || 'Extraction impossible'), 'error', 5000);
+        showModeChoice();
+      }
+    }, { once: true });
+    setTimeout(() => input.click(), 50);
+  }
+
+  // ═══ Mode PDF — texte natif, sinon OCR des pages ═══
+  function startPdfPicker() {
+    acMode = 'pdf';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf,.pdf';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.addEventListener('change', async () => {
+      const file = (input.files || [])[0];
+      input.remove();
+      if (!file) { showModeChoice(); return; }
+      acBusy = true;
+      acBody.innerHTML = `
+        <div class="extract-progress"><span class="mini-spinner"></span><span id="acProgTxt">Lecture du PDF…</span></div>
+        <button type="button" class="mode-back" id="acCancelBtn"><i class="fas fa-times"></i> Annuler</button>
+      `;
+      $('acCancelBtn').addEventListener('click', () => { acBusy = false; showModeChoice(); });
+      const prog = (t) => { const el = $('acProgTxt'); if (el) el.textContent = t; };
+      try {
+        let text = '';
+        const res = await acExtractPdfText(file, (p, total, all) => {
+          prog(`Extraction du texte — page ${p}/${total}${all > total ? ` (sur ${all})` : ''}…`);
+        });
+        if (res.scanned) {
+          // PDF scanné : pages rendues en images → OCR (kit IA, 6 pages max)
+          if (!window.ARVX_AI) throw new Error('Kit IA indisponible.');
+          prog('PDF scanné — lecture IA des pages…');
+          const pages = await window.ARVX_AI.pdfToImages(file, { maxPages: 6, scale: 1.6, onProgress: (p, n) => prog(`Rendu page ${p}/${n}…`) });
+          text = await acOcrImages(pages, (b, total) => prog(`Lecture IA des pages… (${b}/${total})`));
+        } else {
+          text = res.text;
+        }
+        acBusy = false;
+        if (!text || text.trim().length === 0) {
+          showToast('Aucun texte extrait de ce PDF', 'error');
+          showModeChoice();
+          return;
+        }
+        acText = clampAc(text);
+        if (text.length > MAX_CONTENT_LENGTH) showToast(`Extrait ramené à ${MAX_CONTENT_LENGTH} caractères — le reste peut être ajouté en une 2ᵉ section`, 'info', 5000);
+        showVerifyMode();
+      } catch (e) {
+        acBusy = false;
+        showToast(e.message || 'Extraction impossible', 'error', 5000);
+        showModeChoice();
+      }
+    }, { once: true });
+    setTimeout(() => input.click(), 50);
+  }
+
+  function clampAc(t) { return String(t || '').length > MAX_CONTENT_LENGTH ? String(t).slice(0, MAX_CONTENT_LENGTH) : String(t || ''); }
+
+  // ═══ Mode VOCAL — dictée avec bouton enregistrer ═══
+  function showVoiceMode() {
+    acMode = 'vocal';
+    setSubtitle('Dicte ta leçon — appuie, parle, ré-appuie pour arrêter');
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      acBody.innerHTML = `
+        <div class="empty-state" style="padding:24px 16px;">
+          <div class="icon"><i class="fas fa-microphone-slash"></i></div>
+          <h3>Dictée indisponible</h3>
+          <p>Ce navigateur ne soutient pas la dictée vocale. Utilise Chrome, ou saisis ton texte.</p>
+        </div>
+        <button type="button" class="btn-full secondary" id="acVoiceBack"><span class="btn-icon">←</span><span class="btn-text">Revenir aux modes</span></button>
+      `;
+      $('acVoiceBack').addEventListener('click', showModeChoice);
+      return;
+    }
+
+    acBody.innerHTML = `
+      <div class="voice-stage" id="acVoiceStage">
+        <div class="voice-timer" id="acTimer">00:00</div>
+        <button type="button" class="voice-rec-btn" id="acRecBtn" aria-label="Enregistrer">
+          <span class="voice-rec-core">
+            <i class="fas fa-microphone ic-mic"></i>
+            <i class="fas fa-stop ic-stop"></i>
+          </span>
+        </button>
+        <p class="voice-hint" id="acHint">Appuie et parle — durée illimitée</p>
+        <div class="voice-live-wrap" id="acLiveWrap">
+          <textarea class="voice-live" id="acLive" placeholder="Ton texte apparaîtra ici en direct…" maxlength="${MAX_CONTENT_LENGTH}" rows="3"></textarea>
+          <div class="voice-counter" id="acCounter2">0 / ${MAX_CONTENT_LENGTH}</div>
+        </div>
+        <p class="voice-edit-hint">✏️ Touche ton texte pour corriger les fautes au clavier</p>
+        <div class="voice-actions">
+          <button type="button" class="btn-full secondary" id="acVoiceBack"><span class="btn-icon">←</span><span class="btn-text">Revenir aux modes</span></button>
+          <button class="btn-full primary" id="acSubmitBtn2" disabled>
+            <span class="btn-icon"><i class="fas fa-wand-magic-sparkles"></i></span>
+            <span class="btn-text">Analyser avec l'IA</span>
+            <span class="spinner"></span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    const recBtn = $('acRecBtn');
+    const timerEl = $('acTimer');
+    const hintEl = $('acHint');
+    const live = $('acLive');
+    const liveWrap = $('acLiveWrap');
+    const counterEl = $('acCounter2');
+
+    let recognition = null;
+    let isRecording = false;
+    let editMode = false;
+    let baseText = acText || '';
+    let sessionFinals = '';
+    let timerInt = null;
+    let startedAt = 0;
+    let wakeLock = null;
+    let capWarned = false;
+
+    const clampMax = (t) => (t.length > MAX_CONTENT_LENGTH ? t.slice(0, MAX_CONTENT_LENGTH) : t);
+    const flushFinals = () => {
+      if (sessionFinals) {
+        baseText = clampMax(acMergeNoOverlap(baseText, sessionFinals));
+        sessionFinals = '';
+      }
+    };
+    const fmt = (s) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    const startTimer = () => {
+      startedAt = Date.now();
+      timerEl.textContent = '00:00';
+      if (timerInt) clearInterval(timerInt);
+      timerInt = setInterval(() => { timerEl.textContent = fmt(Math.floor((Date.now() - startedAt) / 1000)); }, 1000);
+    };
+    const stopTimer = () => { if (timerInt) { clearInterval(timerInt); timerInt = null; } };
+    const grabWake = async () => { try { if (navigator.wakeLock && !wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} };
+    const dropWake = () => { try { if (wakeLock) wakeLock.release(); } catch (e) {} wakeLock = null; };
+    const setUI = (rec) => {
+      recBtn.classList.toggle('recording', rec);
+      recBtn.setAttribute('aria-label', rec ? 'Arrêter l\'enregistrement' : 'Enregistrer');
+      hintEl.textContent = rec ? 'J\'écoute… Appuie pour arrêter' : 'Appuie et parle — durée illimitée';
+    };
+    const syncLive = () => {
+      if (document.activeElement !== live) {
+        live.value = acText;
+        live.scrollTop = live.scrollHeight;
+      }
+      counterEl.textContent = `${acText.length} / ${MAX_CONTENT_LENGTH}`;
+      counterEl.classList.toggle('limit', acText.length >= MAX_CONTENT_LENGTH);
+    };
+    const updateSubmit = () => { $('acSubmitBtn2').disabled = acText.trim().length < MIN_CONTENT_LENGTH; };
+
+    stopAcDictation = () => {
+      if (!isRecording) return;
+      isRecording = false;
+      try { if (recognition) recognition.stop(); } catch (e) {}
+      stopTimer(); dropWake(); setUI(false);
+      flushFinals();
+    };
+
+    // Correction clavier pendant la dictée → pause propre
+    live.addEventListener('focus', () => {
+      liveWrap.classList.add('editing');
+      if (isRecording) {
+        acText = clampMax(live.value || '');
+        baseText = acText;
+        sessionFinals = '';
+        isRecording = false;
+        try { if (recognition) recognition.abort(); } catch (e) {}
+        stopTimer(); dropWake(); setUI(false);
+        hintEl.textContent = 'Dictée en pause — corrige ton texte, puis 🎤 pour reprendre';
+        updateSubmit();
+      }
+      editMode = true;
+    });
+    live.addEventListener('blur', () => liveWrap.classList.remove('editing'));
+    live.addEventListener('input', () => {
+      if (live.value.length > MAX_CONTENT_LENGTH) live.value = live.value.slice(0, MAX_CONTENT_LENGTH);
+      acText = live.value;
+      baseText = acText;
+      updateSubmit();
+      counterEl.textContent = `${acText.length} / ${MAX_CONTENT_LENGTH}`;
+      counterEl.classList.toggle('limit', acText.length >= MAX_CONTENT_LENGTH);
+    });
+
+    recBtn.addEventListener('click', () => {
+      if (isRecording) { stopAcDictation(); syncLive(); updateSubmit(); return; }
+      if (editMode) {
+        acText = clampMax(live.value || '');
+        baseText = acText;
+        editMode = false;
+        liveWrap.classList.remove('editing');
+        updateSubmit();
+      }
+      if (!recognition) {
+        recognition = new SpeechRecognition();
+        try {
+          const uiLang = String(localStorage.getItem('arvexa-lang') || 'fr').toLowerCase();
+          recognition.lang = uiLang.startsWith('en') ? 'en-US' : 'fr-FR';
+        } catch (e) { recognition.lang = 'fr-FR'; }
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (event) => {
+          if (editMode || !isRecording) return;
+          let finals = '';
+          let interim = '';
+          for (let i = 0; i < event.results.length; i++) {
+            const r = event.results[i];
+            const txt = r && r[0] ? r[0].transcript : '';
+            if (!txt) continue;
+            if (r.isFinal) finals = acMergeNoOverlap(finals, acWithoutOverlap(baseText, txt));
+            else interim += (interim ? ' ' : '') + txt;
+          }
+          sessionFinals = acCollapseStutter(finals);
+          const spokenBase = baseText + (sessionFinals ? ' ' + sessionFinals : '');
+          interim = acWithoutOverlap(spokenBase, interim);
+          const total = spokenBase + (interim ? ' ' + interim : '');
+          if (total.length > MAX_CONTENT_LENGTH) {
+            acText = total.slice(0, MAX_CONTENT_LENGTH);
+            syncLive(); updateSubmit();
+            if (!capWarned) { capWarned = true; showToast('Limite de 2 500 caractères atteinte — dictée arrêtée', 'info'); }
+            stopAcDictation();
+            syncLive();
+            return;
+          }
+          acText = total;
+          syncLive();
+          updateSubmit();
+        };
+
+        recognition.onerror = (e) => {
+          if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+            isRecording = false; stopTimer(); dropWake(); setUI(false); syncLive();
+            showToast('Micro bloqué — autorise le micro dans les réglages du navigateur', 'error');
+          } else if (e.error === 'network') {
+            isRecording = false; stopTimer(); dropWake(); setUI(false); syncLive();
+            showToast('Dictée interrompue (réseau) — ton texte est conservé', 'error');
+          } else if (e.error === 'audio-capture') {
+            isRecording = false; stopTimer(); dropWake(); setUI(false); syncLive();
+            showToast('Aucun micro détecté', 'error');
+          }
+        };
+
+        recognition.onend = () => {
+          flushFinals();
+          if (editMode) return;
+          acText = baseText;
+          syncLive();
+          updateSubmit();
+          if (isRecording) setTimeout(() => { try { recognition.start(); } catch (e) {} }, 300);
+        };
+      }
+
+      try {
+        flushFinals();
+        capWarned = false;
+        baseText = clampMax(acText ? acText + ' ' : '');
+        recognition.start();
+        isRecording = true;
+        setUI(true);
+        startTimer();
+        grabWake();
+        syncLive();
+      } catch (e) {
+        showToast('Impossible de démarrer la dictée', 'error');
+      }
+    });
+
+    // Retour d'onglet : Chrome coupe le micro → relance
+    const visHandler = () => {
+      if (document.visibilityState === 'visible' && isRecording && recognition) {
+        try { recognition.start(); } catch (e) {}
+      }
+    };
+    document.removeEventListener('visibilitychange', window.__acVisHandler || (() => {}));
+    window.__acVisHandler = visHandler;
+    document.addEventListener('visibilitychange', visHandler);
+
+    $('acVoiceBack').addEventListener('click', () => { stopAcDictation(); showModeChoice(); });
+    $('acSubmitBtn2').addEventListener('click', submitAutoAdd);
+
+    if (acText) { live.value = acText; updateSubmit(); }
+    counterEl.textContent = `${acText.length} / ${MAX_CONTENT_LENGTH}`;
+  }
+
+  // ═══ Soumission — autoAddSection (l'IA classe tout) ═══
+  async function submitAutoAdd() {
+    if (acBusy) return;
+    const rawInput = (acText || '').trim();
+    if (rawInput.length < MIN_CONTENT_LENGTH) {
+      showToast(`Contenu trop court (min ${MIN_CONTENT_LENGTH} caractères)`, 'error');
+      return;
+    }
+
+    const submitBtn = $('acSubmitBtn') || $('acSubmitBtn2');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add('loading'); }
+    stopAcDictation();
+
+    const container = $('view-section');
+    document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+    container.classList.add('active');
+    const cleanupProgress = showGeneratingState(container, 'auto');
+
+    try {
+      closeModal();
+      __isAddCourseModalOpen = false;
+      const result = await callApi('autoAddSection', { rawInput });
+      cleanupProgress();
+      state.autoAdded = { chapterId: result.chapterId, sectionId: result.sectionId, createdChapter: !!result.createdChapter };
+      delete state.cache.chapters[result.subject];
+      delete state.cache.chapter[`${result.subject}/${result.chapterId}`];
+      showToast(`IA : ${result.subjectLabel || 'Matière'} › ${result.chapterTitle || 'Chapitre'}${result.createdChapter ? ' (nouveau chapitre)' : ''} — renomme si tu veux`, 'success', 6000);
+      navigate('section', { subject: result.subject, chapterId: result.chapterId, sectionId: result.sectionId });
+    } catch (e) {
+      cleanupProgress();
+      if (e.code === 'FREE_SECTION_LIMIT') {
+        showPremiumModal();
+        applyRoute({ view: 'notebooks', params: {} });
+      } else {
+        showToast('Erreur : ' + (e.message || 'analyse impossible'), 'error', 5000);
+        applyRoute({ view: 'notebooks', params: {} });
+      }
+    }
+  }
+
+  showModeChoice();
+}
+
+// ── Modale de renommage (v8.38 — ajuster la proposition de l'IA) ──
+function openRenameModal({ title, heading, onSave }) {
+  openModal(`
+    <div class="modal">
+      <button class="modal-close"><i class="fas fa-times"></i></button>
+      <div class="modal-head">
+        <h2>${escapeHtml(heading || 'Renommer')}</h2>
+        <p>Donne le nom qui te aide à te retrouver</p>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Nouveau nom</label>
+        <input type="text" class="form-input" id="renameInput" maxlength="100">
+      </div>
+      <button class="btn-full primary" id="renameSaveBtn" disabled>
+        <span class="btn-icon"><i class="fas fa-check"></i></span>
+        <span class="btn-text">Enregistrer</span>
+        <span class="spinner"></span>
+      </button>
+    </div>
+  `, { center: true });
+
+  const input = $('renameInput');
+  const btn = $('renameSaveBtn');
+  input.value = title || '';
+  btn.disabled = input.value.trim().length < 2;
+  input.addEventListener('input', () => { btn.disabled = input.value.trim().length < 2; });
+  setTimeout(() => input.focus(), 200);
+  btn.addEventListener('click', async () => {
+    const v = input.value.trim();
+    if (v.length < 2) return;
+    btn.disabled = true;
+    btn.classList.add('loading');
+    try {
+      await onSave(v);
+      closeModal();
+    } catch (e) {
+      showToast('Erreur : ' + e.message, 'error');
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  });
+}
+
 // Backend progress v8.5 : les séances (updateSession) ne font plus partie du
 // serveur → handlers retirés, aucun appel fantôme.
 
@@ -4705,7 +5556,7 @@ function isPremiumUser(data) {
   return false;
 }
 
-console.log('🚀 ARVEXA — Mon cahier — serveur progress v8.5 (11 actions stables)');
+console.log('🚀 ARVEXA — Mon cahier — serveur progress v8.8 (Ajouter intelligent : 4 modes + autoAddSection)');
 
 // ✅ v8.0 — SYNC FIREBASE : la carte « Ma progression — révisions officielles »
 // se recalcule quand la progression fusionne/arrive du cloud (autre appareil).

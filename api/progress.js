@@ -1,6 +1,13 @@
 // ================================================================
-// API PROGRESS v8.7 — ARVEXA School
+// API PROGRESS v8.8 — ARVEXA School
 // Cahier intelligent + Fan-out IA + Tracking temps d'étude
+// v8.38 « Ajouter intelligent » :
+//   - autoAddSection : l'élève n'a PAS à choisir matière/chapitre — l'IA lit la
+//     leçon, détecte la matière (8 clés), réutilise un chapitre existant du cahier
+//     (match normalisé) sinon en crée un, puis lance l'analyse complète existante ;
+//   - renameSection / renameChapter : l'élève peut ajuster les noms proposés ;
+//   - getDashboard renvoie `activity` (14 jours : sections + minutes) pour la
+//     courbe de la nouvelle carte statistiques de la page Résumé.
 // v8.6 « édition complète » (base v8.5 inchangée structurellement) :
 //   - explications « comme un prof » enrichies (analogies, étapes)
 //   - banque de questions SPLIT en 2 demi-tâches (base + avancée, 5-13 chacune)
@@ -27,6 +34,9 @@ const RATE_LIMITS = {
   createChapter: 10,
   getChapter: 30,
   createSection: 5,       // IA lourd = 5/min max
+  autoAddSection: 5,      // ✅ v8.38 — IA (classement + analyse) = même budget que createSection
+  renameSection: 20,      // ✅ v8.38 — écriture légère
+  renameChapter: 20,      // ✅ v8.38 — écriture légère
   getSection: 30,
   updateNotes: 30,
   deleteSection: 10,
@@ -2000,6 +2010,41 @@ async function computeStudyTime(uid) {
 // ═══════════════════════════════════════════════════════════════
 // ACTIONS
 // ═══════════════════════════════════════════════════════════════
+// ✅ v8.38 — activité des N derniers jours (sections créées + minutes d'étude)
+// pour la courbe de la carte statistiques de la page Résumé.
+async function getDailyActivity(uid, days = 14) {
+  const { db } = getAdminServices();
+  let snap;
+  try {
+    snap = await db.collection('users').doc(uid).collection('dailyActivity')
+      .orderBy('date', 'desc').limit(days).get();
+  } catch (e) {
+    console.error('[PROGRESS] getDailyActivity failed:', e.message);
+    snap = { docs: [] };
+  }
+
+  const byDate = new Map();
+  snap.docs.forEach((d) => {
+    const data = d.data();
+    if (!data?.date) return;
+    byDate.set(data.date, {
+      sections: Number(data.sectionsCreated || 0),
+      minutes: Number(data.studyMinutes || 0)
+    });
+  });
+
+  const out = [];
+  const today = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const hit = byDate.get(key) || { sections: 0, minutes: 0 };
+    out.push({ date: key, sections: hit.sections, minutes: hit.minutes });
+  }
+  return out;
+}
+
 async function getDashboard(uid) {
   const { db } = getAdminServices();
 
@@ -2016,11 +2061,13 @@ async function getDashboard(uid) {
 
   const streakPromise = computeStreak(uid);
   const studyTimePromise = computeStudyTime(uid);
+  const activityPromise = getDailyActivity(uid, 14);
 
-  const [chaptersResults, streak, studyTime] = await Promise.all([
+  const [chaptersResults, streak, studyTime, activity] = await Promise.all([
     Promise.all(chaptersPromises),
     streakPromise,
-    studyTimePromise
+    studyTimePromise,
+    activityPromise
   ]);
 
   const subjects = [];
@@ -2092,7 +2139,8 @@ async function getDashboard(uid) {
     streak,
     studyTime,
     subjects,
-    recentActivity
+    recentActivity,
+    activity // ✅ v8.38 — 14 derniers jours [{date, sections, minutes}] pour la courbe
   };
 }
 
@@ -2242,16 +2290,7 @@ async function createSection(uid, body) {
   if (!chapterId) throw { status: 400, message: 'chapterId requis.' };
   if (!rawInput || typeof rawInput !== 'string') throw { status: 400, message: 'Contenu manquant.' };
 
-  const trimmed = rawInput.trim();
-  if (trimmed.length < MIN_CONTENT_LENGTH) {
-    throw { status: 400, message: `Contenu trop court (min ${MIN_CONTENT_LENGTH} caractères).` };
-  }
-  if (trimmed.length > MAX_CONTENT_LENGTH) {
-    throw { status: 400, message: `Contenu trop long (max ${MAX_CONTENT_LENGTH}).` };
-  }
-  if (!isMeaningfulContent(trimmed)) {
-    throw { status: 400, message: 'Contenu trop court ou sans texte exploitable.' };
-  }
+  const trimmed = validateSectionContent(rawInput);
 
   const quota = await reserveSectionQuota(uid);
   if (!quota.allowed) {
@@ -2262,7 +2301,7 @@ async function createSection(uid, body) {
     };
   }
 
-  const { db, FieldValue } = getAdminServices();
+  const { db } = getAdminServices();
 
   const chapterRef = db
     .collection('users').doc(uid)
@@ -2274,6 +2313,31 @@ async function createSection(uid, body) {
     if (quota.reserved) await releaseSectionQuota(uid);
     throw { status: 404, message: 'Chapitre introuvable.' };
   }
+
+  return finalizeSection(uid, { subject, chapterId, chapterRef, trimmed, quota });
+}
+
+// ✅ v8.38 — validations partagées par createSection ET autoAddSection
+function validateSectionContent(rawInput) {
+  if (!rawInput || typeof rawInput !== 'string') throw { status: 400, message: 'Contenu manquant.' };
+  const trimmed = rawInput.trim();
+  if (trimmed.length < MIN_CONTENT_LENGTH) {
+    throw { status: 400, message: `Contenu trop court (min ${MIN_CONTENT_LENGTH} caractères).` };
+  }
+  if (trimmed.length > MAX_CONTENT_LENGTH) {
+    throw { status: 400, message: `Contenu trop long (max ${MAX_CONTENT_LENGTH}).` };
+  }
+  if (!isMeaningfulContent(trimmed)) {
+    throw { status: 400, message: 'Contenu trop court ou sans texte exploitable.' };
+  }
+  return trimmed;
+}
+
+// ✅ v8.38 — noyau d'analyse extrait de createSection (comportement IDENTIQUE) :
+// cache partagé → fan-out IA → fusion → écriture Firestore → compteurs.
+// Utilisé par createSection (chapitre choisi) et autoAddSection (chapitre détecté).
+async function finalizeSection(uid, { subject, chapterId, chapterRef, trimmed, quota }) {
+  const { FieldValue } = getAdminServices();
 
   const info = SUBJECT_INFO[subject];
   const subjectLabel = info.label;
@@ -2421,6 +2485,241 @@ async function createSection(uid, body) {
       userNotes: ''
     }
   };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ✅ v8.38 — AUTO-ADD : l'IA détecte la matière et classe la leçon
+// ═══════════════════════════════════════════════════════════════
+
+// Clé de comparaison : minuscules, sans accents, sans ponctuation.
+function normalizeTitleKey(s) {
+  let out = String(s || '').toLowerCase();
+  try { out = out.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) {}
+  return out.replace(/[^a-z0-9]+/g, '');
+}
+
+// Titres des chapitres existants, toutes matières (pour que l'IA réutilise
+// le bon chapitre au lieu d'en créer un doublon).
+async function getSubjectChapterTitles(uid) {
+  const { db } = getAdminServices();
+  const map = {};
+  await Promise.all(ALLOWED_SUBJECTS_ARRAY.map(async (subjectKey) => {
+    try {
+      const snap = await db
+        .collection('users').doc(uid)
+        .collection('notebooks').doc(subjectKey)
+        .collection('chapters')
+        .orderBy('updatedAt', 'desc')
+        .limit(100)
+        .get();
+      const titles = snap.docs.map((d) => String(d.data()?.title || '').trim()).filter((t) => t.length >= 2);
+      if (titles.length > 0) map[subjectKey] = titles;
+    } catch (e) { /* cahier absent : rien à proposer */ }
+  }));
+  return map;
+}
+
+// 1 appel IA léger (JSON) : {subject, chapter, section}. Boucle sur les
+// fournisseurs disponibles jusqu'à une réponse exploitable.
+async function classifyLesson(rawInput, chapterMap, providers) {
+  const SUBJ_LINE = ALLOWED_SUBJECTS_ARRAY.join(', ');
+  const SUBJ_LABELS = ALLOWED_SUBJECTS_ARRAY
+    .map((k) => `- ${k} = ${SUBJECT_INFO[k].label}`)
+    .join('\n');
+
+  let mapText = '(aucun chapitre existant)';
+  const parts = ALLOWED_SUBJECTS_ARRAY
+    .filter((k) => Array.isArray(chapterMap[k]) && chapterMap[k].length > 0)
+    .map((k) => `${k} : ${chapterMap[k].slice(0, 25).join(' | ')}`);
+  if (parts.length > 0) mapText = parts.join('\n');
+
+  const systemPrompt =
+    'Tu es un classifieur de leçons scolaires pour le cahier intelligent ARVEXA (élèves du collège à l\'université, programmes francophones). ' +
+    'Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, sans balises de code.';
+
+  const userPrompt =
+    'Voici le début d\'une leçon donnée par un élève :\n' +
+    '"""\n' + rawInput.slice(0, 1400) + (rawInput.length > 1400 ? '\n[…] (tronqué)' : '') + '\n"""\n\n' +
+    'Les cahiers existants de cet élève (matière : chapitres déjà créés) :\n' + mapText + '\n\n' +
+    'Matières disponibles :\n' + SUBJ_LABELS + '\n\n' +
+    'Ta tâche :\n' +
+    '1. "subject" : la matière de cette leçon — EXACTEMENT une de ces clés : ' + SUBJ_LINE + '.\n' +
+    '2. "chapter" : le chapitre auquel cette leçon appartient. Si la leçon correspond à un chapitre EXISTANT du cahier (même thème, même sujet), reprends son titre EXACTEMENT comme il est écrit dans la liste. Sinon, propose un titre de chapitre court et standard (max 60 caractères, sans numéro de chapitre).\n' +
+    '3. "section" : un titre court et clair pour CETTE partie de leçon précise (max 80 caractères, sans numéro).\n\n' +
+    'Réponds exactement : {"subject":"...","chapter":"...","section":"..."}';
+
+  let lastErr = null;
+  for (const provider of providers) {
+    try {
+      const parsed = await callProvider(provider, {
+        systemPrompt,
+        userPrompt,
+        maxTokens: 300,
+        deadline: Date.now() + 24000
+      });
+      const subject = String(parsed?.subject || '').trim().toLowerCase();
+      const chapter = String(parsed?.chapter || '').trim().replace(/^chapitre\s*\d+\s*[:.\-–]?\s*/i, '').slice(0, 100);
+      const section = String(parsed?.section || '').trim().slice(0, 100);
+      if (!ALLOWED_SUBJECTS.has(subject)) throw new Error(`matière hors liste : ${subject}`);
+      if (chapter.length < 2 || section.length < 2) throw new Error('titres trop courts');
+      return { subject, chapter, section };
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[AUTO-ADD] classement échoué chez ${provider.name} : ${e.message}`);
+    }
+  }
+  throw { status: 502, message: 'L\'IA n\'a pas pu identifier la matière de cette leçon. Réessaie dans un instant.', detail: String(lastErr?.message || '').slice(0, 200) };
+}
+
+async function autoAddSection(uid, body) {
+  const { rawInput } = body;
+  const trimmed = validateSectionContent(rawInput);
+
+  const quota = await reserveSectionQuota(uid);
+  if (!quota.allowed) {
+    throw {
+      status: 429,
+      message: `Limite gratuite atteinte (${quota.limit} sections/mois). Passe à Premium.`,
+      code: 'FREE_SECTION_LIMIT'
+    };
+  }
+
+  const providers = getProviders();
+  if (!providers.length) {
+    if (quota.reserved) await releaseSectionQuota(uid);
+    throw { status: 503, message: 'Aucun fournisseur IA disponible.' };
+  }
+
+  let chapterMapForMatch = {};
+  let classification;
+  try {
+    const chapterMap = await getSubjectChapterTitles(uid);
+    classification = await classifyLesson(trimmed, chapterMap, providers);
+    chapterMapForMatch = chapterMap;
+  } catch (err) {
+    if (quota.reserved) await releaseSectionQuota(uid);
+    throw err;
+  }
+
+  const { subject, chapter: proposedChapter, section: proposedSection } = classification;
+
+  // Réutilise un chapitre existant si le titre proposé correspond (comparaison
+  // normalisée, containment dans les deux sens pour absorber les variantes) ;
+  // sinon crée le chapitre.
+  const existingTitles = chapterMapForMatch[subject] || [];
+  const proposedKey = normalizeTitleKey(proposedChapter);
+  let matchedChapterTitle = null;
+  if (proposedKey.length >= 4) {
+    for (const t of existingTitles) {
+      const tk = normalizeTitleKey(t);
+      if (!tk) continue;
+      if (tk === proposedKey || (tk.length >= 6 && proposedKey.length >= 6 && (tk.includes(proposedKey) || proposedKey.includes(tk)))) {
+        matchedChapterTitle = t;
+        break;
+      }
+    }
+  }
+
+  const { db, FieldValue } = getAdminServices();
+  const chaptersCol = db
+    .collection('users').doc(uid)
+    .collection('notebooks').doc(subject)
+    .collection('chapters');
+
+  let chapterId = null;
+  let chapterTitle = proposedChapter;
+  let chapterRef = null;
+  let createdChapter = false;
+
+  if (matchedChapterTitle) {
+    const snap = await chaptersCol.where('title', '==', matchedChapterTitle).limit(1).get().catch(() => null);
+    if (snap && !snap.empty) {
+      chapterId = snap.docs[0].id;
+      chapterRef = snap.docs[0].ref;
+      chapterTitle = matchedChapterTitle;
+    }
+  }
+  if (!chapterRef) {
+    const ref = chaptersCol.doc();
+    await ref.set({
+      title: proposedChapter.slice(0, 100),
+      sectionsCount: 0,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp()
+    });
+    chapterId = ref.id;
+    chapterRef = ref;
+    chapterTitle = proposedChapter.slice(0, 100);
+    createdChapter = true;
+  }
+
+  const result = await finalizeSection(uid, {
+    subject, chapterId, chapterRef, trimmed, quota
+  });
+
+  // La section peut porter un meilleur titre que la proposition (l'analyse IA
+  // choisit le sien) — on renvoie tout pour que l'élève garde ses repères.
+  const sectionTitle = result?.section?.title || proposedSection;
+
+  return {
+    success: true,
+    sectionId: result.sectionId,
+    meta: result.meta,
+    subject,
+    subjectLabel: SUBJECT_INFO[subject].label,
+    chapterId,
+    chapterTitle,
+    sectionTitle,
+    createdChapter,
+    section: result.section
+  };
+}
+
+// ✅ v8.38 — renommage (l'élève ajuste les noms proposés par l'IA)
+function cleanRenameTitle(title) {
+  if (!title || typeof title !== 'string') throw { status: 400, message: 'Titre manquant.' };
+  const clean = title.trim().replace(/\s+/g, ' ').slice(0, 100);
+  if (clean.length < 2) throw { status: 400, message: 'Titre trop court (2 caractères minimum).' };
+  return clean;
+}
+
+async function renameSection(uid, body) {
+  const { subject, chapterId, sectionId, title } = body;
+  if (!ALLOWED_SUBJECTS.has(subject)) throw { status: 400, message: 'Matière invalide.' };
+  if (!chapterId || !sectionId) throw { status: 400, message: 'IDs manquants.' };
+  const clean = cleanRenameTitle(title);
+
+  const { db, FieldValue } = getAdminServices();
+  const ref = db
+    .collection('users').doc(uid)
+    .collection('notebooks').doc(subject)
+    .collection('chapters').doc(chapterId)
+    .collection('sections').doc(sectionId);
+
+  const snap = await ref.get();
+  if (!snap.exists) throw { status: 404, message: 'Section introuvable.' };
+
+  await ref.set({ title: clean, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { success: true, title: clean };
+}
+
+async function renameChapter(uid, body) {
+  const { subject, chapterId, title } = body;
+  if (!ALLOWED_SUBJECTS.has(subject)) throw { status: 400, message: 'Matière invalide.' };
+  if (!chapterId) throw { status: 400, message: 'chapterId requis.' };
+  const clean = cleanRenameTitle(title);
+
+  const { db, FieldValue } = getAdminServices();
+  const ref = db
+    .collection('users').doc(uid)
+    .collection('notebooks').doc(subject)
+    .collection('chapters').doc(chapterId);
+
+  const snap = await ref.get();
+  if (!snap.exists) throw { status: 404, message: 'Chapitre introuvable.' };
+
+  await ref.set({ title: clean, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { success: true, title: clean };
 }
 
 async function getSection(uid, body) {
@@ -2626,7 +2925,7 @@ module.exports = async function handler(request, response) {
 
   const uid = user.uid;
 
-  console.log(`[PROGRESS v8.6] ${action} | uid=${uid.slice(0, 8)}`);
+  console.log(`[PROGRESS v8.8] ${action} | uid=${uid.slice(0, 8)}`);
 
   try {
     switch (action) {
@@ -2635,6 +2934,9 @@ module.exports = async function handler(request, response) {
       case 'createChapter':    return response.status(200).json(await createChapter(uid, body));
       case 'getChapter':       return response.status(200).json(await getChapter(uid, body));
       case 'createSection':    return response.status(200).json(await createSection(uid, body));
+      case 'autoAddSection':   return response.status(200).json(await autoAddSection(uid, body));
+      case 'renameSection':    return response.status(200).json(await renameSection(uid, body));
+      case 'renameChapter':    return response.status(200).json(await renameChapter(uid, body));
       case 'getSection':       return response.status(200).json(await getSection(uid, body));
       case 'updateNotes':      return response.status(200).json(await updateNotes(uid, body));
       case 'deleteSection':    return response.status(200).json(await deleteSection(uid, body));
@@ -2645,7 +2947,7 @@ module.exports = async function handler(request, response) {
         return jsonError(response, 400, `Action inconnue : "${action}"`);
     }
   } catch (error) {
-    console.error(`[PROGRESS v8.6] "${action}" failed:`, error.message);
+    console.error(`[PROGRESS v8.8] "${action}" failed:`, error.message);
     if (error.status) return jsonError(response, error.status, error.message, error.code);
     return jsonError(response, 500, error.message || 'Erreur serveur.');
   }
