@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARV IA — Images · Documents · Chat</title>
+<style>
+  :root { --green:#1a5c3a; --green2:#20714a; --gold:#c9a227; --bg:#f6f4ee; --card:#ffffff; --ink:#20241f; --mut:#6b7168; --line:#e4e0d3; --err:#b3372f; }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
+  .wrap { max-width:520px; margin:0 auto; padding:16px 14px 40px; }
+  header.top { background:linear-gradient(135deg,var(--green),var(--green2)); color:#fff; border-radius:16px; padding:18px 16px; margin-bottom:14px; }
+  header.top h1 { font-size:19px; letter-spacing:.2px; }
+  header.top p { font-size:12.5px; opacity:.85; margin-top:4px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:14px; }
+  .card h2 { font-size:14px; color:var(--green); display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .badge { font-size:10px; background:rgba(201,162,39,.16); color:#8a6d1d; border:1px solid rgba(201,162,39,.4); padding:2px 8px; border-radius:99px; }
+  input[type=file] { width:100%; font-size:12.5px; border:1.5px dashed var(--line); border-radius:10px; padding:10px; background:#faf9f4; }
+  .preview { margin-top:10px; max-height:180px; overflow:hidden; border-radius:10px; display:none; }
+  .preview img { width:100%; display:block; }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+  .chip { border:1.5px solid var(--green); color:var(--green); background:#fff; border-radius:99px; padding:7px 13px; font-size:12.5px; cursor:pointer; }
+  .chip:disabled { opacity:.45; cursor:wait; }
+  .chip.gold { border-color:var(--gold); color:#8a6d1d; }
+  .qrow { display:none; margin-top:10px; gap:7px; }
+  .qrow.open { display:flex; }
+  .qrow input, .chatrow input { flex:1; border:1.5px solid var(--line); border-radius:10px; padding:9px 11px; font-size:13px; }
+  .pages { font-size:12px; color:var(--mut); margin-top:8px; display:none; }
+  .chatlog { display:flex; flex-direction:column; gap:8px; margin-top:8px; max-height:240px; overflow-y:auto; }
+  .msg { max-width:86%; padding:8px 11px; border-radius:12px; font-size:13px; white-space:pre-wrap; }
+  .msg.user { align-self:flex-end; background:var(--green); color:#fff; border-bottom-right-radius:4px; }
+  .msg.bot { align-self:flex-start; background:#f1efe6; border-bottom-left-radius:4px; }
+  .chatrow { display:flex; gap:7px; margin-top:10px; }
+  .out { display:none; margin-top:12px; border-top:1px solid var(--line); padding-top:10px; }
+  .out .meta { font-size:11px; color:var(--mut); margin-bottom:6px; }
+  .out .txt { font-size:13.5px; white-space:pre-wrap; line-height:1.5; max-height:320px; overflow-y:auto; }
+  .out .txt.json { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; background:#faf9f4; border:1px solid var(--line); border-radius:10px; padding:10px; }
+  .copy { margin-top:8px; font-size:11.5px; border:1px solid var(--line); background:#fff; border-radius:8px; padding:5px 10px; cursor:pointer; color:var(--mut); }
+  .err { display:none; margin-top:10px; background:rgba(179,55,47,.08); color:var(--err); border:1px solid rgba(179,55,47,.3); border-radius:10px; padding:9px 11px; font-size:12.5px; }
+  .spin { display:inline-block; width:12px; height:12px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:sp 1s linear infinite; vertical-align:-2px; margin-right:6px; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  footer { text-align:center; font-size:11px; color:var(--mut); margin-top:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>🤖 ARV IA — Images &amp; Documents</h1>
+    <p>Lis tes images et tes documents : décrire, OCR, question/réponse, JSON, chat. Tes clés restent côté serveur.</p>
+  </header>
+
+  <!-- IMAGE -->
+  <section class="card">
+    <h2>Image <span class="badge">décrire · OCR · Q&R · JSON</span></h2>
+    <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp">
+    <div class="preview" id="imgPrev"><img id="imgPrevImg" alt=""></div>
+    <div class="chips" id="imgChips">
+      <button class="chip" data-mode="describe">Décrire</button>
+      <button class="chip" data-mode="ocr">Lire le texte</button>
+      <button class="chip gold" data-mode="ask">Question…</button>
+      <button class="chip gold" data-mode="json">Extraire en JSON</button>
+    </div>
+    <div class="qrow" id="imgQrow"><input id="imgQ" placeholder="Ta question sur l’image…"></div>
+  </section>
+
+  <!-- DOCUMENT -->
+  <section class="card">
+    <h2>Document PDF <span class="badge">résumé · points clés · Q&R · JSON</span></h2>
+    <input type="file" id="docFile" accept="application/pdf">
+    <div class="pages" id="docPages"></div>
+    <div class="chips" id="docChips">
+      <button class="chip" data-mode="summary">Résumer</button>
+      <button class="chip" data-mode="keypoints">Points clés</button>
+      <button class="chip gold" data-mode="ask">Question…</button>
+      <button class="chip gold" data-mode="json">Extraire en JSON</button>
+    </div>
+    <div class="qrow" id="docQrow"><input id="docQ" placeholder="Ta question sur le document…"></div>
+  </section>
+
+  <!-- CHAT -->
+  <section class="card">
+    <h2>Chat <span class="badge">texte</span></h2>
+    <div class="chatlog" id="chatLog"></div>
+    <div class="chatrow">
+      <input id="chatIn" placeholder="Écris ton message…">
+      <button class="chip" id="chatSend">Envoyer</button>
+    </div>
+  </section>
+
+  <!-- RÉPONSE -->
+  <section class="card out" id="outCard">
+    <div class="meta" id="outMeta"></div>
+    <div class="txt" id="outTxt"></div>
+    <button class="copy" id="outCopy">Copier</button>
+  </section>
+  <div class="err" id="errBox"></div>
+
+  <footer>ARV IA — propulsé par OpenRouter · Gemini · Groq (secours automatique)</footer>
+</div>
+
+<script src="./arvx-ai.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  let imgData = null, docPages = [];
+
+  const showErr = (e) => {
+    const box = $('errBox');
+    box.textContent = (e && e.code) ? ARVX_AI.errMessage(e.code) : String(e || 'Erreur');
+    box.style.display = 'block';
+  };
+  const clearErr = () => { $('errBox').style.display = 'none'; };
+  const showOut = (provider, data) => {
+    $('outCard').style.display = 'block';
+    $('outMeta').textContent = 'Répondu par ' + provider + (data.json !== undefined && data.json === null ? ' — JSON non décodable, texte brut :' : '');
+    const t = $('outTxt');
+    if (data.json) { t.className = 'txt json'; t.textContent = JSON.stringify(data.json, null, 2); }
+    else { t.className = 'txt'; t.textContent = data.text || ''; }
+    window.__lastOut = data.json ? JSON.stringify(data.json, null, 2) : (data.text || '');
+  };
+  async function busy(btns, on, fn) {
+    btns.forEach((b) => { b.disabled = true; if (on && b === on) b.innerHTML = '<span class="spin"></span>En cours…'; });
+    try { await fn(); } catch (e) { showErr(e); } finally {
+      btns.forEach((b) => { b.disabled = false; b.textContent = b.dataset.label; });
+    }
+  }
+  document.querySelectorAll('.chip').forEach((b) => { b.dataset.label = b.textContent; });
+
+  /* IMAGE */
+  $('imgFile').addEventListener('change', async (e) => {
+    clearErr();
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      imgData = await ARVX_AI.compressImageFile(f);
+      $('imgPrevImg').src = imgData;
+      $('imgPrev').style.display = 'block';
+    } catch (err) { showErr(err); }
+  });
+  $('imgChips').addEventListener('click', (e) => {
+    const b = e.target.closest('.chip');
+    if (!b) return;
+    clearErr();
+    const mode = b.dataset.mode;
+    $('imgQrow').classList.toggle('open', mode === 'ask' || mode === 'json');
+    if (mode === 'ask' || mode === 'json') { $('imgQ').focus(); return; }
+    if (!imgData) { showErr({ code: 'bad' }); return; }
+    busy([...$('imgChips').children], b, async () => {
+      const r = await ARVX_AI.ask('image', { mode, images: [imgData] });
+      showOut(r.provider, r.data);
+    });
+  });
+  $('imgQrow').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const q = $('imgQ').value.trim();
+    const mode = $('imgQrow').classList.contains('open') && document.activeElement === $('imgQ') ? null : null;
+    if (!q || !imgData) { showErr({ code: 'bad' }); return; }
+    const jsonMode = $('imgChips').children[3] && false; /* déterminé au clic */
+    busy([...$('imgChips').children], null, async () => {
+      const m = $('imgQ').dataset.mode || 'ask';
+      const r = await ARVX_AI.ask('image', { mode: m, images: [imgData], question: q });
+      showOut(r.provider, r.data);
+    });
+  });
+  /* mémorise le mode quand on ouvre la ligne question */
+  [...$('imgChips').children].forEach((b) => b.addEventListener('click', () => { $('imgQ').dataset.mode = b.dataset.mode; }));
+  [...$('docChips').children].forEach((b) => b.addEventListener('click', () => { $('docQ').dataset.mode = b.dataset.mode; }));
+
+  /* DOCUMENT */
+  $('docFile').addEventListener('change', async (e) => {
+    clearErr();
+    const f = e.target.files[0];
+    if (!f) return;
+    const box = $('docPages');
+    box.style.display = 'block';
+    box.textContent = 'Rendu des pages…';
+    try {
+      docPages = await ARVX_AI.pdfToImages(f, { maxPages: 4, onProgress: (p, n) => { box.textContent = 'Page ' + p + ' / ' + n + '…'; } });
+      box.textContent = docPages.length + ' page(s) prête(s)' + (f.size > 3e6 ? ' — PDF lourd : si l’envoi échoue, envoie les pages essentielles.' : '');
+    } catch (err) { box.textContent = ''; showErr(err); }
+  });
+  $('docChips').addEventListener('click', (e) => {
+    const b = e.target.closest('.chip');
+    if (!b) return;
+    clearErr();
+    const mode = b.dataset.mode;
+    $('docQrow').classList.toggle('open', mode === 'ask' || mode === 'json');
+    if (mode === 'ask' || mode === 'json') { $('docQ').focus(); return; }
+    if (!docPages.length) { showErr({ code: 'bad' }); return; }
+    busy([...$('docChips').children], b, async () => {
+      const r = await ARVX_AI.ask('doc', { mode, images: docPages });
+      showOut(r.provider, r.data);
+    });
+  });
+  $('docQrow').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const q = $('docQ').value.trim();
+    if (!q || !docPages.length) { showErr({ code: 'bad' }); return; }
+    busy([...$('docChips').children], null, async () => {
+      const m = $('docQ').dataset.mode || 'ask';
+      const r = await ARVX_AI.ask('doc', { mode: m, images: docPages, question: q });
+      showOut(r.provider, r.data);
+    });
+  });
+
+  /* CHAT */
+  function addMsg(cls, txt) {
+    const d = document.createElement('div');
+    d.className = 'msg ' + cls;
+    d.textContent = txt;
+    $('chatLog').appendChild(d);
+    $('chatLog').scrollTop = 1e6;
+  }
+  async function sendChat() {
+    const t = $('chatIn').value.trim();
+    if (!t) return;
+    clearErr();
+    addMsg('user', t);
+    $('chatIn').value = '';
+    const send = $('chatSend');
+    send.disabled = true;
+    try {
+      const hist = [...document.querySelectorAll('#chatLog .msg')].slice(-12).map((el) => ({
+        role: el.classList.contains('user') ? 'user' : 'assistant', content: el.textContent,
+      }));
+      const r = await ARVX_AI.ask('chat', { messages: hist });
+      addMsg('bot', r.data.text || '…');
+    } catch (e) { showErr(e); } finally { send.disabled = false; }
+  }
+  $('chatSend').addEventListener('click', sendChat);
+  $('chatIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
+
+  /* Copier */
+  $('outCopy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(window.__lastOut || ''); $('outCopy').textContent = 'Copié ✓'; setTimeout(() => { $('outCopy').textContent = 'Copier'; }, 1500); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
