@@ -3044,28 +3044,38 @@ function sanitizeQcm(raw) {
   return out.length >= 3 ? out : null;
 }
 
-// CARTE MENTALE EN ESCALIER : 1 idée de base → 3-6 étapes (volume de la
-// leçon) → chaque étape 2-4 subdivisions (ça se multiplie en remontant).
+// CARTE MENTALE EN CHAÎNE DE BULLES (v8.41) : 1 idée de base → 3-6 branches
+// (volume de la leçon) → chaque branche 2-4 sous-points (ça se multiplie à
+// chaque niveau). Chaque nœud porte son EXPLICATION (detail) et sa
+// SIGNIFICATION (signif) — affichés en modale quand l'élève touche la bulle
+// (demande propriétaire : « chaque carte aura son explication, sa
+// signification pour faciliter la révision »).
 function sanitizeMindmap(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const idea = clampStr(raw.idea || raw.title || '', 180);
   if (!idea) return null;
+  const out = { idea, detail: clampStr(raw.detail || raw.description || '', 320), signif: clampStr(raw.signif || raw.signification || '', 280), steps: [] };
   const rawSteps = Array.isArray(raw.steps) ? raw.steps : (Array.isArray(raw.branches) ? raw.branches : []);
   const steps = [];
   for (const st of rawSteps.slice(0, 6)) {
     const title = clampStr(st?.title || '', 120);
     if (!title) continue;
     const detail = clampStr(st?.detail || st?.description || '', 260);
+    const signif = clampStr(st?.signif || st?.signification || '', 240);
     const children = [];
     const rawKids = Array.isArray(st?.children) ? st.children : (Array.isArray(st?.sub) ? st.sub : []);
     for (const c of rawKids.slice(0, 4)) {
       const ct = clampStr(c?.title || c?.q || '', 110);
       if (!ct) continue;
-      children.push({ title: ct, detail: clampStr(c?.detail || '', 200) });
+      children.push({
+        title: ct,
+        detail: clampStr(c?.detail || '', 200),
+        signif: clampStr(c?.signif || c?.signification || '', 200)
+      });
     }
-    steps.push({ title, detail, children });
+    steps.push({ title, detail, signif, children });
   }
-  return steps.length >= 2 ? { idea, steps } : null;
+  return steps.length >= 2 ? out : null;
 }
 
 async function callExtrasTask(taskName, providers, { systemPrompt, userPrompt, maxTokens, deadline }) {
@@ -3151,11 +3161,11 @@ CONTENU DE LA LEÇON :
 ${raw}
 """
 
-Construis une CARTE MENTALE en escalier qui part de l'IDÉE DE BASE et monte jusqu'au bout de la leçon : une idée centrale, puis 3 à 6 étapes (le nombre dépend du volume de la leçon), et chaque étape se subdivise en 2 à 4 points précis. Titres ultra courts, détails d'une phrase. L'ensemble doit raconter la leçon pas à pas, de l'idée de base jusqu'à la fin.
+Construis une CARTE MENTALE en CHAÎNE DE BULLES RELIÉES : une idée centrale (l'idée de base), puis 3 à 6 branches reliées à cette idée (le nombre dépend du volume de la leçon), et chaque branche se subdivise en 2 à 4 sous-points reliés à elle — chaque niveau se multiplie. Chaque bulle porte un titre ULTRA COURT (2 à 5 mots, comme une étiquette de carte mentale) et deux textes courts : "detail" = l'explication d'une phrase (ce que ce point veut dire), "signif" = sa signification pour la révision (une phrase : pourquoi ce point compte, ce qu'il faut retenir). L'idée centrale porte aussi son "detail" et sa "signif". L'ensemble doit couvrir toute la leçon, de l'idée de base jusqu'à la fin.
 
 Réponds EXACTEMENT dans ce format :
-{"idea":"…","steps":[{"title":"…","detail":"…","children":[{"title":"…","detail":"…"}]}]}`,
-      maxTokens: 1800,
+{"idea":"…","detail":"…","signif":"…","steps":[{"title":"…","detail":"…","signif":"…","children":[{"title":"…","detail":"…","signif":"…"}]}]}`,
+      maxTokens: 2200,
       deadline
     });
     const mindmap = sanitizeMindmap(data);

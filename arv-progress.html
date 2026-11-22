@@ -2535,101 +2535,210 @@ select:focus-visible,
     }
     .qcmz-progress { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.4px; }
 
-    /* ── CARTE MENTALE EN ESCALIER (v8.40) ──
-       L'idée de base d'abord, puis les étapes montent comme des marches
-       (indentation croissante) et chaque étape se multiplie en subdivisions. */
-    .mmap-root {
+    /* ── CARTE MENTALE EN CHAÎNE (v8.41) ──
+       Demande propriétaire : « je la veux comme une chaîne de liaison, la
+       première carte c'est comme si on crée une map mais uniquement pour les
+       cartes — sur chaque carte, quand tu appuies dessus, son explication
+       détaillée apparaît en modale ». Map de bulles RELIÉES : idée de base au
+       centre → branches colorées → sous-points, chaque bulle est tactile. */
+    .mmap-wrap {
       position: relative;
-      background: linear-gradient(135deg, rgba(184, 134, 11, 0.20), rgba(184, 134, 11, 0.08));
-      border: 1px solid rgba(224, 184, 74, 0.30);
+      height: 470px;
       border-radius: 18px;
-      padding: 15px 16px;
-      margin-bottom: 6px;
       overflow: hidden;
-    }
-    .mmap-root::after {
-      content: 'DÉPART';
-      position: absolute;
-      top: 10px; right: 12px;
-      font-size: 8.5px; font-weight: 800; letter-spacing: 1.2px;
-      color: rgba(224, 184, 74, 0.55);
-    }
-    .mmap-root-label {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: 10px; font-weight: 800; letter-spacing: 1.2px;
-      text-transform: uppercase;
-      color: var(--accent-bright);
-      margin-bottom: 7px;
-    }
-    .mmap-root-text { font-size: 14.5px; font-weight: 700; color: var(--text-light); line-height: 1.5; }
-    .mmap-stairs { display: flex; flex-direction: column; }
-    .mmap-step {
-      position: relative;
-      background: var(--block-bg);
+      background:
+        radial-gradient(rgba(var(--rgb-soft), 0.14) 1px, transparent 1.4px);
+      background-size: 22px 22px;
+      background-color: var(--block-bg);
       border: 1px solid rgba(var(--rgb-soft), 0.06);
-      border-left: 3px solid rgba(224, 184, 74, 0.45);
-      border-radius: 14px;
-      padding: 12px 14px;
-      margin-top: 10px;
-      transition: var(--transition);
+      touch-action: none;
+      cursor: grab;
+      -webkit-tap-highlight-color: transparent;
     }
-    /* escalier : chaque niveau se décale vers la droite */
-    .mmap-step.lvl1 { margin-left: 14px; }
-    .mmap-step-head { display: flex; align-items: flex-start; gap: 10px; }
-    .mmap-step-num {
+    .mmap-wrap:active { cursor: grabbing; }
+    .mmap-world { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+    .mmap-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .mmap-bubble {
+      position: absolute;
+      max-width: 170px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.3;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: transform 0.15s ease;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+    .mmap-bubble:active { transform: scale(0.94); }
+    .mmap-bubble.root {
+      max-width: 210px;
+      padding: 13px 18px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--on-gold);
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      border: none;
+      box-shadow: 0 6px 22px rgba(184, 134, 11, 0.40);
+    }
+    .mmap-bubble.br {
+      background: var(--mm-bg, rgba(59, 130, 246, 0.16));
+      border: 1.5px solid var(--mm-bd, rgba(59, 130, 246, 0.55));
+      color: var(--mm-fg, var(--text-light));
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.28);
+    }
+    .mmap-bubble.kid {
+      max-width: 150px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--mm-bg2, rgba(59, 130, 246, 0.08));
+      border: 1px solid var(--mm-bd2, rgba(59, 130, 246, 0.35));
+      color: var(--mm-fg, var(--text-body));
+    }
+    .mmap-bubble .mm-tap {
+      display: block;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+    .mmap-hint {
+      position: absolute;
+      top: 8px; left: 10px;
+      z-index: 3;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: var(--text-muted);
+      background: rgba(var(--rgb-veil), 0.75);
+      padding: 4px 9px;
+      border-radius: 999px;
+      pointer-events: none;
+    }
+    .mmap-ctrl {
+      position: absolute;
+      right: 9px; bottom: 9px;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .mmap-ctrl button {
+      width: 34px; height: 34px;
+      border-radius: 11px;
+      border: 1px solid rgba(224, 184, 74, 0.30);
+      background: rgba(var(--rgb-veil), 0.92);
+      color: var(--text-light);
+      font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Modale d'explication d'une bulle (révision) */
+    .mx-card { padding: 2px 2px 4px; }
+    .mx-path {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .mx-path .mx-dot {
+      width: 9px; height: 9px; border-radius: 999px;
+      background: var(--mc, var(--accent-bright));
       flex-shrink: 0;
-      width: 24px; height: 24px;
-      border-radius: 8px;
+    }
+    .mx-title { font-size: 17px; font-weight: 800; color: var(--text-light); line-height: 1.35; margin-bottom: 12px; }
+    .mx-sec { margin-bottom: 12px; }
+    .mx-sec-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 800; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--accent-bright);
+      margin-bottom: 5px;
+    }
+    .mx-sec-text { font-size: 13.5px; color: var(--text-body); line-height: 1.6; }
+    .mx-rev {
+      display: flex; gap: 9px; align-items: flex-start;
+      background: rgba(45, 125, 90, 0.10);
+      border: 1px solid rgba(58, 182, 126, 0.28);
+      border-radius: 13px;
+      padding: 10px 12px;
+      font-size: 12px; color: #A9DFC4; line-height: 1.55;
+    }
+    .mx-rev i { margin-top: 2px; color: #A9DFC4; }
+
+    /* ── FILE D'ATTENTE « AJOUTS RÉCENTS » (v8.41) — zéro perte :
+       ce qui a été extrait mais pas encore généré reste retrouvable. ── */
+    .acq-wrap { margin-bottom: 4px; }
+    .acq-title {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 10.5px; font-weight: 800; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--accent-bright);
+      margin-bottom: 8px;
+    }
+    .acq-row {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(var(--rgb-soft), 0.04);
+      border: 1px solid rgba(224, 184, 74, 0.22);
+      border-radius: 15px;
+      padding: 10px 12px;
+      margin-bottom: 7px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .acq-row:active { background: rgba(224, 184, 74, 0.08); }
+    .acq-ico {
+      flex-shrink: 0;
+      width: 34px; height: 34px;
+      border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      color: var(--on-gold);
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+    }
+    .acq-body { flex: 1; min-width: 0; }
+    .acq-name { font-size: 12.5px; font-weight: 700; color: var(--text-light); line-height: 1.35; }
+    .acq-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+    .acq-side { flex-shrink: 0; display: flex; align-items: center; gap: 7px; }
+    .acq-chip {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 3px 8px; border-radius: 999px;
+      white-space: nowrap;
+    }
+    .acq-chip.run { color: var(--accent-bright); background: rgba(224, 184, 74, 0.14); border: 1px solid rgba(224, 184, 74, 0.35); }
+    .acq-chip.done { color: #A9DFC4; background: rgba(45, 125, 90, 0.14); border: 1px solid rgba(58, 182, 126, 0.35); }
+    .acq-chip.stop { color: #E8B489; background: rgba(196, 106, 44, 0.14); border: 1px solid rgba(224, 130, 60, 0.35); }
+    .acq-chip.sent { color: #9EC1E8; background: rgba(52, 108, 176, 0.16); border: 1px solid rgba(90, 156, 232, 0.35); }
+    .acq-del {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .acq-pct { font-size: 12px; font-weight: 800; color: var(--accent-bright); font-variant-numeric: tabular-nums; }
+    /* Badge du bouton Ajouter (ajouts en attente) */
+    .add-course-btn { position: relative; }
+    .ac-badge {
+      position: absolute;
+      top: -7px; right: -7px;
+      min-width: 22px; height: 22px;
+      padding: 0 6px;
+      border-radius: 999px;
       display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: 800;
       color: var(--on-gold);
       background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-    }
-    .mmap-step-title { font-size: 13.5px; font-weight: 700; color: var(--text-light); line-height: 1.4; flex: 1; }
-    .mmap-step-detail { margin: 7px 0 0 34px; font-size: 12.5px; color: var(--text-dim); line-height: 1.55; }
-    .mmap-kids { margin: 9px 0 0 34px; display: flex; flex-direction: column; gap: 6px; position: relative; }
-    .mmap-kids::before {
-      content: '';
-      position: absolute;
-      left: -14px; top: 4px; bottom: 4px;
-      width: 2px;
-      background: linear-gradient(180deg, rgba(224, 184, 74, 0.35), rgba(224, 184, 74, 0.05));
-      border-radius: 2px;
-    }
-    .mmap-kid {
-      position: relative;
-      background: rgba(var(--rgb-soft), 0.03);
-      border: 1px solid rgba(var(--rgb-soft), 0.05);
-      border-radius: 11px;
-      padding: 9px 11px;
-    }
-    .mmap-kid::before {
-      content: '';
-      position: absolute;
-      left: -14px; top: 16px;
-      width: 12px; height: 2px;
-      background: rgba(224, 184, 74, 0.30);
-      border-radius: 2px;
-    }
-    .mmap-kid-title { font-size: 12px; font-weight: 700; color: var(--text-body); line-height: 1.4; }
-    .mmap-kid-detail { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin-top: 3px; }
-    .mmap-summit {
-      margin-top: 14px;
-      margin-left: 28px;
-      display: flex; align-items: center; gap: 9px;
-      padding: 11px 14px;
-      border-radius: 13px;
-      background: rgba(45, 125, 90, 0.10);
-      border: 1px solid rgba(58, 182, 126, 0.30);
-      font-size: 12px; font-weight: 700;
-      color: #A9DFC4;
-    }
-    .mmap-summit i { color: #A9DFC4; }
-    @media (max-width: 420px) {
-      .mmap-step.lvl1 { margin-left: 8px; }
-      .mmap-kids { margin-left: 24px; }
-      .mmap-kid::before, .mmap-kids::before { display: none; }
-      .mmap-summit { margin-left: 16px; }
+      border: 2px solid var(--card-bg);
+      box-shadow: 0 3px 10px rgba(184, 134, 11, 0.45);
     }
 
     /* ── POURCENTAGE FIABLE près de la barre ronde + barre fine (v8.40) ── */
@@ -3463,6 +3572,8 @@ async function renderNotebooksView() {
     });
 
     $('addCourseBtn')?.addEventListener('click', () => openAddCourseModal());
+    // ✅ v8.41 — badge des ajouts récents (extraits mais pas encore générés)
+    try { acQueueBadge(); } catch (e) {}
 
   } catch (err) {
     showEmptyState(el, 'fa-exclamation-triangle', 'Impossible de charger', err.message || 'Erreur réseau.');
@@ -3808,41 +3919,231 @@ function bindQcmShort(rootEl) {
   });
 }
 
-// ── CARTE MENTALE EN ESCALIER (idée de base → étapes → subdivisions) ──
+// ── CARTE MENTALE EN CHAÎNE DE BULLES RELIÉES (v8.41) ──
+// Demande propriétaire : « je la veux comme une chaîne de liaison, la première
+// carte c'est comme si on crée une map mais uniquement pour les cartes — sur
+// cette image regarde comment elles sont, c'est de cette même manière que je
+// veux que pour nous soit. Sur chaque carte, lorsque tu appuies dessus, il y
+// aura son explication détaillée qui va apparaître en modale — chaque carte
+// aura son explication, sa signification pour faciliter la révision ».
+// Idée de base au CENTRE → branches colorées reliées → sous-points reliés
+// (ça se multiplie à chaque niveau), fond à pointillés, glisser pour déplacer,
+// zoom, et chaque bulle s'ouvre en modale d'explication.
+const MM_COLORS = [
+  { main: '#5B8DEF', bg: 'rgba(91,141,239,0.17)', bd: 'rgba(91,141,239,0.62)', bg2: 'rgba(91,141,239,0.08)', bd2: 'rgba(91,141,239,0.36)', fg: '#BFD7FA' },
+  { main: '#3ABA75', bg: 'rgba(58,186,117,0.16)', bd: 'rgba(58,186,117,0.60)', bg2: 'rgba(58,186,117,0.08)', bd2: 'rgba(58,186,117,0.34)', fg: '#B8E8CF' },
+  { main: '#E6B93C', bg: 'rgba(230,185,60,0.15)', bd: 'rgba(230,185,60,0.58)', bg2: 'rgba(230,185,60,0.08)', bd2: 'rgba(230,185,60,0.34)', fg: '#F2E3B0' },
+  { main: '#B07BE8', bg: 'rgba(176,123,232,0.16)', bd: 'rgba(176,123,232,0.58)', bg2: 'rgba(176,123,232,0.08)', bd2: 'rgba(176,123,232,0.34)', fg: '#DCC4F5' },
+  { main: '#F08A4B', bg: 'rgba(240,138,75,0.15)', bd: 'rgba(240,138,75,0.58)', bg2: 'rgba(240,138,75,0.08)', bd2: 'rgba(240,138,75,0.34)', fg: '#F3CDB0' },
+  { main: '#4BC0C8', bg: 'rgba(75,192,200,0.15)', bd: 'rgba(75,192,200,0.58)', bg2: 'rgba(75,192,200,0.08)', bd2: 'rgba(75,192,200,0.34)', fg: '#BCE8EC' }
+];
+
+function mmLayout(mm) {
+  const steps = safeArray(mm.steps);
+  const n = Math.max(steps.length, 1);
+  const R1 = 230, R2 = 440; // ✅ v8.41b — compact : bulles lisibles dès l'ouverture
+  const nodes = [{
+    id: 'n0', level: 0, x: 0, y: 0, parent: null, color: null,
+    title: String(mm.idea || ''), detail: String(mm.detail || ''), signif: String(mm.signif || '')
+  }];
+  steps.forEach((st, i) => {
+    const col = MM_COLORS[i % MM_COLORS.length];
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const sid = `s${i}`;
+    nodes.push({
+      id: sid, level: 1, x: Math.cos(a) * R1, y: Math.sin(a) * R1,
+      parent: 'n0', color: col,
+      title: String(st.title || ''), detail: String(st.detail || ''), signif: String(st.signif || '')
+    });
+    const kids = safeArray(st.children);
+    const c = kids.length;
+    const spread = c > 1 ? Math.min(64, 30 * (c - 1)) : 0; // degrés
+    kids.forEach((k, ki) => {
+      const ka = a + ((c === 1) ? 0 : ((ki / (c - 1)) - 0.5) * (spread * Math.PI / 180));
+      nodes.push({
+        id: `${sid}k${ki}`, level: 2, x: Math.cos(ka) * R2, y: Math.sin(ka) * R2,
+        parent: sid, color: col,
+        title: String(k.title || ''), detail: String(k.detail || ''), signif: String(k.signif || '')
+      });
+    });
+  });
+  // Boîte englobante (demi-largeur des bulles) → monde positif
+  const pad = 135;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const nd of nodes) {
+    minX = Math.min(minX, nd.x); minY = Math.min(minY, nd.y);
+    maxX = Math.max(maxX, nd.x); maxY = Math.max(maxY, nd.y);
+  }
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  const W = Math.max(600, maxX - minX), H = Math.max(460, maxY - minY);
+  for (const nd of nodes) { nd.x -= minX; nd.y -= minY; }
+  return { nodes, W, H };
+}
+
 function renderMindmap(mm) {
   if (!mm || !mm.idea || !Array.isArray(mm.steps) || mm.steps.length === 0) return '';
-  const kidsTotal = mm.steps.reduce((n, st) => n + (safeArray(st.children).length || 0), 0);
-  return `
+  const { nodes, W, H } = mmLayout(mm);
+  const total = nodes.length;
+  const byId = {};
+  nodes.forEach((nd) => { byId[nd.id] = nd; });
+
+  const line = (nd) => {
+    const p = byId[nd.parent];
+    const col = (nd.color ? nd.color.main : '#E0B84A');
+    const mx = (p.x + nd.x) / 2 + (nd.y - p.y) * 0.16;
+    const my = (p.y + nd.y) / 2 - (nd.x - p.x) * 0.16;
+    return `<path d="M ${p.x.toFixed(1)} ${p.y.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${nd.x.toFixed(1)} ${nd.y.toFixed(1)}" fill="none" stroke="${col}" stroke-width="${nd.level === 1 ? 3.5 : 2}" stroke-linecap="round" opacity="${nd.level === 1 ? 0.75 : 0.5}"/>`;
+  };
+  const bubble = (nd) => {
+    const cls = nd.level === 0 ? 'root' : (nd.level === 1 ? 'br' : 'kid');
+    const style = nd.color
+      ? `left:${nd.x.toFixed(1)}px;top:${nd.y.toFixed(1)}px;--mm-bg:${nd.color.bg};--mm-bd:${nd.color.bd};--mm-bg2:${nd.color.bg2};--mm-bd2:${nd.color.bd2};--mm-fg:${nd.color.fg}`
+      : `left:${nd.x.toFixed(1)}px;top:${nd.y.toFixed(1)}px`;
+    const tap = nd.level === 0 ? 'Idée de base' : 'Explication';
+    return `<button type="button" class="mmap-bubble ${cls}" style="${style}" data-node="${nd.id}">
+      ${escapeHtml(nd.title)}<span class="mm-tap">${nd.level === 0 ? '' : ''}<i class="fas fa-hand-pointer" style="font-size:8px;"></i> ${tap}</span>
+    </button>`;
+  };
+
+  return {
+    html: `
     <div class="content-section" style="margin-top:2px;">
-      <div class="content-section-title"><i class="fas fa-diagram-project"></i>Carte mentale — de l'idée de base à la fin <span class="count">${mm.steps.length + kidsTotal + 1} cartes</span></div>
-      <div class="mmap-root">
-        <div class="mmap-root-label"><i class="fas fa-lightbulb"></i> Idée de base</div>
-        <div class="mmap-root-text">${safeTextP(mm.idea)}</div>
+      <div class="content-section-title"><i class="fas fa-diagram-project"></i>Carte mentale — chaîne d'idées reliées <span class="count">${total} cartes</span></div>
+      <div class="mmap-wrap" data-mmap>
+        <div class="mmap-hint"><i class="fas fa-hand-pointer"></i> Glisser pour déplacer · touche une bulle</div>
+        <div class="mmap-world" style="width:${Math.round(W)}px;height:${Math.round(H)}px;">
+          <svg class="mmap-lines" width="${Math.round(W)}" height="${Math.round(H)}" viewBox="0 0 ${Math.round(W)} ${Math.round(H)}">${nodes.filter((nd) => nd.parent).map(line).join('')}</svg>
+          ${nodes.map(bubble).join('')}
+        </div>
+        <div class="mmap-ctrl">
+          <button type="button" data-mm-zoom="in" aria-label="Zoomer"><i class="fas fa-plus"></i></button>
+          <button type="button" data-mm-zoom="out" aria-label="Dézoomer"><i class="fas fa-minus"></i></button>
+          <button type="button" data-mm-zoom="fit" aria-label="Recadrer"><i class="fas fa-expand"></i></button>
+        </div>
       </div>
-      <div class="mmap-stairs">
-        ${mm.steps.map((st, i) => `
-          <div class="mmap-step lvl1">
-            <div class="mmap-step-head">
-              <div class="mmap-step-num">${i + 1}</div>
-              <div class="mmap-step-title">${safeTextP(st.title)}</div>
-            </div>
-            ${st.detail ? `<div class="mmap-step-detail">${safeTextP(st.detail)}</div>` : ''}
-            ${safeArray(st.children).length > 0 ? `
-              <div class="mmap-kids">
-                ${safeArray(st.children).map((c) => `
-                  <div class="mmap-kid">
-                    <div class="mmap-kid-title">${safeTextP(c.title)}</div>
-                    ${c.detail ? `<div class="mmap-kid-detail">${safeTextP(c.detail)}</div>` : ''}
-                  </div>
-                `).join('')}
-              </div>
-            ` : ''}
-          </div>
-        `).join('')}
-      </div>
-      <div class="mmap-summit"><i class="fas fa-flag-checkered"></i> Fin de la leçon — toute la carte est gravie, étape par étape.</div>
+      <div class="mmap-summit" style="margin-top:12px;"><i class="fas fa-flag-checkered"></i> Touche n'importe quelle bulle pour son explication détaillée — idéal pour la révision.</div>
     </div>
-  `;
+  `,
+    byId, idea: String(mm.idea || '')
+  };
+}
+
+// Pan / zoom + modale d'explication — branchés après insertion du HTML.
+function mmApplyTransform(wrap, world, st) {
+  world.style.transform = `translate(${st.x}px, ${st.y}px) scale(${st.s})`;
+  wrap.__mmSt = st;
+}
+function mmFit(wrap, world, W, H) {
+  const vw = wrap.clientWidth || 340, vh = wrap.clientHeight || 470;
+  const s = Math.max(0.35, Math.min(1.15, (vw - 26) / W, (vh - 26) / H));
+  mmApplyTransform(wrap, world, { s, x: (vw - W * s) / 2, y: (vh - H * s) / 2 });
+}
+function mmZoomAt(wrap, world, px, py, factor) {
+  const st = wrap.__mmSt || { s: 1, x: 0, y: 0 };
+  const ns = Math.max(0.35, Math.min(2.6, st.s * factor));
+  const k = ns / st.s;
+  mmApplyTransform(wrap, world, { s: ns, x: px - (px - st.x) * k, y: py - (py - st.y) * k });
+}
+function openMindmapModal(nd, mm) {
+  const path = mm && mm.idea ? `${mm.idea}` : '';
+  const det = String(nd.detail || '').trim();
+  const sig = String(nd.signif || '').trim();
+  openModal(`
+    <div class="modal dicta-modal">
+      <button class="modal-close"><i class="fas fa-times"></i></button>
+      <div class="mx-card">
+        ${path && nd.id !== 'n0' ? `<div class="mx-path"><span class="mx-dot"></span>${escapeHtml(path)}</div>` : ''}
+        <div class="mx-title">${escapeHtml(nd.title)}</div>
+        ${det ? `<div class="mx-sec"><span class="mx-sec-label"><i class="fas fa-book-open"></i> Explication</span><div class="mx-sec-text">${escapeHtml(det)}</div></div>` : ''}
+        ${sig ? `<div class="mx-sec"><span class="mx-sec-label"><i class="fas fa-key"></i> Signification</span><div class="mx-sec-text">${escapeHtml(sig)}</div></div>` : ''}
+        ${!det && !sig ? `<div class="mx-sec"><div class="mx-sec-text">Ce point résume une partie de la leçon — relis le résumé pour le contexte complet.</div></div>` : ''}
+        <div class="mx-rev"><i class="fas fa-graduation-cap"></i><span>Pour la révision : dis cette carte à voix haute, puis vérifie que tu peux l'expliquer sans relire le cours.</span></div>
+      </div>
+    </div>
+  `);
+}
+function bindMindmap(rootEl) {
+  if (!rootEl) return;
+  rootEl.querySelectorAll('[data-mmap]').forEach((wrap) => {
+    const world = wrap.querySelector('.mmap-world');
+    if (!world || wrap.__mmBound) return;
+    wrap.__mmBound = true;
+    const W = parseFloat(world.style.width) || 600;
+    const H = parseFloat(world.style.height) || 460;
+    // ✅ v8.41b — cadrage initial : centré sur l'IDÉE DE BASE à une échelle
+    // lisible (les bulles se lisent sans zoom) ; « recadrer » montre toute la
+    // carte, glisser/pincer explore le reste — comme l'app de référence.
+    const sAll = Math.max(0.35, Math.min(1.15, ((wrap.clientWidth || 340) - 26) / W, ((wrap.clientHeight || 470) - 26) / H));
+    const s0 = Math.max(0.42, Math.min(0.64, sAll * 1.5));
+    const rootEl = world.querySelector('.mmap-bubble.root');
+    const rx = parseFloat(rootEl && rootEl.style.left || '0') || W / 2;
+    const ry = parseFloat(rootEl && rootEl.style.top || '0') || H / 2;
+    const vw = wrap.clientWidth || 340, vh = wrap.clientHeight || 470;
+    mmApplyTransform(wrap, world, { s: s0, x: vw / 2 - rx * s0, y: vh / 2 - ry * s0 });
+
+    let pts = new Map();
+    let pinch = null;
+    let dragDist = 0;
+    const start = (e) => {
+      if (e.target.closest('.mmap-ctrl')) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      dragDist = 0;
+      if (pts.size === 2) {
+        const [p1, p2] = [...pts.values()];
+        pinch = { d: Math.hypot(p1.x - p2.x, p1.y - p2.y) };
+      }
+      try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    };
+    const move = (e) => {
+      const prev = pts.get(e.pointerId);
+      if (!prev) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 1) {
+        const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+        dragDist += Math.abs(dx) + Math.abs(dy);
+        const st = wrap.__mmSt || { s: 1, x: 0, y: 0 };
+        mmApplyTransform(wrap, world, { s: st.s, x: st.x + dx, y: st.y + dy });
+      } else if (pts.size === 2 && pinch) {
+        const [p1, p2] = [...pts.values()];
+        const d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        if (pinch.d > 0 && d > 0) {
+          const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+          const rect = wrap.getBoundingClientRect();
+          mmZoomAt(wrap, world, mid.x - rect.left, mid.y - rect.top, d / pinch.d);
+        }
+        pinch = { d };
+        dragDist += 8;
+      }
+    };
+    const end = (e) => {
+      pts.delete(e.pointerId);
+      if (pts.size < 2) pinch = null;
+      setTimeout(() => { dragDist = 0; }, 250);
+    };
+    wrap.addEventListener('pointerdown', start);
+    wrap.addEventListener('pointermove', move);
+    wrap.addEventListener('pointerup', end);
+    wrap.addEventListener('pointercancel', end);
+    wrap.addEventListener('pointerleave', (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; });
+
+    wrap.querySelectorAll('[data-mm-zoom]').forEach((b) => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const rect = wrap.getBoundingClientRect();
+        const kind = b.dataset.mmZoom;
+        if (kind === 'fit') mmFit(wrap, world, W, H);
+        else mmZoomAt(wrap, world, rect.width / 2, rect.height / 2, kind === 'in' ? 1.28 : 0.78);
+      });
+    });
+    wrap.addEventListener('click', (e) => {
+      if (dragDist > 8) return; // c'était un glissement, pas un tap
+      const bub = e.target.closest('.mmap-bubble');
+      if (!bub) return;
+      const id = bub.dataset.node;
+      const nd = (wrap.__mmNodes || {})[id];
+      if (nd) openMindmapModal(nd, wrap.__mmMeta || null);
+    });
+  });
 }
 
 // ── Écran « l'IA prépare… » + écran d'erreur des extras ──
@@ -4003,7 +4304,12 @@ async function renderSectionView(params) {
       const panel = $('mmPanel');
       if (!panel) return;
       if (ex.mindmap) {
-        panel.innerHTML = renderMindmap(ex.mindmap);
+        const mmBuilt = renderMindmap(ex.mindmap);
+        panel.innerHTML = mmBuilt.html;
+        // ✅ v8.41 — données des bulles + idée de base pour la modale d'explication
+        const wrapEl = panel.querySelector('[data-mmap]');
+        if (wrapEl) { wrapEl.__mmNodes = mmBuilt.byId; wrapEl.__mmMeta = { idea: mmBuilt.idea }; }
+        bindMindmap(panel);
       } else if (ex.loading.mindmap) {
         panel.innerHTML = extrasGeneratingHtml('mindmap');
       } else {
@@ -4725,590 +5031,20 @@ function openNewChapterModal(subject) {
   setTimeout(() => input.focus(), 200);
 }
 
-let __isAddSectionModalOpen = false;
-
+// ══════════════════════════════════════════════════════════════
+// ✅ v8.41 — « AJOUTER UNE SECTION » = LA MÊME MODALE 4 MODES QUE LE COURS
+// (demande propriétaire : « dans la partie des sections tu n'as pas changé le
+// moyen de mettre le cours — lorsqu'on appuie sur ajouter ou bien nouvelle
+// section tu dois avoir la même chose que lorsque tu ajoutes un cours, je
+// parle des quatre méthodes pour mettre ton cours, donc dans les sections tu
+// mets la même chose »).
+// Ici la matière et le chapitre sont DÉJÀ connus : la même modale unifiée
+// (Texte · Photos OCR · Vocal · PDF — même pourcentage fiable, même
+// arrière-plan, même file d'ajouts récents) envoie le texte vers
+// createSection (chapitre courant) au lieu du classement autoAddSection.
+// ══════════════════════════════════════════════════════════════
 function openAddSectionModal(subject, chapterId) {
-  if (__isAddSectionModalOpen) return;
-  __isAddSectionModalOpen = true;
-
-  const info = SUBJECTS[subject];
-  const tabsHtml = SYMBOL_GROUPS.map((g, i) =>
-    `<button type="button" class="symbols-tab ${i === 0 ? 'active' : ''}" data-tab="${i}">${escapeHtml(g.name)}</button>`
-  ).join('');
-  const gridsHtml = SYMBOL_GROUPS.map((g, i) =>
-    `<div class="symbols-grid" data-grid="${i}" style="${i === 0 ? '' : 'display:none;'}">
-      ${g.symbols.map((sym) => `<button type="button" class="symbol-btn" data-symbol="${escapeHtml(sym)}">${sym}</button>`).join('')}
-    </div>`
-  ).join('');
-
-  openModal(`
-    <div class="modal dicta-modal">
-      <button class="modal-close"><i class="fas fa-times"></i></button>
-      <div class="modal-head">
-        <h2>Ajouter une section</h2>
-        <p>${info.emoji} ${escapeHtml(info.label)} — Saisis ton texte, ou dicte-le à la voix</p>
-        <div class="dicta-dots" aria-hidden="true">
-          <span class="dicta-dot active" id="dictaDot1"></span>
-          <span class="dicta-dot" id="dictaDot2"></span>
-        </div>
-      </div>
-      <div class="dicta-stages" id="dictaStages">
-
-        <!-- ═══ ÉTAPE 1 · TEXTE (centré, inchangé) ═══ -->
-        <section class="dicta-stage">
-          <div class="dicta-stage-inner">
-            <div class="dicta-step-tag"><span class="dicta-tag-n">1</span>Ton texte</div>
-            <div class="form-field">
-              <label class="form-label">Contenu</label>
-              <button type="button" class="symbols-toggle" id="symbolsToggle">
-                <span class="fx">ƒx</span>
-                <span>Symboles</span>
-                <i class="fas fa-chevron-down chev"></i>
-              </button>
-              <div class="symbols-panel" id="symbolsPanel">
-                <div class="symbols-panel-inner">
-                  <div class="symbols-tabs">${tabsHtml}</div>
-                  ${gridsHtml}
-                </div>
-              </div>
-              <textarea class="form-textarea" id="sectionBody" placeholder="Colle ici la partie du cours que tu viens d'étudier." maxlength="${MAX_CONTENT_LENGTH}"></textarea>
-              <div class="char-counter" id="sectionCounter">0 / ${MAX_CONTENT_LENGTH}</div>
-            </div>
-            <button class="btn-full primary" id="sectionSubmitBtn" disabled>
-              <span class="btn-icon"><i class="fas fa-wand-magic-sparkles"></i></span>
-              <span class="btn-text">Analyser avec l'IA</span>
-              <span class="spinner"></span>
-            </button>
-            <button type="button" class="btn-full secondary dicta-next" id="goDictBtn">
-              <span class="btn-icon">🎤</span>
-              <span class="btn-text">Passer à la dictée vocale</span>
-              <i class="fas fa-arrow-down"></i>
-            </button>
-          </div>
-        </section>
-
-        <!-- ═══ ÉTAPE 2 · DICTÉE VOCALE (bouton enregistrer, tout en dur, zéro chargement) ═══ -->
-        <section class="dicta-stage">
-          <div class="dicta-stage-inner">
-            <div class="dicta-step-tag"><span class="dicta-tag-n">2</span>Dictée vocale</div>
-            <div class="voice-unsupported" id="voiceUnsupported" style="display:none;">
-              <span>🔇</span>
-              <p>La dictée vocale n'est pas disponible sur ce navigateur. Utilise Chrome, ou saisis ton texte à l'étape 1.</p>
-            </div>
-            <div class="voice-stage" id="voiceStage">
-              <div class="voice-timer" id="voiceTimer">00:00</div>
-              <button type="button" class="voice-rec-btn" id="voiceRecBtn" aria-label="Enregistrer">
-                <span class="voice-rec-core">
-                  <i class="fas fa-microphone ic-mic"></i>
-                  <i class="fas fa-stop ic-stop"></i>
-                </span>
-              </button>
-              <p class="voice-hint" id="voiceHint">Appuie et parle — durée illimitée</p>
-              <div class="voice-live-wrap" id="voiceLiveWrap">
-                <textarea class="voice-live" id="voiceLive" placeholder="Ton texte apparaîtra ici en direct…" maxlength="${MAX_CONTENT_LENGTH}" rows="3"></textarea>
-                <div class="voice-counter" id="voiceCounter">0 / ${MAX_CONTENT_LENGTH}</div>
-              </div>
-              <p class="voice-edit-hint">✏️ Touche ton texte pour corriger les fautes au clavier</p>
-              <div class="voice-actions">
-                <button type="button" class="btn-full secondary" id="backToTextBtn">
-                  <span class="btn-icon">←</span>
-                  <span class="btn-text">Revenir au texte</span>
-                </button>
-                <button class="btn-full primary" id="sectionSubmitBtn2" disabled>
-                  <span class="btn-icon"><i class="fas fa-wand-magic-sparkles"></i></span>
-                  <span class="btn-text">Analyser avec l'IA</span>
-                  <span class="spinner"></span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-      </div>
-    </div>
-  `);
-
-  const body = $('sectionBody');
-  const counter = $('sectionCounter');
-  const toggle = $('symbolsToggle');
-  const panel = $('symbolsPanel');
-  const stages = $('dictaStages');
-  const dots = [$('dictaDot1'), $('dictaDot2')];
-  const goDictBtn = $('goDictBtn');
-  const backToTextBtn = $('backToTextBtn');
-  const voiceRecBtn = $('voiceRecBtn');
-  const voiceTimer = $('voiceTimer');
-  const voiceHint = $('voiceHint');
-  const voiceLive = $('voiceLive');
-  const voiceCounter = $('voiceCounter');
-  const voiceStage = $('voiceStage');
-  const voiceUnsupported = $('voiceUnsupported');
-
-  const submitBtns = [$('sectionSubmitBtn'), $('sectionSubmitBtn2')];
-  let stopDictation = () => {};  // défini dans le bloc dictée ci-dessous (si supporté)
-  let updateLive = () => {};     // idem : affecté dans le bloc dictée (sync éditeur vocal)
-
-  const DRAFT_KEY = 'arvexa_section_draft_' + subject + '_' + chapterId;
-  const saveDraft = () => {
-    try {
-      if (body.value.trim().length > 0) localStorage.setItem(DRAFT_KEY, body.value);
-      else localStorage.removeItem(DRAFT_KEY);
-    } catch (e) {}
-  };
-  try {
-    const saved = localStorage.getItem(DRAFT_KEY);
-    if (saved && saved.trim().length > 0) {
-      body.value = saved.slice(0, MAX_CONTENT_LENGTH); // blocage dur 2 500
-      // ⚠️ updateReady() et non dispatch('input') : à ce stade aucun listener
-      // n'est encore attaché → le bouton « Analyser » resterait désactivé.
-      updateReady();
-    }
-  } catch (e) {}
-
-  body.addEventListener('input', saveDraft);
-
-  const releaseGarde = () => {
-    __isAddSectionModalOpen = false;
-    // Fermeture pendant un enregistrement → arrêt propre (micro, timer, écran).
-    try { stopDictation(); } catch (e) {}
-  };
-  $('modalBackdrop')?.addEventListener('click', (e) => {
-    if (e.target === $('modalBackdrop')) releaseGarde();
-  });
-  $('modalBackdrop')?.querySelector('.modal-close')?.addEventListener('click', releaseGarde);
-
-  function updateReady() {
-    if (body.value.length > MAX_CONTENT_LENGTH) body.value = body.value.slice(0, MAX_CONTENT_LENGTH);
-    const len = body.value.trim().length;
-    submitBtns.forEach((b) => { b.disabled = len < MIN_CONTENT_LENGTH; });
-    counter.textContent = `${body.value.length} / ${MAX_CONTENT_LENGTH}`;
-    counter.classList.toggle('limit', body.value.length >= MAX_CONTENT_LENGTH);
-  }
-  body.addEventListener('input', updateReady);
-
-  // ── v7.5 · Confort de saisie ──
-  // (1) Le textarea grandit avec le texte : plus de grande espace morte.
-  const autoGrow = () => {
-    body.style.height = 'auto';
-    const cap = Math.round(window.innerHeight * 0.38);
-    body.style.height = Math.min(body.scrollHeight, cap) + 'px';
-  };
-  body.addEventListener('input', autoGrow);
-  // (2) Au focus, on laisse le clavier redimensionner le viewport
-  // (interactive-widget=resizes-content) puis on recadre la hauteur.
-  body.addEventListener('focus', () => setTimeout(() => {
-    try { body.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {}
-    try { autoGrow(); } catch (e) {}
-  }, 320));
-  if (window.__dictaResizeHandler) window.removeEventListener('resize', window.__dictaResizeHandler);
-  window.__dictaResizeHandler = () => { try { autoGrow(); } catch (e) {} };
-  window.addEventListener('resize', window.__dictaResizeHandler);
-  autoGrow();
-
-  toggle.addEventListener('click', () => {
-    panel.classList.toggle('open');
-    toggle.classList.toggle('active');
-  });
-
-  document.querySelectorAll('.symbols-tab').forEach((tab) => {
-    tab.addEventListener('click', (e) => {
-      e.preventDefault();
-      const idx = tab.dataset.tab;
-      document.querySelectorAll('.symbols-tab').forEach((t) => t.classList.toggle('active', t === tab));
-      document.querySelectorAll('.symbols-grid').forEach((g) => {
-        g.style.display = g.dataset.grid === idx ? 'grid' : 'none';
-      });
-    });
-  });
-
-  document.querySelectorAll('.symbol-btn').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const symbol = btn.dataset.symbol;
-      const value = body.value;
-      // Blocage dur 2 500 : un symbole ne rentre que s'il a la place.
-      if (value.length + symbol.length > MAX_CONTENT_LENGTH) {
-        showToast('Limite de 2 500 caractères atteinte', 'error');
-        updateReady();
-        return;
-      }
-      const start = body.selectionStart || 0;
-      const end = body.selectionEnd || 0;
-      body.value = value.slice(0, start) + symbol + value.slice(end);
-      const newPos = start + symbol.length;
-      body.setSelectionRange(newPos, newPos);
-      body.focus();
-      saveDraft(); // l'affectation .value ne déclenche pas 'input'
-      updateReady();
-    });
-  });
-
-  // ── Navigation entre les 2 étapes (scroll : texte ⇄ dictée vocale) ──
-  const goToStage = (n) => {
-    if (n === 2) {
-      // L'éditeur vocal reflète toujours le texte à jour (s'il est éditable).
-      try { updateLive(); } catch (e) {}
-    }
-    stages.scrollTo({ top: (n - 1) * stages.clientHeight, behavior: 'smooth' });
-  };
-  goDictBtn.addEventListener('click', () => goToStage(2));
-  backToTextBtn.addEventListener('click', () => goToStage(1));
-  stages.addEventListener('scroll', () => {
-    const idx = Math.min(1, Math.max(0, Math.round(stages.scrollTop / Math.max(1, stages.clientHeight))));
-    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-  }, { passive: true });
-
-  // ── Dictée vocale — étape 2 dédiée : bouton enregistrer bien centré,
-  // durée illimitée (relance automatique), cap 2 500 caractères (budget IA),
-  // tout est en dur : aucun chargement, l'étape est prête dès l'ouverture.
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    voiceStage.style.display = 'none';
-    voiceUnsupported.style.display = 'block';
-  } else {
-    let recognition = null;
-    let isRecording = false;
-    let editMode = false;      // v7.5 : correction clavier en cours (dictée en pause)
-    let savedBaseValue = '';   // texte présent AVANT la dictée + finales validées des sessions précédentes
-    let sessionFinals = '';    // finales de la session courante (reconstruites à chaque event)
-    let timerInt = null;
-    let startedAt = 0;
-    let wakeLock = null;
-    let capWarned = false;
-    /* === DEDUP-HELPERS-START (testes par scripts/test_dictation_dedup.js) === */
-    // Normalise un mot pour comparaison : casse, accents et ponctuation ignores.
-    const normTok = (w) => {
-      let s = String(w || '').toLowerCase().replace(/\u0153/g, 'oe');
-      try { s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) {}
-      return s.replace(/[^a-z0-9']+/g, '');
-    };
-    const wordsOf = (t) => String(t || '').split(/\s+/).filter(Boolean);
-    // Retire de `txt` ses premiers mots qui repetent la fin de `base` : apres une
-    // relance auto, le moteur re-transcrit la fin de l'audio deja valide.
-    const withoutOverlap = (base, txt) => {
-      if (!base || !txt) return txt || '';
-      const bw = wordsOf(base); const tw = wordsOf(txt);
-      // Segment entièrement re-transcrit (contigu près de la fin de base) → à jeter.
-      const twN = tw.map(normTok).join(' ');
-      const winN = bw.slice(Math.max(0, bw.length - tw.length - 8)).map(normTok).join(' ');
-      if (twN && winN.indexOf(twN) !== -1) return '';
-      const maxK = Math.min(bw.length, tw.length, 60);
-      for (let k = maxK; k >= 1; k--) {
-        let ok = true;
-        for (let i = 0; i < k; i++) {
-          if (normTok(bw[bw.length - k + i]) !== normTok(tw[i])) { ok = false; break; }
-        }
-        if (ok) return tw.slice(k).join(' ');
-      }
-      return txt;
-    };
-    // Concatene en supprimant le chevauchement prev/next (zero repetition).
-    const mergeNoOverlap = (prev, next) => {
-      if (!prev) return next || '';
-      if (!next) return prev;
-      const kept = withoutOverlap(prev, next);
-      return kept ? prev + ' ' + kept : prev;
-    };
-    // Compresse les begaiements colles du moteur (<< le le >>, << ce que ce que >>).
-    // Les doubles legitimes courants (oui oui, non non, tres tres...) sont gardes.
-    const STUTTER_KEEP = { oui: 1, non: 1, tres: 1, bien: 1, jamais: 1, encore: 1, toujours: 1 };
-    const collapseStutter = (text) => {
-      const w = wordsOf(text);
-      const out = [];
-      let i = 0;
-      while (i < w.length) {
-        let consumed = 1;
-        for (let n = 4; n >= 2; n--) {
-          if (i + 2 * n > w.length) continue;
-          let ok = true;
-          for (let j = 0; j < n; j++) {
-            if (normTok(w[i + j]) !== normTok(w[i + n + j])) { ok = false; break; }
-          }
-          if (ok) { consumed = n; break; }
-        }
-        if (consumed === 1) {
-          out.push(w[i]);
-          const tok = normTok(w[i]);
-          let j = i + 1;
-          while (j < w.length && normTok(w[j]) === tok) {
-            if (STUTTER_KEEP[tok]) out.push(w[j]);
-            j++;
-          }
-          i = j;
-        } else {
-          // Répétition d'un groupe : garde le 1er groupe entier, saute tous
-          // les doublons consécutifs de ce même groupe.
-          for (let j = 0; j < consumed; j++) out.push(w[i + j]);
-          i += consumed;
-          while (i + consumed <= w.length) {
-            let same = true;
-            for (let j = 0; j < consumed; j++) {
-              if (normTok(w[i + j]) !== normTok(w[i - consumed + j])) { same = false; break; }
-            }
-            if (!same) break;
-            i += consumed;
-          }
-        }
-      }
-      return out.join(' ');
-    };
-    /* === DEDUP-HELPERS-END === */
-
-    const clampToMax = (txt) => (txt.length > MAX_CONTENT_LENGTH ? txt.slice(0, MAX_CONTENT_LENGTH) : txt);
-
-    const flushSessionFinals = () => {
-      if (sessionFinals) {
-        savedBaseValue = clampToMax(mergeNoOverlap(savedBaseValue, sessionFinals));
-        sessionFinals = '';
-      }
-    };
-
-    const fmt = (s) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
-
-    const startTimer = () => {
-      startedAt = Date.now();
-      voiceTimer.textContent = '00:00';
-      if (timerInt) clearInterval(timerInt);
-      timerInt = setInterval(() => {
-        voiceTimer.textContent = fmt(Math.floor((Date.now() - startedAt) / 1000));
-      }, 1000);
-    };
-    const stopTimer = () => { if (timerInt) { clearInterval(timerInt); timerInt = null; } };
-
-    const requestWakeLock = async () => {
-      try {
-        if (navigator.wakeLock && !wakeLock) wakeLock = await navigator.wakeLock.request('screen');
-      } catch (e) {}
-    };
-    const releaseWakeLock = () => {
-      try { if (wakeLock) wakeLock.release(); } catch (e) {}
-      wakeLock = null;
-    };
-
-    const setVoiceUI = (recording) => {
-      voiceRecBtn.classList.toggle('recording', recording);
-      voiceRecBtn.setAttribute('aria-label', recording ? 'Arrêter l\'enregistrement' : 'Enregistrer');
-      voiceHint.textContent = recording ? 'J\'écoute… Appuie pour arrêter' : 'Appuie et parle — durée illimitée';
-    };
-
-    updateLive = () => {
-      const val = body.value;
-      if (document.activeElement !== voiceLive) {
-        // On n'écrase JAMAIS le texte pendant que l'élève le corrige au clavier.
-        voiceLive.value = val;
-        voiceLive.scrollTop = voiceLive.scrollHeight;
-      }
-      voiceCounter.textContent = `${val.length} / ${MAX_CONTENT_LENGTH}`;
-      voiceCounter.classList.toggle('limit', val.length >= MAX_CONTENT_LENGTH);
-      // ✅ Le brouillon suit la dictée en continu : rien n'est perdu si l'app est tuée.
-      saveDraft();
-    };
-
-    stopDictation = () => {
-      if (!isRecording) return;
-      isRecording = false;
-      try { if (recognition) recognition.stop(); } catch (e) {}
-      stopTimer();
-      releaseWakeLock();
-      setVoiceUI(false);
-      updateLive();
-    };
-
-    // ── v7.5 · Correction au clavier PENDANT la note vocale ──
-    // L'élève touche son texte → la dictée se met en pause, le clavier
-    // s'ouvre, il répare les fautes de transcription, puis appuie sur 🎤
-    // pour reprendre exactement là où il en était (aucun mot perdu).
-    const voiceLiveWrap = $('voiceLiveWrap');
-    const pauseForEdit = () => {
-      voiceLiveWrap.classList.add('editing');
-      if (isRecording) {
-        // Le texte affiché (finales + brouillon en cours) devient LA vérité :
-        // même les mots pas encore validés par le moteur sont conservés.
-        body.value = (voiceLive.value || '').slice(0, MAX_CONTENT_LENGTH);
-        savedBaseValue = body.value;
-        sessionFinals = '';
-        isRecording = false;
-        try { if (recognition) recognition.abort(); } catch (e) {}
-        stopTimer();
-        releaseWakeLock();
-        setVoiceUI(false);
-        voiceHint.textContent = 'Dictée en pause — corrige ton texte, puis 🎤 pour reprendre';
-        showToast('Dictée en pause — corrige au clavier, puis appuie sur 🎤', 'info');
-        updateReady();
-      }
-      editMode = true;
-    };
-    voiceLive.addEventListener('focus', pauseForEdit);
-    voiceLive.addEventListener('blur', () => voiceLiveWrap.classList.remove('editing'));
-    // Chaque frappe au clavier est répercutée dans body.value (source de vérité).
-    voiceLive.addEventListener('input', () => {
-      if (voiceLive.value.length > MAX_CONTENT_LENGTH) voiceLive.value = voiceLive.value.slice(0, MAX_CONTENT_LENGTH);
-      body.value = voiceLive.value;
-      saveDraft();
-      updateReady();
-      voiceCounter.textContent = `${body.value.length} / ${MAX_CONTENT_LENGTH}`;
-      voiceCounter.classList.toggle('limit', body.value.length >= MAX_CONTENT_LENGTH);
-    });
-
-    voiceRecBtn.addEventListener('click', () => {
-      if (isRecording) { stopDictation(); return; }
-      if (editMode) {
-        // Reprendre après correction clavier : le texte corrigé devient la base.
-        body.value = (voiceLive.value || '').slice(0, MAX_CONTENT_LENGTH);
-        editMode = false;
-        voiceLiveWrap.classList.remove('editing');
-        updateReady();
-      }
-      if (!recognition) {
-        recognition = new SpeechRecognition();
-        try {
-          const uiLang = String(localStorage.getItem('arvexa-lang') || 'fr').toLowerCase();
-          recognition.lang = uiLang.startsWith('en') ? 'en-US' : 'fr-FR';
-        } catch (e) { recognition.lang = 'fr-FR'; }
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.maxAlternatives = 1;
-
-        recognition.onresult = (event) => {
-          if (editMode || !isRecording) return; // correction clavier en cours : ignorer
-          // ✅ Reconstruction complète à CHAQUE event + FUSION anti-chevauchement :
-          // après une relance auto, le moteur re-transcrit la fin de l'audio déjà
-          // validé → chaque segment est fusionné (mergeNoOverlap) au lieu d'être
-          // additionné, puis compressé (collapseStutter) → zéro répétition.
-          let finals = '';
-          let interim = '';
-          for (let i = 0; i < event.results.length; i++) {
-            const r = event.results[i];
-            const txt = r && r[0] ? r[0].transcript : '';
-            if (!txt) continue;
-            if (r.isFinal) {
-              finals = mergeNoOverlap(finals, withoutOverlap(savedBaseValue, txt));
-            } else {
-              interim += (interim ? ' ' : '') + txt;
-            }
-          }
-          sessionFinals = collapseStutter(finals);
-          const spokenBase = savedBaseValue + (sessionFinals ? ' ' + sessionFinals : '');
-          interim = withoutOverlap(spokenBase, interim);
-          const total = spokenBase + (interim ? ' ' + interim : '');
-          if (total.length > MAX_CONTENT_LENGTH) {
-            // Cap 2 500 : coupe nette, avertissement, arrêt propre.
-            body.value = total.slice(0, MAX_CONTENT_LENGTH);
-            updateReady();
-            updateLive();
-            if (!capWarned) {
-              capWarned = true;
-              showToast('Limite de 2 500 caractères atteinte — dictée arrêtée', 'info');
-            }
-            stopDictation();
-            return;
-          }
-          body.value = total;
-          updateReady();
-          updateLive();
-        };
-
-        recognition.onerror = (e) => {
-          console.warn('[Speech]', e.error);
-          if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-            isRecording = false; stopTimer(); releaseWakeLock(); setVoiceUI(false); updateLive();
-            showToast('Micro bloqué — autorise le micro dans les réglages du navigateur', 'error');
-          } else if (e.error === 'network') {
-            isRecording = false; stopTimer(); releaseWakeLock(); setVoiceUI(false); updateLive();
-            showToast('Dictée interrompue (réseau) — ton texte est conservé', 'error');
-          } else if (e.error === 'audio-capture') {
-            isRecording = false; stopTimer(); releaseWakeLock(); setVoiceUI(false); updateLive();
-            showToast('Aucun micro détecté', 'error');
-          }
-          // no-speech / aborted : silencieux — onend relance automatiquement.
-        };
-
-        recognition.onend = () => {
-          // ✅ Fin de session (silence / limite interne Chrome) : les finales de
-          // CETTE session sont validées UNE seule fois, puis relance automatique
-          // tant que l'utilisateur n'a pas arrêté → durée réellement illimitée.
-          flushSessionFinals();
-          if (editMode) return; // correction clavier : on ne touche à rien
-          body.value = savedBaseValue;
-          updateReady();
-          updateLive();
-          if (isRecording) {
-            setTimeout(() => { try { recognition.start(); } catch (e) {} }, 300);
-          }
-        };
-      }
-
-      try {
-        flushSessionFinals();
-        capWarned = false;
-        savedBaseValue = clampToMax(body.value ? body.value + ' ' : '');
-        recognition.start();
-        isRecording = true;
-        setVoiceUI(true);
-        startTimer();
-        requestWakeLock();
-        updateLive();
-      } catch (e) {
-        showToast('Impossible de démarrer la dictée', 'error');
-      }
-    });
-
-    // Retour d'onglet / d'app : Chrome coupe le micro en arrière-plan → relance.
-    if (window.__dictaVisHandler) document.removeEventListener('visibilitychange', window.__dictaVisHandler);
-    window.__dictaVisHandler = () => {
-      if (document.visibilityState === 'visible' && isRecording && recognition) {
-        try { recognition.start(); } catch (e) {}
-      }
-    };
-    document.addEventListener('visibilitychange', window.__dictaVisHandler);
-  }
-
-  const submitSection = async () => {
-    const rawInput = body.value.trim();
-    if (rawInput.length < MIN_CONTENT_LENGTH) {
-      showToast(`Contenu trop court (min ${MIN_CONTENT_LENGTH} caractères)`, 'error');
-      return;
-    }
-    if (body.value.length > MAX_CONTENT_LENGTH) {
-      // Blocage dur 2 500 : filet de sécurité, on ne soumet jamais plus.
-      body.value = body.value.slice(0, MAX_CONTENT_LENGTH);
-      updateReady();
-      showToast('Texte ramené à la limite de 2 500 caractères', 'info');
-      return;
-    }
-
-    submitBtns.forEach((b) => { b.disabled = true; b.classList.add('loading'); });
-    stopDictation();
-
-    const container = $('view-section');
-    const infoLocal = SUBJECTS[subject];
-    document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
-    container.classList.add('active');
-    const cleanupProgress = showGeneratingState(container, infoLocal?.profile || 'scientific');
-
-    try {
-      closeModal();
-      __isAddSectionModalOpen = false;
-      const result = await callApi('createSection', { subject, chapterId, rawInput });
-      cleanupProgress();
-      showToast('Section analysée', 'success');
-      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
-      delete state.cache.chapter[`${subject}/${chapterId}`];
-      applyRoute({ view: 'section', params: { subject, chapterId, sectionId: result.sectionId } });
-    } catch (e) {
-      cleanupProgress();
-      if (e.code === 'FREE_SECTION_LIMIT') {
-        showPremiumModal();
-        applyRoute({ view: 'chapter', params: { subject, chapterId } });
-      } else {
-        showToast('Erreur : ' + e.message, 'error', 5000);
-        applyRoute({ view: 'chapter', params: { subject, chapterId } });
-      }
-    }
-  };
-  submitBtns.forEach((b) => b.addEventListener('click', submitSection));
-
-  setTimeout(() => body.focus(), 200);
+  openAddCourseModal({ subject, chapterId });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -5446,7 +5182,12 @@ async function acExtractPdfText(file, onProgress) {
 // OCR par lots de ≤ 4 images (limite du kit IA) via /api/arv?kit=1
 // ✅ v8.39 — ANTI-ERREUR : chaque lot est retenté (3 essais), et si un lot
 // résiste, on le redécoupe image par image — l'important est d'EXTRAIRE.
-async function acOcrImages(images, onProgress) {
+// ✅ v8.41 — POURCENTAGE FIABLE (demande propriétaire : « dès que j'ai mis une
+// image directement c'est parti à 90 % alors que ça a tardé beaucoup avant de
+// finaliser ») : le % n'avance QUAND un lot est TERMINÉ — jamais au lancement.
+// onProgress(done, total, partialText) → après chaque lot fini (+ texte
+// partiel accumulé pour la file) ; onBatchStart(b, total) → label seulement.
+async function acOcrImages(images, onProgress, onBatchStart) {
   const batches = [];
   for (let i = 0; i < images.length; i += 4) batches.push(images.slice(i, i + 4));
   const askOnce = async (imgs) => {
@@ -5455,8 +5196,8 @@ async function acOcrImages(images, onProgress) {
   };
   const parts = [];
   for (let b = 0; b < batches.length; b++) {
-    if (onProgress) onProgress(b + 1, batches.length, images.length);
     if (window.__acJobApi && window.__acJobApi.cancelled()) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' }); // ✅ v8.40
+    if (onBatchStart) onBatchStart(b, batches.length);
     const imgs = batches[b];
     let t = '';
     for (let tries = 0; tries < 3 && !t; tries++) {
@@ -5477,6 +5218,8 @@ async function acOcrImages(images, onProgress) {
       t = chunk.join('\n\n');
     }
     if (t) parts.push(t);
+    // ✅ v8.41 — le pourcentage avance ICI (lot réellement terminé), jamais avant
+    if (onProgress) onProgress(b + 1, batches.length, parts.join('\n\n'));
   }
   return parts.join('\n\n');
 }
@@ -5502,7 +5245,11 @@ const acJob = {
   label: '',
   cancelled: false,
   seq: 0,               // séquence pour identifier le propriétaire de la modale
-  modalToken: 0         // token de la modale qui a démarré le job
+  modalToken: 0,        // token de la modale qui a démarré le job
+  qid: null,            // ✅ v8.41 — id de l'entrée dans la file des ajouts récents
+  ctx: null,            // ✅ v8.41 — contexte capturé au DÉBUT de l'extraction (cours | section)
+  ctxLabel: '',         // ✅ v8.41 — label matière pour la file
+  partText: ''          // ✅ v8.41 — texte partiel déjà extrait (zéro perte)
 };
 
 function acPillEnsure() {
@@ -5569,9 +5316,35 @@ function acJobBegin(kind, label) {
   acJob.cancelled = false;
   acJob.pct = 0;
   acJob.label = label;
+  acJob.partText = '';
+  acJob.ctx = __acOpenCtx;             // ✅ v8.41 — le contexte est figé au début
+  acJob.ctxLabel = (acJob.ctx && SUBJECTS[acJob.ctx.subject]) ? SUBJECTS[acJob.ctx.subject].label : '';
+  // ✅ v8.41 — ZÉRO PERTE : l'extraction est enregistrée dans la file des
+  // ajouts récents dès son lancement (elle reste visible même si l'élève
+  // ferme la modale, quitte la page ou que l'extraction est interrompue).
+  acJob.qid = `ac${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  acQueueUpsert({
+    id: acJob.qid,
+    mode: kind === 'analyse' ? 'texte' : kind,
+    ctx: acJob.ctx ? 'section' : 'cours',
+    subject: acJob.ctx ? acJob.ctx.subject : null,
+    chapterId: acJob.ctx ? acJob.ctx.chapterId : null,
+    ctxLabel: acJob.ctxLabel,
+    title: label,
+    status: 'running',
+    pct: 1,
+    text: '',
+    createdAt: Date.now()
+  });
   acPillEnsure();
   acPillUpdate();
   acJobStep(1, label);
+}
+
+// ✅ v8.41 — stocke le texte partiel au fil des lots OCR (zéro perte)
+function acJobText(partial) {
+  acJob.partText = String(partial || '');
+  if (acJob.qid) acQueueUpsert({ id: acJob.qid, text: acJob.partText });
 }
 
 function acJobEnd(label) {
@@ -5579,12 +5352,25 @@ function acJobEnd(label) {
   if (label) acJob.label = label;
   acJobStep(100, label);
   acJob.active = false;
+  // ✅ v8.41 — l'extraction est terminée : le texte est PRÊT dans la file
+  // (l'entrée repasse « Prêt » tant que la section n'est pas créée).
+  if (acJob.qid) {
+    acQueueUpsert({ id: acJob.qid, status: 'done', pct: 100, text: acJob.partText, label: acJob.label });
+  }
   acPillUpdate();
 }
 
 function acJobStop() {
   acJob.active = false;
   acJob.cancelled = false;
+  // ✅ v8.41 — si l'extraction n'a pas abouti (annulation, erreur, page
+  // quittée), le texte PARTIEL déjà extrait reste dans la file : « Reprendre ».
+  if (acJob.qid) {
+    const it = acQueueGet(acJob.qid);
+    if (it && it.status === 'running') {
+      acQueueUpsert({ id: acJob.qid, status: 'interrompu', text: acJob.partText });
+    }
+  }
   acPillUpdate();
 }
 
@@ -5596,6 +5382,16 @@ function acJobCancel() {
 
 // ✅ v8.40 — poignée console/debug + annulation depuis les helpers de page
 // (les bindings de module ne sont pas visibles depuis window) :
+// ✅ v8.41 — poignée debug/tests (les bindings de module ne sont pas visibles
+// depuis window — même principe que __acJobApi en v8.40) :
+window.__arvV841 = {
+  renderMindmap, bindMindmap, openMindmapModal,
+  acQueueLoad, acQueueGet, acQueueRowHtml, acQueueBadge, acQueueSweepOnLoad,
+  acQueueSet: (v) => localStorage.setItem('arvexa_ac_queue_v1', JSON.stringify(v)),
+  acOcrImages, openAddCourseModal, closeModal: () => { try { closeModal(); } catch (e) {} },
+  resetModalGuard: () => { __isAddCourseModalOpen = false; }
+};
+
 window.__acJobApi = {
   begin: acJobBegin,
   step: acJobStep,
@@ -5604,7 +5400,7 @@ window.__acJobApi = {
   cancel: acJobCancel,
   updatePill: acPillUpdate,
   cancelled: () => acJob.cancelled,
-  state: () => ({ active: acJob.active, kind: acJob.kind, pct: acJob.pct, label: acJob.label })
+  state: () => ({ active: acJob.active, kind: acJob.kind, pct: acJob.pct, label: acJob.label, partText: acJob.partText })
 };
 
 // Écran de progression DANS la modale — % près de la barre ronde + barre + arrière-plan
@@ -5647,6 +5443,8 @@ function acWireProgressButtons(showModeChoice, onCancel) {
 // sinon la modale se rouvre toute seule sur le texte extrait).
 function acFinishExtraction(text, sourceLabel) {
   acJobEnd('Extraction terminée');
+  // ✅ v8.41 — le texte extrait est désormais dans la file (statut « Prêt ») :
+  // même si l'élève ferme tout, il le retrouvera en appuyant sur Ajouter.
   if (!text || String(text).trim().length === 0) {
     showToast('Aucun texte lisible — essaie d\'autres images ou un PDF texte', 'error', 5000);
     acJobStop();
@@ -5654,13 +5452,16 @@ function acFinishExtraction(text, sourceLabel) {
     return false;
   }
   const finished = String(text);
+  // ✅ v8.41 — le contexte de l'EXTRACTION (cours ou section) accompagne son
+  // texte : la rouverture ne peut pas l'égarer.
+  __acOpenCtx = acJob.ctx || null;
   if (__isAddCourseModalOpen && acJob.modalToken === acJob.seq) {
     try { __acSetExtractedText(finished, sourceLabel); } catch (e) { window.__acResumeText = finished; }
   } else {
     // l'élève était ailleurs (arrière-plan) → la modale se rouvre sur SON texte
     window.__acResumeText = finished;
     window.__acResumeNotice = sourceLabel || 'Extraction terminée';
-    openAddCourseModal();
+    openAddCourseModal(__acOpenCtx || undefined);
     showToast('Extraction terminée — vérifie ton texte', 'success', 4000);
   }
   return true;
@@ -5669,23 +5470,115 @@ function acFinishExtraction(text, sourceLabel) {
 // pont vers la modale active (défini dans openAddCourseModal)
 function showModeChoiceSafe() { try { if (typeof window.__acShowModeChoice === 'function') window.__acShowModeChoice(); } catch (e) {} }
 
-let __isAddCourseModalOpen = false;
+// ══════════════════════════════════════════════════════════════
+// ✅ v8.41 — FILE DES AJOUTS RÉCENTS (ZÉRO PERTE) — demande propriétaire :
+// « lorsque je lance une extraction sur une image PDF et que j'appuie sur
+// continuer en arrière-plan, ce qui a été extrait soit stocké comme ça il y
+// aura pas de perte — par exemple ça va être stocké dans la partie ajoutée,
+// comme ça lorsque je lance une extraction et que je pars en arrière-plan
+// dès que j'appuie sur le bouton ajouter il y aura ce qui a été ajouté
+// dernièrement mais qui n'a pas été généré ».
+// Chaque extraction (photos/PDF) est enregistrée dans localStorage : % en
+// direct, TEXTE PARTIEL conservé au fil des lots OCR, statut visible dans la
+// modale Ajouter (badge sur le bouton), reprise en un tap, suppression
+// automatique dès que la section est créée.
+// ══════════════════════════════════════════════════════════════
+const AC_QUEUE_KEY = 'arvexa_ac_queue_v1';
+function acQueueLoad() { try { return JSON.parse(localStorage.getItem(AC_QUEUE_KEY) || '[]') || []; } catch (e) { return []; } }
+function acQueueSave(list) {
+  try { localStorage.setItem(AC_QUEUE_KEY, JSON.stringify(list.slice(-14))); } catch (e) {}
+  try { acQueueBadge(); } catch (e) {}
+}
+function acQueueUpsert(entry) {
+  const list = acQueueLoad();
+  const i = list.findIndex((x) => x.id === entry.id);
+  if (i >= 0) list[i] = { ...list[i], ...entry };
+  else list.push(entry);
+  acQueueSave(list);
+  return entry;
+}
+function acQueueRemove(id) { acQueueSave(acQueueLoad().filter((x) => x.id !== id)); }
+function acQueueGet(id) { return acQueueLoad().find((x) => x.id === id) || null; }
+// Au chargement de la page : un job « running » est forcément mort (le JS a
+// redémarré) → il devient « interrompu » avec le texte partiel conservé.
+function acQueueSweepOnLoad() {
+  const list = acQueueLoad();
+  let changed = false;
+  for (const it of list) {
+    if (it.status === 'running') { it.status = 'interrompu'; changed = true; }
+  }
+  if (changed) acQueueSave(list);
+}
+const ACQ_ICONS = { photos: 'fa-images', pdf: 'fa-file-pdf', texte: 'fa-keyboard', vocal: 'fa-microphone' };
+const ACQ_STATUS = {
+  running: { cls: 'run', label: 'En cours' },
+  done: { cls: 'done', label: 'Prêt' },
+  interrompu: { cls: 'stop', label: 'Reprendre' },
+  analysee: { cls: 'sent', label: 'Analyse' }
+};
+function acQueueBadge() {
+  const btn = $('addCourseBtn');
+  if (!btn) return;
+  const n = acQueueLoad().length;
+  let badge = btn.querySelector('.ac-badge');
+  if (n <= 0) { if (badge) badge.remove(); return; }
+  if (!badge) { badge = document.createElement('span'); badge.className = 'ac-badge'; btn.appendChild(badge); }
+  badge.textContent = String(n);
+}
+function acQueueRowHtml(it) {
+  const st = ACQ_STATUS[it.status] || ACQ_STATUS.done;
+  const pctTxt = (it.status === 'running' && it.pct != null) ? `<span class="acq-pct">${it.pct} %</span>` : '';
+  const when = it.createdAt ? new Date(it.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+  const where = it.ctx === 'section' ? `section · ${it.ctxLabel || ''}` : 'cours';
+  const chars = String(it.text || '').length;
+  return `
+    <div class="acq-row" data-acq="${it.id}" role="button" tabindex="0">
+      <span class="acq-ico"><i class="fas ${ACQ_ICONS[it.mode] || 'fa-file-lines'}"></i></span>
+      <span class="acq-body">
+        <span class="acq-name">${escapeHtml(it.title || 'Ajout récent')}</span>
+        <span class="acq-sub">${escapeHtml(where)} · ${when} — ${chars} car. extraits</span>
+      </span>
+      <span class="acq-side">${pctTxt}<span class="acq-chip ${st.cls}">${st.label}</span>
+        <button type="button" class="acq-del" data-acq-del="${it.id}" aria-label="Supprimer"><i class="fas fa-trash-alt"></i></button>
+      </span>
+    </div>
+  `;
+}
 
-function openAddCourseModal() {
+let __isAddCourseModalOpen = false;
+let __acOpenCtx = null; // contexte de la modale en cours : null (cours) | {subject, chapterId} (section)
+
+function openAddCourseModal(context) {
   if (__isAddCourseModalOpen) return;
   __isAddCourseModalOpen = true;
 
+  // ✅ v8.41 — contexte : null = « Ajouter mon cours » (l'IA classe tout) ou
+  // {subject, chapterId} = « Ajouter une section » (même modale, même 4 modes,
+  // même % fiable, même arrière-plan — le chapitre est déjà choisi).
+  // Demande propriétaire : « dans les sections tu dois avoir la même chose que
+  // lorsque tu ajoutes un cours, je parle des quatre méthodes ».
+  const ctx = (context && context.subject && context.chapterId) ? { subject: context.subject, chapterId: context.chapterId } : null;
+  __acOpenCtx = ctx;
+  const secInfo = ctx ? SUBJECTS[ctx.subject] : null;
+
   // ✅ v8.39 — texte repris quand l'IA répond « ce n'est pas un cours » :
   // l'élève retrouve SA saisie pour la corriger (rien n'est perdu).
-  const resumeText = String(window.__acResumeText || '');
+  let resumeText = String(window.__acResumeText || '');
   try { delete window.__acResumeText; } catch (e) {}
+
+  // ✅ v8.41 — brouillon de section (ancien comportement conservé) : l'élève
+  // retrouve sa saisie quand il rouvre « Ajouter une section » du chapitre.
+  const draftKey = ctx ? `arvexa_section_draft_${ctx.subject}_${ctx.chapterId}` : null;
+  if (!resumeText && draftKey) {
+    try { resumeText = String(localStorage.getItem(draftKey) || ''); } catch (e) {}
+  }
 
   openModal(`
     <div class="modal dicta-modal" id="addCourseModal">
       <button class="modal-close"><i class="fas fa-times"></i></button>
       <div class="modal-head">
-        <h2>Ajouter mon cours</h2>
-        <p id="acSubtitle">Choisis comment donner ta leçon — l'IA s'occupe du reste</p>
+        <h2>${ctx ? 'Ajouter une section' : 'Ajouter mon cours'}</h2>
+        <p id="acSubtitle">${ctx ? `${secInfo.emoji} ${escapeHtml(secInfo.label)} — les 4 moyens pour donner ton contenu` : 'Choisis comment donner ta leçon — l\'IA s\'occupe du reste'}</p>
       </div>
       <div id="acBody"></div>
     </div>
@@ -5696,6 +5589,9 @@ function openAddCourseModal() {
   let acMode = null;        // mode actif : 'texte' | 'photos' | 'vocal' | 'pdf'
   let stopAcDictation = () => {};
   let acBusy = false;       // extraction OCR/PDF en cours
+  // ✅ v8.41 — id de l'entrée de file liée au texte affiché (pour la retirer
+  // dès que la section est créée — « généré » ne reste jamais dans la file) :
+  let acResumeQid = (!acJob.active && (acJob.kind === 'photos' || acJob.kind === 'pdf') && acJob.qid) ? acJob.qid : null;
 
   // ✅ v8.40 — ponts vers le job d'arrière-plan : la fin d'une extraction
   // (même démarrée avant une fermeture de modale) alimente CETTE modale ;
@@ -5704,6 +5600,7 @@ function openAddCourseModal() {
   window.__acSetExtractedText = (txt, sourceLabel) => {
     acBusy = false;
     acText = String(txt || '');
+    acResumeQid = acJob.qid || null; // ✅ v8.41 — ce texte vient de la file
     if (sourceLabel) setSubtitle(`${sourceLabel} — vérifie et corrige ton texte avant l'analyse`);
     showVerifyMode();
   };
@@ -5711,6 +5608,12 @@ function openAddCourseModal() {
   const releaseGarde = () => {
     __isAddCourseModalOpen = false;
     try { stopAcDictation(); } catch (e) {}
+    // ✅ v8.41 — brouillon de section conservé si l'élève ferme sans soumettre
+    try {
+      if (draftKey && !acBusy && acText.trim().length >= MIN_CONTENT_LENGTH) {
+        localStorage.setItem(draftKey, acText.slice(0, MAX_CONTENT_LENGTH));
+      }
+    } catch (e) {}
     // ✅ v8.40 — si une extraction tourne, la pastille flottante reprend le relais
     try { acPillUpdate(); } catch (e) {}
   };
@@ -5726,14 +5629,27 @@ function openAddCourseModal() {
     if (acBusy) return;
     stopAcDictation();
     acMode = null;
-    setSubtitle('Choisis comment donner ta leçon — l\'IA s\'occupe du reste');
+    setSubtitle(ctx
+      ? `${secInfo.emoji} ${secInfo.label} — choisis ton moyen d'ajout`
+      : 'Choisis comment donner ta leçon — l\'IA s\'occupe du reste');
     const resumeHtml = acText.trim().length > 0 ? `
       <button type="button" class="btn-full secondary" id="acResumeBtn" style="margin-top:2px;">
         <span class="btn-icon"><i class="fas fa-rotate-left"></i></span>
         <span class="btn-text">Reprendre ma saisie en cours</span>
       </button>
     ` : '';
+    // ✅ v8.41 — « dès que j'appuie sur le bouton ajouter il y aura ce qui a été
+    // ajouté dernièrement mais qui n'a pas été généré » : la file des ajouts
+    // récents (extraits mais pas encore analysés) s'affiche en premier.
+    const pend = acQueueLoad();
+    const queueHtml = pend.length > 0 ? `
+      <div class="acq-wrap">
+        <div class="acq-title"><i class="fas fa-clock-rotate-left"></i> Ajouts récents — pas encore générés <span class="count">${pend.length}</span></div>
+        ${pend.map(acQueueRowHtml).join('')}
+      </div>
+    ` : '';
     acBody.innerHTML = `
+      ${queueHtml}
       <div class="mode-grid">
         <button type="button" class="mode-card" data-mode="texte">
           <span class="mode-ico"><i class="fas fa-keyboard"></i></span>
@@ -5768,6 +5684,45 @@ function openAddCourseModal() {
       });
     });
     $('acResumeBtn')?.addEventListener('click', () => showVerifyMode());
+    // ✅ v8.41 — reprise d'un ajout récent (fait, interrompu ou analyse lancée)
+    const acQueueOpen = (id) => {
+      const it = acQueueGet(id);
+      if (!it) { showModeChoice(); return; }
+      if (it.status === 'running' && acJob.active && acJob.qid === id) {
+        // job toujours VIVANT → écran de progression avec les valeurs en direct
+        acBusy = true;
+        acBody.innerHTML = acProgressScreenHtml(acJob.label || 'Extraction en cours…');
+        acWireProgressButtons(showModeChoice, () => {});
+        const pctEl = $('acPct'); const barEl = $('acBarFill'); const txtEl = $('acProgTxt');
+        if (pctEl) pctEl.textContent = `${acJob.pct || 0} %`;
+        if (barEl) barEl.style.width = `${acJob.pct || 0}%`;
+        if (txtEl) txtEl.textContent = acJob.label || 'Extraction en cours…';
+        acJob.modalToken = ++acJob.seq;
+        return;
+      }
+      // reprise du texte déjà extrait (même partiel) — rien n'a été perdu
+      acMode = 'texte';
+      acText = String(it.text || '');
+      acResumeQid = it.id; // ✅ v8.41 — ce texte est lié à cette entrée de file
+      __acOpenCtx = (it.ctx === 'section' && it.subject && it.chapterId) ? { subject: it.subject, chapterId: it.chapterId } : null;
+      if (it.status === 'analysee') {
+        showToast('Analyse déjà lancée — si la section n\'apparaît pas dans ton cahier, relance', 'info', 5000);
+      }
+      showVerifyMode();
+    };
+    acBody.querySelectorAll('[data-acq]').forEach((row) => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('[data-acq-del]')) return;
+        acQueueOpen(row.dataset.acq);
+      });
+    });
+    acBody.querySelectorAll('[data-acq-del]').forEach((b) => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        acQueueRemove(b.dataset.acqDel);
+        showModeChoice();
+      });
+    });
   }
 
   // ═══ Écran 2 — vérification du texte (commun à tous les modes) ═══
@@ -5853,10 +5808,18 @@ function openAddCourseModal() {
           acJobStep(1 + Math.round(((i + 1) / files.length) * 19), `Image ${i + 1}/${files.length} — préparation…`);
           images.push(await window.ARVX_AI.compressImageFile(files[i], { maxSide: 1400, quality: 0.8 }));
         }
-        // OCR par lots : de 20 % à 90 % — chaque lot fini fait vraiment avancer
-        const text = await acOcrImages(images, (b, total) => {
+        // ✅ v8.41 — OCR par lots : 20 % → 90 %, le % n'avance QUAND un lot est
+        // réellement terminé ; pendant un lot, le libellé montre le travail en
+        // cours. Texte partiel stocké au fil des lots → zéro perte.
+        const text = await acOcrImages(images, (done, total, partial) => {
           if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
-          acJobStep(20 + Math.round((b / total) * 70), `Lecture IA des images… (${b}/${total})`);
+          acJobText(partial);
+          acJobStep(20 + Math.round((done / Math.max(total, 1)) * 70), `Lecture IA des images… (${done}/${total})`);
+        }, (b, total) => {
+          acJob.label = `Lecture IA du lot ${b + 1}/${total}… — continue en arrière-plan si tu veux`;
+          const txtEl = document.getElementById('acProgTxt');
+          if (txtEl) txtEl.textContent = acJob.label;
+          acPillUpdate();
         });
         if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
         acJobStep(95, 'Assemblage du texte…');
@@ -5921,9 +5884,15 @@ function openAddCourseModal() {
             if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
             acJobStep(10 + Math.round((p / Math.max(n, 1)) * 20), `Rendu page ${p}/${n}…`);
           } });
-          text = await acOcrImages(pages, (b, total) => {
+          text = await acOcrImages(pages, (done, total, partial) => {
             if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
-            acJobStep(30 + Math.round((b / total) * 62), `Lecture IA des pages… (${b}/${total})`);
+            acJobText(partial);
+            acJobStep(30 + Math.round((done / Math.max(total, 1)) * 62), `Lecture IA des pages… (${done}/${total})`);
+          }, (b, total) => {
+            acJob.label = `Lecture IA des pages… lot ${b + 1}/${total}`;
+            const txtEl = document.getElementById('acProgTxt');
+            if (txtEl) txtEl.textContent = acJob.label;
+            acPillUpdate();
           });
         } else {
           text = res.text;
@@ -6201,6 +6170,23 @@ function openAddCourseModal() {
     if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add('loading'); }
     stopAcDictation();
 
+    // ✅ v8.41 — le contexte suit la SOURCE du texte : si ce texte vient d'une
+    // extraction (photos/PDF), c'est le contexte FIGÉ au début de l'extraction
+    // qui gagne ; sinon c'est le contexte de la modale (section ou cours).
+    const submitCtx = (acJob.active && (acJob.kind === 'photos' || acJob.kind === 'pdf') && acJob.ctx)
+      ? acJob.ctx
+      : (__acOpenCtx || null);
+    const isSectionCtx = !!(submitCtx && submitCtx.subject && submitCtx.chapterId);
+
+    // ✅ v8.41 — file des ajouts récents : l'entrée passe « Analyse » pendant
+    // l'appel (elle sera retirée à la réussite, rendue « Prêt » à l'échec).
+    // Source de l'id : extraction live EN COURS, sinon texte venu d'une
+    // extraction finie / d'une reprise de la file (acResumeQid).
+    const jobQid = (acJob.active && acJob.kind !== 'analyse' && acJob.qid) ? acJob.qid : null;
+    const qid = jobQid || acResumeQid || null;
+    acResumeQid = null;
+    if (qid) acQueueUpsert({ id: qid, status: 'analysee', text: rawInput });
+
     closeModal();
     __isAddCourseModalOpen = false;
 
@@ -6208,22 +6194,39 @@ function openAddCourseModal() {
     acJob.kind = 'analyse';
     acJob.cancelled = false;
     acJob.pct = null;
-    acJob.label = 'Analyse IA en cours — ton résumé se prépare';
+    acJob.label = isSectionCtx ? 'Analyse IA en cours — ta section arrive' : 'Analyse IA en cours — ton résumé se prépare';
     acJob.modalToken = ++acJob.seq;
     acPillEnsure();
     acPillUpdate();
 
     try {
-      // keepalive : l'appel aboutit côté serveur même si l'élève quitte la page
-      const result = await callApi('autoAddSection', { rawInput }, 1, false, { keepalive: true });
-      acJobStop();
-      state.autoAdded = { chapterId: result.chapterId, sectionId: result.sectionId, createdChapter: !!result.createdChapter };
-      delete state.cache.chapters[result.subject];
-      delete state.cache.chapter[`${result.subject}/${result.chapterId}`];
-      showToast(`IA : ${result.subjectLabel || 'Matière'} › ${result.chapterTitle || 'Chapitre'}${result.createdChapter ? ' (nouveau chapitre)' : ''} — renomme si tu veux`, 'success', 6000);
-      navigate('section', { subject: result.subject, chapterId: result.chapterId, sectionId: result.sectionId });
+      if (isSectionCtx) {
+        // ✅ v8.41 — SECTION : la matière et le chapitre sont déjà choisis —
+        // createSection direct (le même contenu, le même arrière-plan keepalive).
+        const result = await callApi('createSection', { subject: submitCtx.subject, chapterId: submitCtx.chapterId, rawInput }, 1, false, { keepalive: true });
+        if (qid) acQueueRemove(qid); // généré → l'entrée sort de la file
+        acJobStop();
+        try { localStorage.removeItem(`arvexa_section_draft_${submitCtx.subject}_${submitCtx.chapterId}`); } catch (e) {}
+        delete state.cache.chapters[submitCtx.subject];
+        delete state.cache.chapter[`${submitCtx.subject}/${submitCtx.chapterId}`];
+        showToast('Section analysée — bon travail !', 'success');
+        navigate('section', { subject: submitCtx.subject, chapterId: submitCtx.chapterId, sectionId: result.sectionId });
+      } else {
+        // COURS : l'IA détecte la matière et classe la section (keepalive).
+        const result = await callApi('autoAddSection', { rawInput }, 1, false, { keepalive: true });
+        if (qid) acQueueRemove(qid); // généré → l'entrée sort de la file
+        acJobStop();
+        state.autoAdded = { chapterId: result.chapterId, sectionId: result.sectionId, createdChapter: !!result.createdChapter };
+        delete state.cache.chapters[result.subject];
+        delete state.cache.chapter[`${result.subject}/${result.chapterId}`];
+        showToast(`IA : ${result.subjectLabel || 'Matière'} › ${result.chapterTitle || 'Chapitre'}${result.createdChapter ? ' (nouveau chapitre)' : ''} — renomme si tu veux`, 'success', 6000);
+        navigate('section', { subject: result.subject, chapterId: result.chapterId, sectionId: result.sectionId });
+      }
     } catch (e) {
       acJobStop();
+      // ✅ v8.41 — échec de l'analyse : l'entrée repasse « Prêt » (texte intact),
+      // l'élève relance en un tap depuis la file ou la modale rouverte.
+      if (qid) acQueueUpsert({ id: qid, status: 'done', text: rawInput });
       if (e.code === 'FREE_SECTION_LIMIT') {
         showPremiumModal();
         applyRoute({ view: 'notebooks', params: {} });
@@ -6233,7 +6236,7 @@ function openAddCourseModal() {
         window.__acResumeText = rawInput;
         showToast(e.message || 'Ce contenu ne ressemble pas à un cours', 'error', 7000);
         __isAddCourseModalOpen = false;
-        openAddCourseModal();
+        openAddCourseModal(isSectionCtx ? submitCtx : undefined);
       } else {
         // ✅ v8.40 — RIEN n'est perdu : la saisie de l'élève est retrouvée dans
         // la modale, il relance en un tap (les pannes passagères sont déjà
@@ -6241,16 +6244,15 @@ function openAddCourseModal() {
         window.__acResumeText = rawInput;
         showToast(e.message || 'Analyse impossible — ta leçon est conservée, réessaie', 'error', 6000);
         __isAddCourseModalOpen = false;
-        openAddCourseModal();
+        openAddCourseModal(isSectionCtx ? submitCtx : undefined);
       }
     }
   }
 
-  showModeChoice();
-  if (resumeText.trim().length > 0) { acMode = 'texte'; showVerifyMode(); }
-  else if (acJob.active && (acJob.kind === 'photos' || acJob.kind === 'pdf')) {
-    // ✅ v8.40 — modale rouverte via la pastille : l'écran reflète la
-    // progression LIVE de l'extraction en cours (même pourcentage, même label).
+  // ✅ v8.41 — ordre d'ouverture : un extraction LIVE d'abord (la modale
+  // rouverte via la pastille doit refléter la progression), sinon la saisie
+  // reprise (texte de l'IA / brouillon de section), sinon le choix du mode.
+  if (acJob.active && (acJob.kind === 'photos' || acJob.kind === 'pdf')) {
     acBusy = true;
     acBody.innerHTML = acProgressScreenHtml(acJob.label || 'Extraction en cours…');
     acWireProgressButtons(showModeChoice, () => {});
@@ -6259,6 +6261,11 @@ function openAddCourseModal() {
     if (barEl) barEl.style.width = `${acJob.pct || 0}%`;
     if (txtEl) txtEl.textContent = acJob.label || 'Extraction en cours…';
     acJob.modalToken = ++acJob.seq; // la fin de l'extraction alimentera CETTE modale
+  } else if (resumeText.trim().length > 0) {
+    acMode = 'texte';
+    showVerifyMode();
+  } else {
+    showModeChoice();
   }
 }
 
@@ -6460,7 +6467,11 @@ function isPremiumUser(data) {
   return false;
 }
 
-console.log("🚀 ARVEXA — Mon cahier — serveur progress v8.10 (3 onglets Résumé/Questionnaires/Carte mentale · pourcentage d'extraction fiable · extraction en arrière-plan · 0 échec d'authentification)");
+// ✅ v8.41 — balayage de la file au chargement : les extractions « running »
+// d'une session précédente deviennent « Reprendre » (texte partiel conservé).
+try { acQueueSweepOnLoad(); } catch (e) {}
+
+console.log("🚀 ARVEXA — Mon cahier — serveur progress v8.11 (sections = mêmes 4 modes que le cours · carte mentale en bulles reliées avec explication en modale · % d'extraction réel attaché aux lots · file des ajouts récents zéro perte · 0 échec d'authentification)");
 
 // ✅ v8.0 — SYNC FIREBASE : la carte « Ma progression — révisions officielles »
 // se recalcule quand la progression fusionne/arrive du cloud (autre appareil).
