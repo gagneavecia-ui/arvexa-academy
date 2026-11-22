@@ -996,48 +996,6 @@
       color: var(--text-muted); padding-bottom: 10px;
     }
 
-    /* ============================================================
-       OBJECTIF DU JOUR — remplace le compte à rebours J/H/M/S (v8.35)
-       Identique pour TOUTES les classes (6ᵉ → Licence 3, classe libre) :
-       juste et motivant pour chacun, quel que soit l'examen visé.
-       ============================================================ */
-    .odj {
-      margin-top: 14px;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .odj-head {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 8px; margin-bottom: 2px;
-    }
-    .odj-title {
-      font-size: 12px; font-weight: 800; letter-spacing: 1.2px;
-      text-transform: uppercase; color: var(--accent-bright);
-    }
-    .odj-row {
-      display: flex; align-items: center; gap: 11px;
-      padding: 11px 13px; border-radius: 12px;
-      background: rgba(224,184,74,0.05); border: 1px solid rgba(224,184,74,0.12);
-      text-decoration: none;
-      transition: background .15s ease, border-color .15s ease;
-    }
-    .odj-row:hover { background: rgba(224,184,74,0.10); border-color: rgba(224,184,74,0.24); }
-    .odj-ico { font-size: 18px; flex-shrink: 0; line-height: 1; }
-    .odj-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    .odj-txt strong { font-size: 13.5px; font-weight: 700; color: var(--text-light); line-height: 1.3; }
-    .odj-sub {
-      font-size: 11.5px; color: var(--text-muted); margin-top: 2px;
-      line-height: 1.35; overflow-wrap: anywhere;
-    }
-    .odj-state {
-      flex-shrink: 0; font-size: 11px; font-weight: 800;
-      padding: 5px 10px; border-radius: 999px;
-      background: rgba(224,184,74,0.10); border: 1px solid rgba(224,184,74,0.26);
-      color: var(--accent-bright); white-space: nowrap;
-    }
-    .odj-state.done {
-      background: rgba(46,204,113,0.10); border-color: rgba(46,204,113,0.30);
-      color: var(--success-light, #2ECC71);
-    }
     .hero-quote {
       position: relative; margin-top: 16px; padding: 2px 0 0 16px;
       border-left: 2px solid rgba(224,184,74,0.35);
@@ -1542,27 +1500,6 @@
           </p>
           <div class="progress-track">
             <div class="progress-fill early" id="progressFill" style="width: 0%"></div>
-          </div>
-          <div class="odj" id="odjBlock" aria-label="Objectif du jour">
-            <div class="odj-head">
-              <span class="odj-title">🎯 Objectif du jour</span>
-            </div>
-            <a class="odj-row" id="odjRowQj" href="quotidien.html">
-              <span class="odj-ico">❓</span>
-              <span class="odj-txt">
-                <strong>Question du jour</strong>
-                <span class="odj-sub" id="odjQjSub">4 questions · une par matière · 90 secondes</span>
-              </span>
-              <span class="odj-state" id="odjQjState">À faire</span>
-            </a>
-            <a class="odj-row" id="odjRowLecon" href="ma-journee.html">
-              <span class="odj-ico">📖</span>
-              <span class="odj-txt">
-                <strong>Leçon du jour</strong>
-                <span class="odj-sub" id="odjLeconSub">Reprends ta lecture — un pas chaque jour</span>
-              </span>
-              <span class="odj-state" id="odjLeconState">0/3</span>
-            </a>
           </div>
           <div class="hero-quote">
             <span id="heroQuoteText">« Chaque jour compte vers ton BAC. »</span>
@@ -2637,20 +2574,15 @@
   if (!window.__ARVEXA_INSTANT__) showProfileLoading();
 
   // ================================================================
-  // HÉROS PAR CLASSE + OBJECTIF DU JOUR (✅ v8.35)
-  // - Le compteur J/H/M/S « BAC 2027 » disparaît : faux pour les classes
-  //   sans examen (6ᵉ, Seconde, Licence…, classe libre).
-  // - Titre = objectif de la classe (« BEPC 2027 », « BAC 2027 », « BAC
-  //   en vue », « Réussir ta licence », « Ton objectif ») ; ligne d'info =
-  //   échéance d'examen ou vraie classe complète (ARVEXA_CLASSES).
-  // - À la place : « 🎯 Objectif du jour » — question du jour + leçon du
-  //   jour (objectif 3 sections) — identique pour toutes les classes.
+  // HÉROS PAR CLASSE (✅ v8.36)
+  // Le titre suit la vraie classe de l'élève via ARVEXA_CLASSES :
+  // « BEPC 2027 » (3ᵉ), « BAC 2027 » (Terminale), « Collège en route »,
+  // « BAC en vue », « Réussir ta licence », « Ton objectif » (classe
+  // libre) ; ligne d'info = échéance d'examen ou classe complète.
+  // PAS de compteur J/H/M/S et PAS d'« objectif du jour » dans le héros
+  // (demande propriétaire) : la question du jour vit dans SA carte
+  // juste en bas (qjCard), unique et inchangée.
   // ================================================================
-  function odjDayKey() {
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
-
   function majHeroClasse() {
     try {
       const CL = window.ARVEXA_CLASSES;
@@ -2696,45 +2628,10 @@
     } catch (e) { /* silencieux : le héros doit toujours s'afficher */ }
   }
 
-  function majODJQj() {
-    const qjState = document.getElementById('odjQjState');
-    const qjSub = document.getElementById('odjQjSub');
-    let qjFait = false;
-    try {
-      const e = JSON.parse(localStorage.getItem('arvexa-quotidien-v1') || '{}') || {};
-      qjFait = e.lastDone === odjDayKey();
-      if (qjFait && qjSub) {
-        qjSub.textContent = 'Score du jour : ' + (typeof e.score === 'number' ? e.score : '—') + '/4 · reviens demain à 7 h';
-      }
-    } catch (err) { qjFait = false; }
-    if (qjState) {
-      qjState.textContent = qjFait ? '✅ Fait' : 'À faire';
-      qjState.classList.toggle('done', qjFait);
-    }
-  }
-
-  function majODJ() {
-    // — Leçon du jour : sections lues aujourd'hui vs objectif du jour —
-    const leconState = document.getElementById('odjLeconState');
-    let lus = 0;
-    try { lus = Number(computeActivity()[odjDayKey()]) || 0; } catch (err) { lus = 0; }
-    const atteint = lus >= DAILY_GOAL;
-    if (leconState) {
-      leconState.textContent = atteint ? ('✅ ' + lus + '/' + DAILY_GOAL) : (lus + '/' + DAILY_GOAL);
-      leconState.classList.toggle('done', atteint);
-    }
-    const leconSub = document.getElementById('odjLeconSub');
-    if (leconSub && lus === 0) leconSub.textContent = 'Reprends ta lecture — un pas chaque jour';
-    majODJQj();
-  }
-
-  // Différé : computeActivity/DAILY_GOAL sont déclarés plus bas dans ce
-  // même script (TDZ) — on peint le héros après l'exécution complète.
-  setTimeout(() => { majHeroClasse(); majODJ(); }, 0);
+  majHeroClasse();
   window.addEventListener('arvexa:profile', majHeroClasse);
-  window.addEventListener('arvexa-progress-updated', majODJ);
-  window.addEventListener('pageshow', () => { majHeroClasse(); majODJ(); });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { majHeroClasse(); majODJ(); } });
+  window.addEventListener('pageshow', majHeroClasse);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) majHeroClasse(); });
 
   // ================================================================
   // HERO — date + citation du jour
