@@ -1,13 +1,18 @@
 // ================================================================
-// API PROGRESS v8.8 — ARVEXA School
+// API PROGRESS v8.9 — ARVEXA School
 // Cahier intelligent + Fan-out IA + Tracking temps d'étude
-// v8.38 « Ajouter intelligent » :
-//   - autoAddSection : l'élève n'a PAS à choisir matière/chapitre — l'IA lit la
-//     leçon, détecte la matière (8 clés), réutilise un chapitre existant du cahier
-//     (match normalisé) sinon en crée un, puis lance l'analyse complète existante ;
-//   - renameSection / renameChapter : l'élève peut ajuster les noms proposés ;
-//   - getDashboard renvoie `activity` (14 jours : sections + minutes) pour la
-//     courbe de la nouvelle carte statistiques de la page Résumé.
+// v8.9 « chaîne IA robuste · matières dynamiques · PDF 7 Mo » :
+//   - callProvider CASCADE : modèle principal → replis (Groq llama-3.1-8b,
+//     OpenRouter gpt-oss/llama-3.3:free, Gemini flash-latest) + 1 retente
+//     auto sur 429/5xx/réseau — « si l'un tombe en panne, un autre prend le
+//     relais », l'élève doit voir 0 erreur ; Gemini reçoit sa clé en query
+//     ET en header x-goog-api-key (couvre clés AIza… et AQ.…) ;
+//   - classifyLesson détecte aussi isStudy (cours réel vs écritures sans
+//     rapport avec l'étude) → erreurs NOT_COURSE / SUBJECT_UNKNOWN (422,
+//     quota remboursé, message clair côté élève) ;
+//   - l'accueil n'affiche plus 8 cartes fixes : cartes matières DYNAMIQUES
+//     (seulement les matières avec sections) — côté page, pas ici ;
+//   - PDF > 7 Mo refusé proprement côté page (message), OCR élargi 10 pages.
 // v8.6 « édition complète » (base v8.5 inchangée structurellement) :
 //   - explications « comme un prof » enrichies (analogies, étapes)
 //   - banque de questions SPLIT en 2 demi-tâches (base + avancée, 5-13 chacune)
@@ -607,6 +612,8 @@ function getProviders() {
       key: process.env.GROQ_API_KEY,
       endpoint: 'https://api.groq.com/openai/v1/chat/completions',
       model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+      // ✅ v8.9 — repli ultra fiable si le modèle principal est saturé
+      fallbackModels: ['llama-3.1-8b-instant'],
       jsonMode: true
     },
     {
@@ -614,6 +621,8 @@ function getProviders() {
       key: process.env.OPENROUTER_API_KEY,
       endpoint: 'https://openrouter.ai/api/v1/chat/completions',
       model: process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b',
+      // ✅ v8.9 — replis GRATUITS si le modèle principal tombe/sature
+      fallbackModels: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'meta-llama/llama-3.3-70b-instruct:free'],
       jsonMode: true,
       headers: {
         'HTTP-Referer': process.env.APP_ORIGIN || '',
@@ -625,12 +634,15 @@ function getProviders() {
       key: process.env.MISTRAL_API_KEY,
       endpoint: 'https://api.mistral.ai/v1/chat/completions',
       model: process.env.MISTRAL_MODEL || 'mistral-large-latest',
+      fallbackModels: ['mistral-small-latest'],
       jsonMode: true
     },
     {
       name: 'Gemini',
       key: process.env.GEMINI_API_KEY,
       endpoint: `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.8-flash'}:generateContent`,
+      // ✅ v8.9 — si le modèle de l'env n'existe pas → modèles stables connus
+      fallbackModels: ['gemini-flash-latest', 'gemini-2.0-flash'],
       gemini: true
     }
   ].filter((p) => Boolean(p.key));
@@ -729,19 +741,22 @@ function repairJson(str) {
   return null;
 }
 
-async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 4000, deadline }) {
-  const controller = new AbortController();
-  const timeouts = { 'Groq': 20000, 'OpenRouter': 32000, 'Mistral': 55000, 'Gemini': 45000 };
-  const baseTimeout = timeouts[provider.name] || 20000;
-  const remaining = deadline ? Math.max(5000, deadline - Date.now()) : baseTimeout;
-  const timeoutMs = Math.min(baseTimeout, remaining);
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+// ✅ v8.9 — CASCADE PAR FOURNISSEUR : modèle principal → replis, avec 1
+// retente automatique sur 429/5xx/réseau. Demande du propriétaire : « si l'un
+// commence et tombe en panne, un autre prend le relais — 0 erreur vue ».
+function sleepMs(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
+// UN appel (1 modèle, 1 délai) — ne jette jamais, renvoie {ok, ...}.
+async function attemptProviderOnce(provider, model, timeoutMs, { systemPrompt, userPrompt, maxTokens }) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     let rawContent = null;
 
     if (provider.gemini) {
-      // API generateContent : JSON natif via responseMimeType
+      // API generateContent : JSON natif via responseMimeType.
+      // ✅ v8.9 — clé passée EN MÊME TEMPS en query (?key=) et en header
+      // x-goog-api-key : couvre les anciennes clés AIza… ET les nouvelles AQ.…
       const body = {
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
@@ -752,87 +767,141 @@ async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 40
           thinkingConfig: { thinkingBudget: 0 }
         }
       };
-      const result = await fetch(`${provider.endpoint}?key=${provider.key}`, {
+      const result = await fetch(`${provider.endpoint.split(':generateContent')[0]}:generateContent?key=${encodeURIComponent(provider.key)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': provider.key },
         body: JSON.stringify(body),
         signal: controller.signal
       });
+      const status = result.status;
       const data = await result.json().catch(() => null);
       if (!result.ok) {
         const msg = data?.error?.message || `HTTP ${result.status}`;
-        throw new Error(`${provider.name}: ${msg}`);
+        const kind = (status === 401 || status === 403) ? 'auth'
+          : (status === 429 || status >= 500) ? 'retryable' : 'other';
+        return { ok: false, status, errMsg: msg, kind };
       }
       rawContent = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
       if (!rawContent) {
         const reason = data?.candidates?.[0]?.finishReason || data?.promptFeedback?.blockReason || 'réponse vide';
-        throw new Error(`${provider.name}: ${reason}`);
+        return { ok: false, status, errMsg: reason, kind: 'empty' };
       }
-    } else {
-      const body = {
-        model: provider.model,
-        temperature: 0.3,
-        max_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ]
-      };
-
-      if (provider.jsonMode) body.response_format = { type: 'json_object' };
-
-      const result = await fetch(provider.endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${provider.key}`,
-          ...(provider.headers || {})
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal
-      });
-
-      const data = await result.json().catch(() => null);
-      if (!result.ok) {
-        const msg = data?.error?.message || `HTTP ${result.status}`;
-        throw new Error(`${provider.name}: ${msg}`);
-      }
-
-      rawContent = data?.choices?.[0]?.message?.content;
-      if (!rawContent) throw new Error(`${provider.name}: réponse vide`);
+      return { ok: true, rawContent, status };
     }
 
-    const cleaned = String(rawContent).replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const body = {
+      model,
+      temperature: 0.3,
+      max_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]
+    };
 
-    try { return JSON.parse(cleaned); }
-    catch (_) {
-      const repaired = repairJson(cleaned);
-      if (repaired) {
-        console.warn(`[AI] ${provider.name} — JSON réparé avec succès`);
-        return repaired;
-      }
-      const sanitized = escapeControlCharsInJsonStrings(cleaned);
-      try { return JSON.parse(sanitized); }
-      catch (posErr) {
-        const repaired2 = repairJson(sanitized);
-        if (repaired2) {
-          console.warn(`[AI] ${provider.name} — JSON réparé (contrôles + LaTeX)`);
-          return repaired2;
-        }
-        // Diagnostic : message V8 (token fautif) + contexte si position disponible
-        let ctx = ` [${String(posErr?.message || '').slice(0, 200)}]`;
-        const pm = /position (\d+)/.exec(String(posErr?.message || ''));
-        if (pm) {
-          const p = parseInt(pm[1], 10);
-          ctx += ` [vers ${sanitized.slice(Math.max(0, p - 120), p + 120).replace(/[\n\r\t]/g, '⏎')}]`;
-        }
-        console.warn(`[AI] ${provider.name} — JSON invalide non réparable. Début: ${cleaned.slice(0, 200)}`);
-        throw new Error(`${provider.name}: JSON invalide${ctx}`);
-      }
+    if (provider.jsonMode) body.response_format = { type: 'json_object' };
+
+    const result = await fetch(provider.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${provider.key}`,
+        ...(provider.headers || {})
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+
+    const status = result.status;
+    const data = await result.json().catch(() => null);
+    if (!result.ok) {
+      const msg = data?.error?.message || `HTTP ${result.status}`;
+      const kind = (status === 401 || status === 403) ? 'auth'
+        : (status === 429 || status >= 500) ? 'retryable'
+        : (/model/i.test(msg) ? 'modelbad' : 'other');
+      return { ok: false, status, errMsg: msg, kind };
     }
+
+    rawContent = data?.choices?.[0]?.message?.content;
+    if (!rawContent) return { ok: false, status, errMsg: 'réponse vide', kind: 'empty' };
+    return { ok: true, rawContent, status };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      errMsg: err?.name === 'AbortError' ? 'délai dépassé' : (err.message || 'réseau'),
+      kind: 'retryable'
+    };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+// Nettoyage + réparation JSON (chaîne existante, extraite telle quelle).
+function parseProviderJson(provider, rawContent) {
+  const cleaned = String(rawContent).replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+  try { return JSON.parse(cleaned); }
+  catch (_) {
+    const repaired = repairJson(cleaned);
+    if (repaired) {
+      console.warn(`[AI] ${provider.name} — JSON réparé avec succès`);
+      return repaired;
+    }
+    const sanitized = escapeControlCharsInJsonStrings(cleaned);
+    try { return JSON.parse(sanitized); }
+    catch (posErr) {
+      const repaired2 = repairJson(sanitized);
+      if (repaired2) {
+        console.warn(`[AI] ${provider.name} — JSON réparé (contrôles + LaTeX)`);
+        return repaired2;
+      }
+      // Diagnostic : message V8 (token fautif) + contexte si position disponible
+      let ctx = ` [${String(posErr?.message || '').slice(0, 200)}]`;
+      const pm = /position (\d+)/.exec(String(posErr?.message || ''));
+      if (pm) {
+        const p = parseInt(pm[1], 10);
+        ctx += ` [vers ${sanitized.slice(Math.max(0, p - 120), p + 120).replace(/[\n\r\t]/g, '⏎')}]`;
+      }
+      console.warn(`[AI] ${provider.name} — JSON invalide non réparable. Début: ${cleaned.slice(0, 200)}`);
+      throw new Error(`${provider.name}: JSON invalide${ctx}`);
+    }
+  }
+}
+
+async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 4000, deadline }) {
+  const perTry = { 'Groq': 18000, 'OpenRouter': 30000, 'Mistral': 45000, 'Gemini': 38000 };
+  const baseTimeout = perTry[provider.name] || 20000;
+  const models = [provider.model]
+    .concat(Array.isArray(provider.fallbackModels) ? provider.fallbackModels : [])
+    .filter(Boolean);
+  const absDeadline = deadline || (Date.now() + baseTimeout * (models.length + 1));
+  let lastMsg = 'indisponible';
+  let parseErr = null;
+
+  for (const model of models) {
+    for (let tries = 0; tries < 2; tries++) {
+      const remaining = absDeadline - Date.now();
+      if (remaining < 4000) break;
+      const res = await attemptProviderOnce(provider, model, Math.min(baseTimeout, remaining), { systemPrompt, userPrompt, maxTokens });
+      if (res.ok) {
+        try { return parseProviderJson(provider, res.rawContent); }
+        catch (e) { parseErr = e; break; } // JSON irréparable → modèle suivant
+      }
+      lastMsg = res.errMsg || `HTTP ${res.status}`;
+      if (res.kind === 'auth') {
+        // clé invalide : inutile d'essayer les autres modèles du même fournisseur
+        throw new Error(`${provider.name}: ${lastMsg}`);
+      }
+      if (res.kind === 'retryable' && tries === 0) { await sleepMs(1400); continue; }
+      break; // autre erreur → modèle suivant
+    }
+    if (parseErr) break;
+    if (Date.now() >= absDeadline) break;
+  }
+
+  if (parseErr) throw parseErr;
+  throw new Error(`${provider.name}: ${lastMsg}`);
 }
 
 // v8.6 — FILES SÉQUENTIELLES PAR FOURNISSEUR (anti-collision) :
@@ -2519,8 +2588,10 @@ async function getSubjectChapterTitles(uid) {
   return map;
 }
 
-// 1 appel IA léger (JSON) : {subject, chapter, section}. Boucle sur les
-// fournisseurs disponibles jusqu'à une réponse exploitable.
+// 1 appel IA léger (JSON) : {subject, chapter, section, isStudy}. Boucle sur
+// les fournisseurs disponibles jusqu'à une réponse exploitable.
+// ✅ v8.9 — l'IA dit AUSSI si le texte n'est PAS un contenu d'étude (« savoir
+// si c'est un domaine ou juste des écritures qui n'ont rien d'étude »).
 async function classifyLesson(rawInput, chapterMap, providers) {
   const SUBJ_LINE = ALLOWED_SUBJECTS_ARRAY.join(', ');
   const SUBJ_LABELS = ALLOWED_SUBJECTS_ARRAY
@@ -2538,17 +2609,21 @@ async function classifyLesson(rawInput, chapterMap, providers) {
     'Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, sans balises de code.';
 
   const userPrompt =
-    'Voici le début d\'une leçon donnée par un élève :\n' +
+    'Voici le début d\'un contenu donné par un élève :\n' +
     '"""\n' + rawInput.slice(0, 1400) + (rawInput.length > 1400 ? '\n[…] (tronqué)' : '') + '\n"""\n\n' +
     'Les cahiers existants de cet élève (matière : chapitres déjà créés) :\n' + mapText + '\n\n' +
     'Matières disponibles :\n' + SUBJ_LABELS + '\n\n' +
     'Ta tâche :\n' +
-    '1. "subject" : la matière de cette leçon — EXACTEMENT une de ces clés : ' + SUBJ_LINE + '.\n' +
-    '2. "chapter" : le chapitre auquel cette leçon appartient. Si la leçon correspond à un chapitre EXISTANT du cahier (même thème, même sujet), reprends son titre EXACTEMENT comme il est écrit dans la liste. Sinon, propose un titre de chapitre court et standard (max 60 caractères, sans numéro de chapitre).\n' +
-    '3. "section" : un titre court et clair pour CETTE partie de leçon précise (max 80 caractères, sans numéro).\n\n' +
-    'Réponds exactement : {"subject":"...","chapter":"...","section":"..."}';
+    '1. "isStudy" : true si ce contenu est bien de l\'ÉTUDE scolaire (leçon, cours, définitions, formules, exercices, résumé de cours, leçon dictée…). ' +
+    'false si ce n\'est PAS un contenu d\'étude (bavardage, message personnel, recette, chanson, publicité, sport, journal intime, écritures sans aucun rapport avec une matière scolaire).\n' +
+    '2. "subject" : la matière de ce contenu — EXACTEMENT une de ces clés : ' + SUBJ_LINE + '. (Si "isStudy" est false, mets "".)\n' +
+    '3. "chapter" : le chapitre auquel cette leçon appartient. Si la leçon correspond à un chapitre EXISTANT du cahier (même thème, même sujet), reprends son titre EXACTEMENT comme il est écrit dans la liste. Sinon, propose un titre de chapitre court et standard (max 60 caractères, sans numéro de chapitre). (Si "isStudy" est false, mets "".)\n' +
+    '4. "section" : un titre court et clair pour CETTE partie de leçon précise (max 80 caractères, sans numéro). (Si "isStudy" est false, mets "".)\n\n' +
+    'Réponds exactement : {"subject":"...","chapter":"...","section":"...","isStudy":true}';
 
   let lastErr = null;
+  let sawNotStudy = false;
+  let unknownSubject = '';
   for (const provider of providers) {
     try {
       const parsed = await callProvider(provider, {
@@ -2560,13 +2635,35 @@ async function classifyLesson(rawInput, chapterMap, providers) {
       const subject = String(parsed?.subject || '').trim().toLowerCase();
       const chapter = String(parsed?.chapter || '').trim().replace(/^chapitre\s*\d+\s*[:.\-–]?\s*/i, '').slice(0, 100);
       const section = String(parsed?.section || '').trim().slice(0, 100);
-      if (!ALLOWED_SUBJECTS.has(subject)) throw new Error(`matière hors liste : ${subject}`);
+      const isStudy = parsed?.isStudy !== false;
+      if (!isStudy) {
+        sawNotStudy = true;
+        throw new Error('contenu hors étude');
+      }
+      if (!ALLOWED_SUBJECTS.has(subject)) {
+        if (!unknownSubject && subject) unknownSubject = subject;
+        throw new Error(`matière hors liste : ${subject}`);
+      }
       if (chapter.length < 2 || section.length < 2) throw new Error('titres trop courts');
       return { subject, chapter, section };
     } catch (e) {
       lastErr = e;
       console.warn(`[AUTO-ADD] classement échoué chez ${provider.name} : ${e.message}`);
     }
+  }
+  if (sawNotStudy) {
+    throw {
+      status: 422,
+      code: 'NOT_COURSE',
+      message: 'Ce texte ne ressemble pas à un cours — l\'IA n\'y a trouvé aucune matière d\'étude. Vérifie ta leçon et réessaie.'
+    };
+  }
+  if (unknownSubject) {
+    throw {
+      status: 422,
+      code: 'SUBJECT_UNKNOWN',
+      message: `Matière hors cahier détectée (${unknownSubject}). Les matières du cahier : Mathématiques, Physique, Chimie, SVT, Philosophie, Histoire, Géographie, Anglais.`
+    };
   }
   throw { status: 502, message: 'L\'IA n\'a pas pu identifier la matière de cette leçon. Réessaie dans un instant.', detail: String(lastErr?.message || '').slice(0, 200) };
 }
@@ -2925,7 +3022,7 @@ module.exports = async function handler(request, response) {
 
   const uid = user.uid;
 
-  console.log(`[PROGRESS v8.8] ${action} | uid=${uid.slice(0, 8)}`);
+  console.log(`[PROGRESS v8.9] ${action} | uid=${uid.slice(0, 8)}`);
 
   try {
     switch (action) {
@@ -2947,7 +3044,7 @@ module.exports = async function handler(request, response) {
         return jsonError(response, 400, `Action inconnue : "${action}"`);
     }
   } catch (error) {
-    console.error(`[PROGRESS v8.8] "${action}" failed:`, error.message);
+    console.error(`[PROGRESS v8.9] "${action}" failed:`, error.message);
     if (error.status) return jsonError(response, error.status, error.message, error.code);
     return jsonError(response, 500, error.message || 'Erreur serveur.');
   }

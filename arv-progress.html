@@ -3045,23 +3045,33 @@ async function renderNotebooksView() {
     const safeActivityList = safeArray(data.recentActivity);
     const totalSections = data.summary?.totalSections || 0;
 
-    const subjectCards = ALL_SUBJECT_KEYS.map((key) => {
-      const info = SUBJECTS[key];
-      const active = safeSubjectsList.find((s) => s.key === key);
-      const sectionsCount = active ? active.sectionsCount : 0;
-      const last = active ? active.last : '';
+    // ✅ v8.39 — CARTES MATIÈRES DYNAMIQUES (demande propriétaire) : un nouvel
+    // élève ne voit AUCUNE carte fixe — les cartes apparaissent au fur et à
+    // mesure des cours ajoutés (matières réellement utilisées dans le cahier).
+    const activeSubjects = safeSubjectsList.filter((s) => (s.sectionsCount || 0) > 0);
+    const subjectCards = activeSubjects.map((active) => {
+      const info = SUBJECTS[active.key] || { emoji: '📘', label: active.label || active.key };
+      const sectionsCount = active.sectionsCount || 0;
+      const last = active.last || '';
       return `
-        <button class="subject-card" data-subject="${key}">
+        <button class="subject-card" data-subject="${escapeHtml(active.key)}">
           <div class="subject-emoji">${info.emoji}</div>
           <div class="subject-name">${escapeHtml(info.label)}</div>
           <div class="subject-meta">
-            ${sectionsCount > 0
-              ? `${sectionsCount} section${sectionsCount > 1 ? 's' : ''}${last ? ' · ' + last : ''}`
-              : 'Vide'}
+            ${sectionsCount} section${sectionsCount > 1 ? 's' : ''}${last ? ' · ' + last : ''}
           </div>
         </button>
       `;
     }).join('');
+
+    const matieresHtml = activeSubjects.length > 0
+      ? `<div class="subjects-grid">${subjectCards}</div>`
+      : `<div class="empty-state" style="padding:28px 18px;">
+           <div class="icon"><i class="fas fa-book-open"></i></div>
+           <h3>Tes matières apparaîtront ici</h3>
+           <p>Ajoute ton premier cours avec le bouton <strong>+</strong> —
+           la carte de sa matière se crée automatiquement.</p>
+         </div>`;
 
     const activityHtml = safeActivityList.length > 0 ? `
       <div class="section-title"><i class="fas fa-clock"></i> Récent</div>
@@ -3099,8 +3109,8 @@ async function renderNotebooksView() {
         </span>
       </button>
 
-      <div class="section-title"><i class="fas fa-book"></i> Mes matières <span class="count">${ALL_SUBJECT_KEYS.length}</span></div>
-      <div class="subjects-grid">${subjectCards}</div>
+      <div class="section-title"><i class="fas fa-book"></i> Mes matières <span class="count">${activeSubjects.length}</span></div>
+      ${matieresHtml}
 
       ${activityHtml}
     `;
@@ -4840,17 +4850,39 @@ async function acExtractPdfText(file, onProgress) {
 }
 
 // OCR par lots de ≤ 4 images (limite du kit IA) via /api/arv?kit=1
+// ✅ v8.39 — ANTI-ERREUR : chaque lot est retenté (3 essais), et si un lot
+// résiste, on le redécoupe image par image — l'important est d'EXTRAIRE.
 async function acOcrImages(images, onProgress) {
   const batches = [];
   for (let i = 0; i < images.length; i += 4) batches.push(images.slice(i, i + 4));
-  let out = '';
+  const askOnce = async (imgs) => {
+    const r = await window.ARVX_AI.ask('image', { mode: 'ocr', images: imgs });
+    return String(r?.data?.text || '').trim();
+  };
+  const parts = [];
   for (let b = 0; b < batches.length; b++) {
     if (onProgress) onProgress(b + 1, batches.length, images.length);
-    const r = await window.ARVX_AI.ask('image', { mode: 'ocr', images: batches[b] });
-    const t = String(r?.data?.text || '').trim();
-    if (t) out += (out ? '\n\n' : '') + t;
+    const imgs = batches[b];
+    let t = '';
+    for (let tries = 0; tries < 3 && !t; tries++) {
+      try { t = await askOnce(imgs); }
+      catch (e) { if (tries < 2) await new Promise((r) => setTimeout(r, 1200)); }
+    }
+    if (!t && imgs.length > 1) {
+      const chunk = [];
+      for (const im of imgs) {
+        let one = '';
+        for (let tries = 0; tries < 2 && !one; tries++) {
+          try { one = await askOnce([im]); }
+          catch (e) { if (tries < 1) await new Promise((r) => setTimeout(r, 1200)); }
+        }
+        if (one) chunk.push(one);
+      }
+      t = chunk.join('\n\n');
+    }
+    if (t) parts.push(t);
   }
-  return out;
+  return parts.join('\n\n');
 }
 
 let __isAddCourseModalOpen = false;
@@ -4858,6 +4890,11 @@ let __isAddCourseModalOpen = false;
 function openAddCourseModal() {
   if (__isAddCourseModalOpen) return;
   __isAddCourseModalOpen = true;
+
+  // ✅ v8.39 — texte repris quand l'IA répond « ce n'est pas un cours » :
+  // l'élève retrouve SA saisie pour la corriger (rien n'est perdu).
+  const resumeText = String(window.__acResumeText || '');
+  try { delete window.__acResumeText; } catch (e) {}
 
   openModal(`
     <div class="modal dicta-modal" id="addCourseModal">
@@ -4871,7 +4908,7 @@ function openAddCourseModal() {
   `);
 
   const acBody = $('acBody');
-  let acText = '';          // texte de la leçon (source de vérité)
+  let acText = resumeText;   // texte de la leçon (source de vérité)
   let acMode = null;        // mode actif : 'texte' | 'photos' | 'vocal' | 'pdf'
   let stopAcDictation = () => {};
   let acBusy = false;       // extraction OCR/PDF en cours
@@ -4919,7 +4956,7 @@ function openAddCourseModal() {
         <button type="button" class="mode-card" data-mode="pdf">
           <span class="mode-ico"><i class="fas fa-file-pdf"></i></span>
           <span class="mode-name">PDF</span>
-          <span class="mode-desc">Envoie ton cours PDF, l'IA extrait tout</span>
+          <span class="mode-desc">Envoie ton cours PDF (max 7 Mo), l'IA extrait tout</span>
         </button>
       </div>
       ${resumeHtml}
@@ -5037,6 +5074,9 @@ function openAddCourseModal() {
   }
 
   // ═══ Mode PDF — texte natif, sinon OCR des pages ═══
+  // ✅ v8.39 — LIMITE 7 Mo demandée par le propriétaire : au-delà, message
+  // clair (pas de compression silencieuse) ; en dessous, extraction fiable.
+  const PDF_MAX_BYTES = 7 * 1024 * 1024;
   function startPdfPicker() {
     acMode = 'pdf';
     const input = document.createElement('input');
@@ -5048,6 +5088,12 @@ function openAddCourseModal() {
       const file = (input.files || [])[0];
       input.remove();
       if (!file) { showModeChoice(); return; }
+      if (file.size > PDF_MAX_BYTES) {
+        const mb = (file.size / (1024 * 1024)).toFixed(1).replace('.', ',');
+        showToast(`PDF trop volumineux (${mb} Mo) — la taille maximale est 7 Mo. Choisis un PDF plus léger.`, 'error', 6000);
+        showModeChoice();
+        return;
+      }
       acBusy = true;
       acBody.innerHTML = `
         <div class="extract-progress"><span class="mini-spinner"></span><span id="acProgTxt">Lecture du PDF…</span></div>
@@ -5061,10 +5107,10 @@ function openAddCourseModal() {
           prog(`Extraction du texte — page ${p}/${total}${all > total ? ` (sur ${all})` : ''}…`);
         });
         if (res.scanned) {
-          // PDF scanné : pages rendues en images → OCR (kit IA, 6 pages max)
+          // PDF scanné : pages rendues en images → OCR (kit IA, 10 pages max — v8.39)
           if (!window.ARVX_AI) throw new Error('Kit IA indisponible.');
           prog('PDF scanné — lecture IA des pages…');
-          const pages = await window.ARVX_AI.pdfToImages(file, { maxPages: 6, scale: 1.6, onProgress: (p, n) => prog(`Rendu page ${p}/${n}…`) });
+          const pages = await window.ARVX_AI.pdfToImages(file, { maxPages: 10, scale: 1.6, onProgress: (p, n) => prog(`Rendu page ${p}/${n}…`) });
           text = await acOcrImages(pages, (b, total) => prog(`Lecture IA des pages… (${b}/${total})`));
         } else {
           text = res.text;
@@ -5350,6 +5396,13 @@ function openAddCourseModal() {
       if (e.code === 'FREE_SECTION_LIMIT') {
         showPremiumModal();
         applyRoute({ view: 'notebooks', params: {} });
+      } else if (e.code === 'NOT_COURSE' || e.code === 'SUBJECT_UNKNOWN') {
+        // ✅ v8.39 — l'IA a jugé que ce texte n'est pas un cours (ou une matière
+        // hors cahier) : message clair + SA saisie est retrouvée pour correction.
+        window.__acResumeText = rawInput;
+        showToast(e.message || 'Ce contenu ne ressemble pas à un cours', 'error', 7000);
+        __isAddCourseModalOpen = false;
+        openAddCourseModal();
       } else {
         showToast('Erreur : ' + (e.message || 'analyse impossible'), 'error', 5000);
         applyRoute({ view: 'notebooks', params: {} });
@@ -5358,6 +5411,7 @@ function openAddCourseModal() {
   }
 
   showModeChoice();
+  if (resumeText.trim().length > 0) { acMode = 'texte'; showVerifyMode(); }
 }
 
 // ── Modale de renommage (v8.38 — ajuster la proposition de l'IA) ──
@@ -5556,7 +5610,7 @@ function isPremiumUser(data) {
   return false;
 }
 
-console.log('🚀 ARVEXA — Mon cahier — serveur progress v8.8 (Ajouter intelligent : 4 modes + autoAddSection)');
+console.log('🚀 ARVEXA — Mon cahier — serveur progress v8.9 (chaîne IA robuste · matières dynamiques · PDF 7 Mo · détection non-cours)');
 
 // ✅ v8.0 — SYNC FIREBASE : la carte « Ma progression — révisions officielles »
 // se recalcule quand la progression fusionne/arrive du cloud (autre appareil).

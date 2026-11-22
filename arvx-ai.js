@@ -96,26 +96,52 @@
     });
   }
 
-  /* Image → JPEG recompressé (≤ maxSide px) : évite les corps trop lourds */
+  /* ✅ v8.39 — taille max en base64 acceptée par l'API (marge de sécurité
+     sous la limite serveur de 1,4 Mo) : au-delà, la requête serait rejetée
+     avant même d'atteindre l'IA — c'était la cause « photo renvoie une
+     erreur ». Toute image produite ici est GARANTIE sous cette limite. */
+  const MAX_B64_CHARS = 1100000;
+  function b64Len(dataUrl) { return (String(dataUrl).split(',')[1] || '').length; }
+
+  function canvasToJpeg(cv, quality) { return cv.toDataURL('image/jpeg', quality); }
+
+  function drawScaled(img, w, h) {
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(w));
+    cv.height = Math.max(1, Math.round(h));
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    return cv;
+  }
+
+  /* Image → JPEG recompressé (≤ maxSide px), PUIS resserré si nécessaire
+     (qualité puis taille) jusqu'à passer sous la limite API. */
   async function compressImageFile(file, opts) {
     const maxSide = (opts && opts.maxSide) || 1400;
     const quality = (opts && opts.quality) || 0.8;
     const dataUrl = await fileToDataURL(file);
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        let w = img.naturalWidth, h = img.naturalHeight;
-        const k = Math.min(1, maxSide / Math.max(w, h));
-        w = Math.max(1, Math.round(w * k));
-        h = Math.max(1, Math.round(h * k));
-        const cv = document.createElement('canvas');
-        cv.width = w; cv.height = h;
-        cv.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(cv.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = () => reject(new AiError('bad'));
-      img.src = dataUrl;
+    const img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => reject(new AiError('bad'));
+      im.src = dataUrl;
     });
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const k = Math.min(1, maxSide / Math.max(w, h));
+    w = Math.max(1, Math.round(w * k));
+    h = Math.max(1, Math.round(h * k));
+    const ladder = [
+      { s: 1, q: quality },
+      { s: 1, q: 0.65 },
+      { s: 0.85, q: 0.6 },
+      { s: 0.7, q: 0.55 },
+      { s: 0.55, q: 0.5 },
+    ];
+    let out = null;
+    for (const step of ladder) {
+      out = canvasToJpeg(drawScaled(img, w * step.s, h * step.s), step.q);
+      if (b64Len(out) <= MAX_B64_CHARS) return out;
+    }
+    return out;
   }
 
   /* ── PDF → pages en images (pdf.js chargé à la demande) ─────────── */
@@ -138,6 +164,9 @@
   }
 
   /* Rend chaque page en JPEG (≤ 4 pages par appel = limite de l'API).
+     ✅ v8.39 — chaque page est garantie sous la limite API (resserrage
+     automatique qualité/taille, même « échelle de compression » que les
+     photos) : un PDF scanné ne peut plus être rejeté pour taille.
      opts : { maxPages:4, scale:1.6, onProgress(p, total) } */
   async function pdfToImages(file, opts) {
     const maxPages = (opts && opts.maxPages) || 4;
@@ -158,7 +187,23 @@
       cv.width = Math.round(vp.width);
       cv.height = Math.round(vp.height);
       await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
-      out.push(cv.toDataURL('image/jpeg', 0.8));
+      let dataUrl = cv.toDataURL('image/jpeg', 0.8);
+      let step = 0;
+      const ladder = [
+        { k: 0.85, q: 0.65 },
+        { k: 0.7, q: 0.6 },
+        { k: 0.55, q: 0.5 },
+      ];
+      while (b64Len(dataUrl) > MAX_B64_CHARS && step < ladder.length) {
+        const s = ladder[step];
+        const cv2 = document.createElement('canvas');
+        cv2.width = Math.max(1, Math.round(cv.width * s.k));
+        cv2.height = Math.max(1, Math.round(cv.height * s.k));
+        cv2.getContext('2d').drawImage(cv, 0, 0, cv2.width, cv2.height);
+        dataUrl = cv2.toDataURL('image/jpeg', s.q);
+        step++;
+      }
+      out.push(dataUrl);
       if (onProgress) onProgress(p, n);
     }
     return out;
