@@ -22,6 +22,7 @@
 
   <script src="register-fcm-sw.js" defer></script>
   <script src="bac-date.js"></script>
+  <script src="arvexa-classes.js"></script><!-- ✅ v8.35 — registre des classes pour le héros (BEPC / BAC / objectif) -->
 
   <link rel="stylesheet" href="arvexa-ui.css">
   <style>
@@ -994,6 +995,49 @@
       font-size: 22px; font-weight: 700;
       color: var(--text-muted); padding-bottom: 10px;
     }
+
+    /* ============================================================
+       OBJECTIF DU JOUR — remplace le compte à rebours J/H/M/S (v8.35)
+       Identique pour TOUTES les classes (6ᵉ → Licence 3, classe libre) :
+       juste et motivant pour chacun, quel que soit l'examen visé.
+       ============================================================ */
+    .odj {
+      margin-top: 14px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .odj-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; margin-bottom: 2px;
+    }
+    .odj-title {
+      font-size: 12px; font-weight: 800; letter-spacing: 1.2px;
+      text-transform: uppercase; color: var(--accent-bright);
+    }
+    .odj-row {
+      display: flex; align-items: center; gap: 11px;
+      padding: 11px 13px; border-radius: 12px;
+      background: rgba(224,184,74,0.05); border: 1px solid rgba(224,184,74,0.12);
+      text-decoration: none;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .odj-row:hover { background: rgba(224,184,74,0.10); border-color: rgba(224,184,74,0.24); }
+    .odj-ico { font-size: 18px; flex-shrink: 0; line-height: 1; }
+    .odj-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .odj-txt strong { font-size: 13.5px; font-weight: 700; color: var(--text-light); line-height: 1.3; }
+    .odj-sub {
+      font-size: 11.5px; color: var(--text-muted); margin-top: 2px;
+      line-height: 1.35; overflow-wrap: anywhere;
+    }
+    .odj-state {
+      flex-shrink: 0; font-size: 11px; font-weight: 800;
+      padding: 5px 10px; border-radius: 999px;
+      background: rgba(224,184,74,0.10); border: 1px solid rgba(224,184,74,0.26);
+      color: var(--accent-bright); white-space: nowrap;
+    }
+    .odj-state.done {
+      background: rgba(46,204,113,0.10); border-color: rgba(46,204,113,0.30);
+      color: var(--success-light, #2ECC71);
+    }
     .hero-quote {
       position: relative; margin-top: 16px; padding: 2px 0 0 16px;
       border-left: 2px solid rgba(224,184,74,0.35);
@@ -1499,26 +1543,26 @@
           <div class="progress-track">
             <div class="progress-fill early" id="progressFill" style="width: 0%"></div>
           </div>
-          <div class="countdown-display">
-            <div class="cd-block primary">
-              <span class="cd-number" id="cdDays">--</span>
-              <span class="cd-label">Jours</span>
+          <div class="odj" id="odjBlock" aria-label="Objectif du jour">
+            <div class="odj-head">
+              <span class="odj-title">🎯 Objectif du jour</span>
             </div>
-            <span class="cd-separator">:</span>
-            <div class="cd-block">
-              <span class="cd-number" id="cdHours">--</span>
-              <span class="cd-label">Heures</span>
-            </div>
-            <span class="cd-separator">:</span>
-            <div class="cd-block">
-              <span class="cd-number" id="cdMinutes">--</span>
-              <span class="cd-label">Minutes</span>
-            </div>
-            <span class="cd-separator">:</span>
-            <div class="cd-block">
-              <span class="cd-number" id="cdSeconds">--</span>
-              <span class="cd-label">Secondes</span>
-            </div>
+            <a class="odj-row" id="odjRowQj" href="quotidien.html">
+              <span class="odj-ico">❓</span>
+              <span class="odj-txt">
+                <strong>Question du jour</strong>
+                <span class="odj-sub" id="odjQjSub">4 questions · une par matière · 90 secondes</span>
+              </span>
+              <span class="odj-state" id="odjQjState">À faire</span>
+            </a>
+            <a class="odj-row" id="odjRowLecon" href="ma-journee.html">
+              <span class="odj-ico">📖</span>
+              <span class="odj-txt">
+                <strong>Leçon du jour</strong>
+                <span class="odj-sub" id="odjLeconSub">Reprends ta lecture — un pas chaque jour</span>
+              </span>
+              <span class="odj-state" id="odjLeconState">0/3</span>
+            </a>
           </div>
           <div class="hero-quote">
             <span id="heroQuoteText">« Chaque jour compte vers ton BAC. »</span>
@@ -1897,77 +1941,62 @@
 
 
 
-    /* — Compte à rebours BAC (identique au module) — */
+    /* — Héros calé sur la CLASSE de l'élève (✅ v8.35) : titre « BEPC 2027 »
+       / « BAC 2027 » / objectif par domaine, ligne d'info (échéance d'examen
+       ou vraie classe complète), pastille d'état. Le compteur J/H/M/S
+       n'existe plus : remplacé partout par l'Objectif du jour. — */
 
     try {
 
-      function dashExamDate() {
+      var CLx = window.ARVEXA_CLASSES || null;
 
-        if (typeof window.ARVEXA_getExamDate === 'function') return window.ARVEXA_getExamDate();
+      var profx = window.ARVEXA_USER_PROFILE || {};
 
-        var n = new Date(), y = n.getFullYear(), j = new Date(y, 5, 1);
+      var classIdX = profx.classId || 'terminale_d';
 
-        return n < j ? j : new Date(y + 1, 5, 1);
+      var examX = CLx ? CLx.exam(classIdX) : 'BAC';
 
-      }
-
-      var now = new Date(), exam = dashExamDate(), diffMs = exam - now;
+      var examDtX = (typeof window.ARVEXA_getExamDate === 'function') ? window.ARVEXA_getExamDate() : null;
 
       var ct = $('countdownTitle');
 
-      if (ct) ct.textContent = 'BAC ' + exam.getFullYear();
+      if (ct) ct.textContent = (CLx && CLx.goal) ? CLx.goal(classIdX, examDtX ? examDtX.getFullYear() : null) : ('BAC ' + (examDtX ? examDtX.getFullYear() : ''));
 
       var cd = $('countdownDate');
 
       if (cd) {
 
-        try { cd.textContent = 'Échéance : ' + exam.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); }
+        if (examX && examDtX) {
 
-        catch (e2) { cd.textContent = 'Date indicative'; }
+          try { cd.textContent = 'Échéance : ' + examDtX.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); }
+
+          catch (e2) { cd.textContent = 'Date indicative'; }
+
+        } else {
+
+          cd.textContent = 'Classe : ' + (CLx ? CLx.full(classIdX, profx.customClass || '', profx.series || '') : 'Terminale D');
+
+        }
 
       }
 
       var pf = $('progressFill'), cs = $('countdownStatus');
 
-      if (diffMs <= 0) {
+      if (examX && examDtX) {
 
-        var dJ = $('cdDays'), hJ = $('cdHours'), mJ = $('cdMinutes'), sJ = $('cdSeconds');
+        var diffMs = examDtX - new Date();
 
-        if (dJ) dJ.textContent = '0';
-
-        if (hJ) hJ.textContent = '00';
-
-        if (mJ) mJ.textContent = '00';
-        if (sJ) sJ.textContent = '00';
-
-        if (pf) { pf.style.width = '100%'; pf.className = 'progress-fill critical'; }
-
-        if (cs) { cs.textContent = "🎉 C'est le jour J !"; cs.className = 'countdown-status critical'; }
-
-      } else {
-
-        var days = Math.floor(diffMs / 86400000);
-
-        var hours = Math.floor((diffMs % 86400000) / 3600000);
-
-        var mins = Math.floor((diffMs % 3600000) / 60000);
-
-        var dE = $('cdDays'); if (dE) dE.textContent = days;
-
-        var hE = $('cdHours'); if (hE) hE.textContent = String(hours).padStart(2, '0');
-
-        var mE = $('cdMinutes'); if (mE) mE.textContent = String(mins).padStart(2, '0');
-        var secs = Math.floor((diffMs % 60000) / 1000); var sE = $('cdSeconds'); if (sE) sE.textContent = String(secs).padStart(2, '0');
-
-        var exY = exam.getFullYear(), exM = exam.getMonth();
-
-        var start = new Date(exM < 8 ? exY - 1 : exY, 8, 1);
-
-        var total = exam - start, elapsed = now - start;
-
-        var progress = total > 0 ? Math.min(100, Math.max(0, (elapsed / total) * 100)) : 0;
+        var days = Math.max(0, Math.floor(diffMs / 86400000));
 
         if (pf) {
+
+          var exY = examDtX.getFullYear(), exM = examDtX.getMonth();
+
+          var start = new Date(exM < 8 ? exY - 1 : exY, 8, 1);
+
+          var total = examDtX - start, elapsed = new Date() - start;
+
+          var progress = total > 0 ? Math.min(100, Math.max(0, (elapsed / total) * 100)) : 0;
 
           var pc = 'early';
 
@@ -1998,6 +2027,12 @@
           cs.className = 'countdown-status ' + msg.c;
 
         }
+
+      } else if (cs) {
+
+        cs.className = 'countdown-status';
+
+        cs.textContent = '✨ Prêt à apprendre';
 
       }
 
@@ -2602,99 +2637,104 @@
   if (!window.__ARVEXA_INSTANT__) showProfileLoading();
 
   // ================================================================
-  // COMPTE À REBOURS BAC
+  // HÉROS PAR CLASSE + OBJECTIF DU JOUR (✅ v8.35)
+  // - Le compteur J/H/M/S « BAC 2027 » disparaît : faux pour les classes
+  //   sans examen (6ᵉ, Seconde, Licence…, classe libre).
+  // - Titre = objectif de la classe (« BEPC 2027 », « BAC 2027 », « BAC
+  //   en vue », « Réussir ta licence », « Ton objectif ») ; ligne d'info =
+  //   échéance d'examen ou vraie classe complète (ARVEXA_CLASSES).
+  // - À la place : « 🎯 Objectif du jour » — question du jour + leçon du
+  //   jour (objectif 3 sections) — identique pour toutes les classes.
   // ================================================================
-  const cdDays = document.getElementById('cdDays');
-  const cdHours = document.getElementById('cdHours');
-  const cdMinutes = document.getElementById('cdMinutes');
-  const cdSeconds = document.getElementById('cdSeconds');
-  const progressFill = document.getElementById('progressFill');
-  const countdownStatus = document.getElementById('countdownStatus');
-  const countdownTitle = document.getElementById('countdownTitle');
-  const countdownDate = document.getElementById('countdownDate');
-
-  function getExamDate() {
-    if (typeof window.ARVEXA_getExamDate === 'function') {
-      return window.ARVEXA_getExamDate();
-    }
-    const now = new Date();
-    const year = now.getFullYear();
-    const juneThisYear = new Date(year, 5, 1);
-    if (now < juneThisYear) return juneThisYear;
-    return new Date(year + 1, 5, 1);
+  function odjDayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
-  function getSchoolYearStart(examDate) {
-    const examYear = examDate.getFullYear();
-    const examMonth = examDate.getMonth();
-    const startYear = examMonth < 8 ? examYear - 1 : examYear;
-    return new Date(startYear, 8, 1);
-  }
-
-  function getCountdownMessages(days) {
-    if (days <= 0) return { emoji: '🎉', message: 'C\'est le jour J ! Bonne chance !', class: 'critical' };
-    if (days < 7) return { emoji: '🏆', message: 'C\'est maintenant ! Dernière ligne droite', class: 'critical' };
-    if (days < 15) return { emoji: '🚀', message: 'Sprint final, donne tout', class: 'critical' };
-    if (days < 30) return { emoji: '🔥', message: 'Concentre-toi, chaque jour compte', class: 'late' };
-    if (days < 60) return { emoji: '⚡', message: 'Accélère, c\'est le moment clé', class: 'mid' };
-    if (days < 90) return { emoji: '📚', message: 'Bon rythme, continue comme ça', class: 'mid' };
-    return { emoji: '🌱', message: 'Tu as le temps, commence tranquillement', class: 'early' };
-  }
-
-  function updateCountdown() {
-    const now = new Date();
-    const exam = getExamDate();
-    const diffMs = exam - now;
-
-    countdownTitle.textContent = 'BAC ' + exam.getFullYear();
+  function majHeroClasse() {
     try {
-      countdownDate.textContent = 'Échéance : ' + exam.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-    } catch (e) {
-      countdownDate.textContent = 'Date indicative';
-    }
-
-    if (diffMs <= 0) {
-      cdDays.textContent = '0';
-      cdHours.textContent = '00';
-      cdMinutes.textContent = '00';
-      cdSeconds.textContent = '00';
-      progressFill.style.width = '100%';
-      progressFill.className = 'progress-fill critical';
-      countdownStatus.textContent = '🎉 C\'est le jour J !';
-      countdownStatus.className = 'countdown-status critical';
-      return;
-    }
-
-    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-
-    cdDays.textContent = days;
-    cdHours.textContent = String(hours).padStart(2, '0');
-    cdMinutes.textContent = String(minutes).padStart(2, '0');
-    cdSeconds.textContent = String(seconds).padStart(2, '0');
-
-    const start = getSchoolYearStart(exam);
-    const total = exam - start;
-    const elapsed = now - start;
-    const progress = total > 0 ? Math.min(100, Math.max(0, (elapsed / total) * 100)) : 0;
-    progressFill.style.width = progress + '%';
-
-    let progressClass = 'early';
-    if (progress > 85) progressClass = 'critical';
-    else if (progress > 70) progressClass = 'late';
-    else if (progress > 50) progressClass = 'mid';
-    progressFill.className = 'progress-fill ' + progressClass;
-
-    const msg = getCountdownMessages(days);
-    countdownStatus.textContent = `${msg.emoji} ${msg.message}`;
-    countdownStatus.className = 'countdown-status ' + msg.class;
+      const CL = window.ARVEXA_CLASSES;
+      const prof = window.ARVEXA_USER_PROFILE || {};
+      const classId = prof.classId || 'terminale_d';
+      const exam = CL ? CL.exam(classId) : 'BAC';
+      const examDt = (typeof window.ARVEXA_getExamDate === 'function') ? window.ARVEXA_getExamDate() : null;
+      const ct = document.getElementById('countdownTitle');
+      if (ct && CL) ct.textContent = CL.goal(classId, examDt ? examDt.getFullYear() : null);
+      const cd = document.getElementById('countdownDate');
+      if (cd) {
+        if (exam && examDt) {
+          try { cd.textContent = 'Échéance : ' + examDt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); }
+          catch (e) { cd.textContent = 'Date indicative'; }
+        } else {
+          cd.textContent = 'Classe : ' + (CL ? CL.full(classId, prof.customClass || '', prof.series || '') : 'Terminale D');
+        }
+      }
+      const cs = document.getElementById('countdownStatus');
+      const track = document.querySelector('.progress-track');
+      if (!exam) {
+        if (cs) { cs.className = 'countdown-status'; cs.textContent = '✨ Prêt à apprendre'; }
+        if (track) track.style.display = 'none';
+      } else if (examDt) {
+        const days = Math.max(0, Math.floor((examDt - new Date()) / 86400000));
+        const msg = days < 7 ? { e: '🏆', m: "C'est maintenant ! Dernière ligne droite", c: 'critical' }
+                : days < 15 ? { e: '🚀', m: 'Sprint final, donne tout', c: 'critical' }
+                : days < 30 ? { e: '🔥', m: 'Concentre-toi, chaque jour compte', c: 'late' }
+                : days < 60 ? { e: '⚡', m: "Accélère, c'est le moment clé", c: 'mid' }
+                : days < 90 ? { e: '📚', m: 'Bon rythme, continue comme ça', c: 'mid' }
+                : { e: '🌱', m: 'Tu as le temps, commence tranquillement', c: 'early' };
+        if (cs) { cs.textContent = msg.e + ' ' + msg.m; cs.className = 'countdown-status ' + msg.c; }
+        if (track) track.style.display = '';
+      }
+      // Textes « ton BAC » réservés aux classes qui passent le BAC
+      const estBac = classId === 'terminale' || classId === 'terminale_d';
+      if (!estBac) {
+        const note = document.querySelector('.cd-hero-note');
+        if (note && /ton BAC/i.test(note.textContent)) note.textContent = ' — chaque jour compte vers ton objectif.';
+        const q = document.getElementById('heroQuoteText');
+        if (q && /ton BAC/i.test(q.textContent)) q.textContent = '« Chaque jour compte vers ton objectif. »';
+      }
+    } catch (e) { /* silencieux : le héros doit toujours s'afficher */ }
   }
 
-  updateCountdown();
-  const countdownInterval = setInterval(updateCountdown, 1000); // v6.7 tick chaque seconde
-  window.addEventListener('beforeunload', () => clearInterval(countdownInterval));
+  function majODJQj() {
+    const qjState = document.getElementById('odjQjState');
+    const qjSub = document.getElementById('odjQjSub');
+    let qjFait = false;
+    try {
+      const e = JSON.parse(localStorage.getItem('arvexa-quotidien-v1') || '{}') || {};
+      qjFait = e.lastDone === odjDayKey();
+      if (qjFait && qjSub) {
+        qjSub.textContent = 'Score du jour : ' + (typeof e.score === 'number' ? e.score : '—') + '/4 · reviens demain à 7 h';
+      }
+    } catch (err) { qjFait = false; }
+    if (qjState) {
+      qjState.textContent = qjFait ? '✅ Fait' : 'À faire';
+      qjState.classList.toggle('done', qjFait);
+    }
+  }
+
+  function majODJ() {
+    // — Leçon du jour : sections lues aujourd'hui vs objectif du jour —
+    const leconState = document.getElementById('odjLeconState');
+    let lus = 0;
+    try { lus = Number(computeActivity()[odjDayKey()]) || 0; } catch (err) { lus = 0; }
+    const atteint = lus >= DAILY_GOAL;
+    if (leconState) {
+      leconState.textContent = atteint ? ('✅ ' + lus + '/' + DAILY_GOAL) : (lus + '/' + DAILY_GOAL);
+      leconState.classList.toggle('done', atteint);
+    }
+    const leconSub = document.getElementById('odjLeconSub');
+    if (leconSub && lus === 0) leconSub.textContent = 'Reprends ta lecture — un pas chaque jour';
+    majODJQj();
+  }
+
+  // Différé : computeActivity/DAILY_GOAL sont déclarés plus bas dans ce
+  // même script (TDZ) — on peint le héros après l'exécution complète.
+  setTimeout(() => { majHeroClasse(); majODJ(); }, 0);
+  window.addEventListener('arvexa:profile', majHeroClasse);
+  window.addEventListener('arvexa-progress-updated', majODJ);
+  window.addEventListener('pageshow', () => { majHeroClasse(); majODJ(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { majHeroClasse(); majODJ(); } });
 
   // ================================================================
   // HERO — date + citation du jour
@@ -3116,6 +3156,16 @@
 
   function renderUserData(data) {
     if (!data) return;
+    // ✅ v8.35 — publie la classe pour le héros aussi sur le chemin cache
+    // (hors ligne / retour instantané) puis re-peint titre + objectif.
+    try {
+      window.ARVEXA_USER_PROFILE = {
+        classId: data.classId || '',
+        series: data.series || '',
+        customClass: data.customClass || ''
+      };
+      window.dispatchEvent(new Event('arvexa:profile'));
+    } catch (e) {}
     updateGreeting(data.firstName || 'Élève');
     const premium = isUserPremium(data);
     updateSubscriptionDisplay(premium, data);
