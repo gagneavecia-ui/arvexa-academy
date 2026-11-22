@@ -96,30 +96,25 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   position: sticky; top: 0; flex-shrink: 0; z-index: 50;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: calc(10px + var(--safe-top)) 16px 10px;
-  background: rgba(var(--rgb-veil), 0.94);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(224, 184, 74, 0.10);
+  /* ✅ v8.40 — UNIFORME À LA PAGE D'ACCUEIL (forme et couleur, pas le contenu) :
+     même voile, même flou, même liseré bas discret — la ligne dorée décorative
+     de la version précédente est retirée. */
+  background: rgba(var(--rgb-veil), 0.92);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(184, 134, 11, 0.06);
   min-height: var(--header-height);
   position: sticky;
-}
-.header::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; bottom: -1px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(224, 184, 74, 0.35), transparent);
-  pointer-events: none;
 }
 .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
 .back-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 38px; height: 38px; border-radius: 10px;
-  border: 1px solid rgba(var(--rgb-soft), 0.06); background: transparent;
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid rgba(var(--rgb-soft), 0.05); background: transparent;
   color: var(--text-dim); transition: var(--transition); font-size: 14px; flex-shrink: 0;
 }
 .back-btn:hover {
-  border-color: rgba(224, 184, 74, 0.30);
-  color: var(--accent-bright);
-  background: rgba(224, 184, 74, 0.05);
+  border-color: rgba(184, 134, 11, 0.14);
+  color: var(--text-light);
 }
 .back-btn.hidden { display: none; }
 
@@ -156,46 +151,39 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 .page-title .emoji { font-size: 16px; }
 .page-title i { color: var(--accent-bright); font-size: 14px; }
-.header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 1; min-width: 0; } /* ✅ v8.22 — rétrécissable : un libellé long revient à la ligne au lieu d'être coupé */
+.header-right { display: flex; align-items: center; gap: 6px; flex-shrink: 1; min-width: 0; }
+/* ✅ v8.40 — boutons d'action RONDS comme ceux de l'accueil (même forme,
+   même couleur : rond 36px, fond doux, sans bordure). */
 .icon-btn {
-  width: 38px; height: 38px; border-radius: 10px;
-  border: 1px solid rgba(var(--rgb-soft), 0.06); background: transparent;
-  color: var(--text-dim); transition: var(--transition); font-size: 14px;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: rgba(var(--rgb-soft), 0.04);
+  color: var(--text-dim); transition: var(--transition); font-size: 15px;
   display: flex; align-items: center; justify-content: center;
 }
 .icon-btn:hover {
-  border-color: rgba(224, 184, 74, 0.30);
-  color: var(--accent-bright);
-  background: rgba(224, 184, 74, 0.05);
+  color: var(--text-light);
+  background: rgba(var(--rgb-soft), 0.07);
 }
 
 .home-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(var(--rgb-soft), 0.06);
-  background: transparent;
+  justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(var(--rgb-soft), 0.04);
   color: var(--text-dim);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
   text-decoration: none;
   transition: var(--transition);
-  min-height: 38px;
-  /* ✅ v8.22 — rétrécissable : un libellé long revient à la ligne au lieu
-     d'être coupé par le clip horizontal (consigne propriétaire) */
-  flex-shrink: 1;
-  min-width: 0;
-  max-width: 100%;
-  white-space: normal;
+  flex-shrink: 0;
 }
 .home-btn:hover {
-  color: var(--accent-bright);
-  border-color: rgba(224, 184, 74, 0.30);
-  background: rgba(224, 184, 74, 0.05);
+  color: var(--text-light);
+  background: rgba(var(--rgb-soft), 0.07);
 }
-.home-btn i { font-size: 12px; }
+.home-btn i { font-size: 14px; }
 
 .premium-badge {
   display: none;
@@ -934,7 +922,8 @@ main {
 .stat-card {
   margin-bottom: 20px;
   padding: 18px;
-  border-radius: var(--radius, 16px);
+  /* ✅ v8.40 — BORDURES RONDES (demande propriétaire) : 24 px bien visibles. */
+  border-radius: 24px;
   background: linear-gradient(140deg, rgba(184, 134, 11, 0.14) 0%, rgba(var(--rgb-veil), 0.7) 100%);
   border: 1px solid rgba(224, 184, 74, 0.18);
   position: relative;
@@ -1037,7 +1026,9 @@ main {
   .stat-metric { padding: 10px 4px; }
 }
 
-/* ── BOUTON AJOUTER (+) — lancement du flux intelligent (v8.38) ── */
+/* ── BOUTON AJOUTER (+) — lancement du flux intelligent (v8.38) ──
+   ✅ v8.40 — SIMPLIFIÉ (demande propriétaire) : uniquement le signe + à
+   gauche et le mot « Ajouter ». Aucune autre information sur le bouton. */
 .add-course-btn {
   display: flex;
   align-items: center;
@@ -1045,7 +1036,7 @@ main {
   gap: 12px;
   width: 100%;
   padding: 16px 20px;
-  border-radius: 16px;
+  border-radius: 20px;
   background: linear-gradient(135deg, var(--accent-bright), var(--accent));
   color: var(--on-gold);
   font-weight: 700;
@@ -1067,13 +1058,6 @@ main {
   justify-content: center;
   font-size: 14px;
   flex-shrink: 0;
-}
-.add-course-btn .add-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  opacity: 0.85;
-  margin-top: 1px;
 }
 
 /* ── MODALE AJOUTER — 4 modes de saisie (v8.38) ── */
@@ -2382,6 +2366,342 @@ select:focus-visible,
       outline-offset: 3px;
     }
 
+    /* ============================================================
+       ✅ v8.40 — VUE SECTION EN 3 ONGLETS
+       Résumé · Questionnaires possibles · Carte mentale
+       Barre inspirée de chapitre.html (Cours/Exercices/Corrections),
+       « un peu plus améliorée et fluide » : pastille coulissante qui
+       glisse d'un onglet à l'autre + contenu qui apparaît en douceur.
+       ============================================================ */
+    .sm-tabs {
+      position: relative;
+      display: flex;
+      gap: 4px;
+      background: rgba(var(--rgb-soft), 0.02);
+      border-radius: 16px;
+      padding: 4px;
+      border: 1px solid rgba(var(--rgb-soft), 0.05);
+      margin: 14px 0 4px;
+    }
+    .sm-ind {
+      position: absolute;
+      top: 4px; bottom: 4px; left: 0;
+      width: calc((100% - 24px) / 3);
+      border-radius: 12px;
+      background: rgba(224, 184, 74, 0.10);
+      border: 1px solid rgba(224, 184, 74, 0.22);
+      transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
+      pointer-events: none;
+    }
+    .sm-tab {
+      flex: 1;
+      padding: 11px 4px;
+      border: none;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: clamp(11px, 1.1vw, 12.5px);
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      position: relative;
+      z-index: 1;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      white-space: nowrap;
+    }
+    .sm-tab i { font-size: 12px; }
+    .sm-tab.active { color: var(--accent-bright); }
+    .sm-tab:not(.active):hover { color: var(--text-light); }
+    .sm-tab:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+    .sm-panel { display: none; }
+    .sm-panel.active { display: block; animation: smFadeIn 0.34s cubic-bezier(0.25, 1, 0.5, 1); }
+    @keyframes smFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Génération à la demande des extras (QCM / carte mentale) ── */
+    .extras-gen {
+      text-align: center;
+      padding: 34px 18px;
+      background: var(--block-bg);
+      border: 1px dashed rgba(224, 184, 74, 0.30);
+      border-radius: 18px;
+      margin-top: 12px;
+    }
+    .extras-gen .eg-icon {
+      width: 46px; height: 46px;
+      margin: 0 auto 12px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 19px;
+      color: var(--accent-bright);
+      background: rgba(224, 184, 74, 0.10);
+      border: 1px solid rgba(224, 184, 74, 0.22);
+    }
+    .extras-gen h3 { font-size: 15px; font-weight: 700; color: var(--text-light); margin: 0 0 6px; }
+    .extras-gen p { font-size: 12.5px; color: var(--text-dim); max-width: 300px; margin: 0 auto 14px; line-height: 1.6; }
+    .extras-gen .btn-full { max-width: 260px; margin: 0 auto; }
+
+    /* ── QCM COURT interactif (v8.40 — « quelque chose de court ») ── */
+    .qcmz-item {
+      background: var(--block-bg);
+      border: 1px solid rgba(var(--rgb-soft), 0.05);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 10px;
+      transition: border-color 0.25s ease;
+    }
+    .qcmz-item.answered { border-color: rgba(224, 184, 74, 0.18); }
+    .qcmz-qrow { display: flex; align-items: flex-start; gap: 10px; }
+    .qcmz-num {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11.5px; font-weight: 700;
+      color: var(--accent-bright);
+      background: rgba(224, 184, 74, 0.10);
+      border: 1px solid rgba(224, 184, 74, 0.20);
+    }
+    .qcmz-q { font-size: 13.5px; font-weight: 600; color: var(--text-light); line-height: 1.5; flex: 1; }
+    .qcmz-choices { display: flex; flex-direction: column; gap: 7px; margin-top: 11px; padding-left: 36px; }
+    .qcmz-choice {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; text-align: left;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(var(--rgb-soft), 0.06);
+      background: rgba(var(--rgb-soft), 0.02);
+      color: var(--text-body);
+      font-size: 12.5px;
+      line-height: 1.45;
+      transition: var(--transition);
+    }
+    .qcmz-choice:not(:disabled):hover { border-color: rgba(224, 184, 74, 0.30); color: var(--text-light); }
+    .qcmz-choice:disabled { cursor: default; opacity: 1; }
+    .qcmz-key {
+      flex-shrink: 0;
+      width: 20px; height: 20px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10.5px; font-weight: 700;
+      color: var(--text-muted);
+      background: rgba(var(--rgb-soft), 0.06);
+    }
+    .qcmz-choice.good {
+      border-color: rgba(58, 182, 126, 0.45);
+      background: rgba(45, 125, 90, 0.14);
+      color: #BFE8D2;
+    }
+    .qcmz-choice.good .qcmz-key { background: rgba(58, 182, 126, 0.25); color: #BFE8D2; }
+    .qcmz-choice.bad {
+      border-color: rgba(224, 122, 95, 0.45);
+      background: rgba(184, 92, 58, 0.12);
+      color: #F1C9BC;
+    }
+    .qcmz-choice.dim { opacity: 0.5; }
+    .qcmz-why {
+      margin: 10px 0 2px 36px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      background: rgba(224, 184, 74, 0.06);
+      border: 1px solid rgba(224, 184, 74, 0.14);
+      font-size: 12px;
+      color: var(--text-body);
+      line-height: 1.55;
+      display: none;
+    }
+    .qcmz-why.show { display: block; animation: smFadeIn 0.3s ease; }
+    .qcmz-score {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 4px;
+      padding: 11px 14px;
+      border-radius: 14px;
+      background: rgba(224, 184, 74, 0.07);
+      border: 1px solid rgba(224, 184, 74, 0.16);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--accent-bright);
+    }
+    .qcmz-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .qcmz-progress { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.4px; }
+
+    /* ── CARTE MENTALE EN ESCALIER (v8.40) ──
+       L'idée de base d'abord, puis les étapes montent comme des marches
+       (indentation croissante) et chaque étape se multiplie en subdivisions. */
+    .mmap-root {
+      position: relative;
+      background: linear-gradient(135deg, rgba(184, 134, 11, 0.20), rgba(184, 134, 11, 0.08));
+      border: 1px solid rgba(224, 184, 74, 0.30);
+      border-radius: 18px;
+      padding: 15px 16px;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+    .mmap-root::after {
+      content: 'DÉPART';
+      position: absolute;
+      top: 10px; right: 12px;
+      font-size: 8.5px; font-weight: 800; letter-spacing: 1.2px;
+      color: rgba(224, 184, 74, 0.55);
+    }
+    .mmap-root-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 800; letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--accent-bright);
+      margin-bottom: 7px;
+    }
+    .mmap-root-text { font-size: 14.5px; font-weight: 700; color: var(--text-light); line-height: 1.5; }
+    .mmap-stairs { display: flex; flex-direction: column; }
+    .mmap-step {
+      position: relative;
+      background: var(--block-bg);
+      border: 1px solid rgba(var(--rgb-soft), 0.06);
+      border-left: 3px solid rgba(224, 184, 74, 0.45);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      transition: var(--transition);
+    }
+    /* escalier : chaque niveau se décale vers la droite */
+    .mmap-step.lvl1 { margin-left: 14px; }
+    .mmap-step-head { display: flex; align-items: flex-start; gap: 10px; }
+    .mmap-step-num {
+      flex-shrink: 0;
+      width: 24px; height: 24px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800;
+      color: var(--on-gold);
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+    }
+    .mmap-step-title { font-size: 13.5px; font-weight: 700; color: var(--text-light); line-height: 1.4; flex: 1; }
+    .mmap-step-detail { margin: 7px 0 0 34px; font-size: 12.5px; color: var(--text-dim); line-height: 1.55; }
+    .mmap-kids { margin: 9px 0 0 34px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+    .mmap-kids::before {
+      content: '';
+      position: absolute;
+      left: -14px; top: 4px; bottom: 4px;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(224, 184, 74, 0.35), rgba(224, 184, 74, 0.05));
+      border-radius: 2px;
+    }
+    .mmap-kid {
+      position: relative;
+      background: rgba(var(--rgb-soft), 0.03);
+      border: 1px solid rgba(var(--rgb-soft), 0.05);
+      border-radius: 11px;
+      padding: 9px 11px;
+    }
+    .mmap-kid::before {
+      content: '';
+      position: absolute;
+      left: -14px; top: 16px;
+      width: 12px; height: 2px;
+      background: rgba(224, 184, 74, 0.30);
+      border-radius: 2px;
+    }
+    .mmap-kid-title { font-size: 12px; font-weight: 700; color: var(--text-body); line-height: 1.4; }
+    .mmap-kid-detail { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin-top: 3px; }
+    .mmap-summit {
+      margin-top: 14px;
+      margin-left: 28px;
+      display: flex; align-items: center; gap: 9px;
+      padding: 11px 14px;
+      border-radius: 13px;
+      background: rgba(45, 125, 90, 0.10);
+      border: 1px solid rgba(58, 182, 126, 0.30);
+      font-size: 12px; font-weight: 700;
+      color: #A9DFC4;
+    }
+    .mmap-summit i { color: #A9DFC4; }
+    @media (max-width: 420px) {
+      .mmap-step.lvl1 { margin-left: 8px; }
+      .mmap-kids { margin-left: 24px; }
+      .mmap-kid::before, .mmap-kids::before { display: none; }
+      .mmap-summit { margin-left: 16px; }
+    }
+
+    /* ── POURCENTAGE FIABLE près de la barre ronde + barre fine (v8.40) ── */
+    .extract-progress {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .pct-badge {
+      flex-shrink: 0;
+      min-width: 52px;
+      text-align: center;
+      padding: 5px 9px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--on-gold);
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      box-shadow: 0 2px 10px rgba(184, 134, 11, 0.30);
+    }
+    .pct-bar {
+      width: 100%;
+      height: 5px;
+      border-radius: 4px;
+      background: rgba(var(--rgb-soft), 0.06);
+      overflow: hidden;
+    }
+    .pct-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-bright));
+      transition: width 0.3s ease;
+    }
+
+    /* ── PASTILLE D'EXTRACTION EN ARRIÈRE-PLAN (v8.40) — visible sur toutes
+       les vues de la page : l'extraction continue pendant que l'élève
+       navigue librement, il ne reste pas bloqué sur la même page. ── */
+    #extractPill {
+      display: none;
+      position: fixed;
+      left: 14px; right: 14px; bottom: calc(14px + var(--safe-bottom));
+      z-index: 900;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(var(--rgb-veil), 0.97);
+      border: 1px solid rgba(224, 184, 74, 0.30);
+      box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #extractPill.show { display: block; animation: smFadeIn 0.3s ease; }
+    .extract-pill-row { display: flex; align-items: center; gap: 10px; }
+    .extract-pill-label {
+      flex: 1;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-light);
+      line-height: 1.4;
+      min-width: 0;
+    }
+    .extract-pill-label small { display: block; font-size: 10.5px; color: var(--text-muted); font-weight: 500; margin-top: 1px; }
+    .extract-pill-pct {
+      flex-shrink: 0;
+      font-size: 13px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--accent-bright);
+    }
+    #extractPill .pct-bar { margin-top: 9px; }
+
 </style>
   <script src="analytics.js"></script>
   <script src="register-sw.js" defer></script>
@@ -2402,9 +2722,8 @@ select:focus-visible,
     </h1>
   </div>
   <div class="header-right">
-    <a href="index.html" class="home-btn" aria-label="Retour à l'accueil">
+    <a href="index.html" class="home-btn" aria-label="Retour à l'accueil" title="Accueil">
       <i class="fas fa-home"></i>
-      <span>Accueil</span>
     </a>
     <div class="premium-badge" id="premiumBadge">
       <i class="fas fa-crown"></i>
@@ -2535,6 +2854,17 @@ const localCache = {
 };
 
 const $ = (id) => document.getElementById(id);
+
+// ✅ v8.40 — ANTI « ÉCHEC D'AUTHENTIFICATION » (demande propriétaire : en
+// arrivant depuis l'accueil, la page ne doit JAMAIS afficher une erreur
+// d'authentification). Cause réelle mesurée : des rendus étaient déclenchés
+// (event de sync, timers) AVANT que requireAuth n'ait restauré la session →
+// callApi jetait « Non authentifié. » → l'élève voyait « Impossible de
+// charger — Non authentifié. » pendant plusieurs secondes. Désormais tout
+// appel attend la résolution de l'auth (authReady) — la page montre un
+// simple « Chargement... » puis le contenu. Aucune erreur visible.
+let __authReadyResolve = null;
+const authReady = new Promise((resolve) => { __authReadyResolve = resolve; });
 
 // ══════════════════════════════════════════════════════════════
 // UTILITAIRES
@@ -2676,8 +3006,14 @@ const LIGHT_PROGRESS_ACTIONS = new Set([
   'renameSection', 'renameChapter'
 ]);
 
-async function callApi(action, params = {}, _attempt = 1, _rateRetried = false) {
-  if (!state.user) throw new Error('Non authentifié.');
+async function callApi(action, params = {}, _attempt = 1, _rateRetried = false, _opts = {}) {
+  // ✅ v8.40 — plus JAMAIS d'erreur visible pendant la restauration de session :
+  // on attend que requireAuth ait résolu (au pire le garde-fou 5 s de l'auth
+  // guard a déjà redirigé vers la connexion à ce moment).
+  if (!state.user) {
+    await authReady;
+    if (!state.user) throw new Error('Session indisponible.');
+  }
   // _attempt > 1 -> forceRefresh : le token est régénéré côté Firebase
   const token = await getIdToken(state.user, _attempt > 1);
 
@@ -2690,7 +3026,11 @@ async function callApi(action, params = {}, _attempt = 1, _rateRetried = false) 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ action, ...params })
+      body: JSON.stringify({ action, ...params }),
+      // ✅ v8.40 — analyse IA en ARRIÈRE-PLAN : keepalive permet à l'appel
+      // d'aboutir côté serveur même si l'élève quitte la page pendant
+      // l'analyse (la section sera créée — il la retrouve à son retour).
+      keepalive: !!_opts.keepalive
     });
   } catch (networkErr) {
     const err = new Error('Problème de connexion. Vérifie ton réseau et réessaie.');
@@ -3103,10 +3443,7 @@ async function renderNotebooksView() {
 
       <button class="add-course-btn" id="addCourseBtn" aria-label="Ajouter un cours">
         <span class="add-plus"><i class="fas fa-plus"></i></span>
-        <span>
-          Ajouter
-          <span class="add-sub">Texte · Photos · Vocal · PDF — l'IA classe ta leçon</span>
-        </span>
+        <span>Ajouter</span>
       </button>
 
       <div class="section-title"><i class="fas fa-book"></i> Mes matières <span class="count">${activeSubjects.length}</span></div>
@@ -3362,8 +3699,179 @@ async function renderChapterView(params) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// VUE 4 — SECTION DÉTAILLÉE
+// VUE 4 — SECTION DÉTAILLÉE — ✅ v8.40 EN 3 ONGLETS
+// Résumé (juste le cours) · Questionnaires possibles (QCM court
+// interactif + banque de questions) · Carte mentale (escalier :
+// idée de base → étapes → subdivisions, ça se multiplie en montant).
+// La barre reprend celle de chapitre.html (Cours/Exercices/Corrections),
+// améliorée : pastille coulissante + transitions douces.
 // ══════════════════════════════════════════════════════════════
+
+// ── Cache des extras (QCM / carte mentale) par section ──
+const extrasCache = {};
+function extrasKey(subject, chapterId, sectionId) { return `${subject}/${chapterId}/${sectionId}`; }
+function getExtras(subject, chapterId, sectionId) {
+  const k = extrasKey(subject, chapterId, sectionId);
+  if (!extrasCache[k]) extrasCache[k] = { qcm: null, mindmap: null, loading: {} };
+  return extrasCache[k];
+}
+
+async function fetchSectionExtras(subject, chapterId, sectionId, parts) {
+  const ex = getExtras(subject, chapterId, sectionId);
+  try {
+    const data = await callApi('generateSectionExtras', { subject, chapterId, sectionId, parts });
+    if (data.qcm) ex.qcm = data.qcm;
+    if (data.mindmap) ex.mindmap = data.mindmap;
+    return data;
+  } finally {
+    parts.forEach((p) => { ex.loading[p] = false; });
+  }
+}
+
+// ── QCM COURT interactif (« quelque chose de court » — demande propriétaire) ──
+function renderQcmShort(qcm) {
+  const items = safeArray(qcm);
+  if (items.length === 0) return '';
+  const keys = ['A', 'B', 'C'];
+  return `
+    <div data-qcmz data-done="0" data-good="0">
+      <div class="content-section" style="margin-top:2px;">
+        <div class="content-section-title"><i class="fas fa-bolt"></i>QCM express <span class="count">${items.length}</span></div>
+        <div class="qcmz-head">
+          <span class="qcmz-progress">Réponds, la correction s'affiche tout de suite</span>
+          <span class="qcmz-progress" data-qcmz-score>0 / ${items.length}</span>
+        </div>
+        ${items.map((it, i) => `
+          <div class="qcmz-item" data-answer="${Number(it.answer) || 0}">
+            <div class="qcmz-qrow">
+              <div class="qcmz-num">${i + 1}</div>
+              <div class="qcmz-q">${safeTextP(it.q)}</div>
+            </div>
+            <div class="qcmz-choices">
+              ${safeArray(it.choices).slice(0, 3).map((c, ci) => `
+                <button type="button" class="qcmz-choice" data-i="${ci}">
+                  <span class="qcmz-key">${keys[ci] || ci + 1}</span>
+                  <span>${safeTextP(c)}</span>
+                </button>
+              `).join('')}
+            </div>
+            <div class="qcmz-why"><strong>Pourquoi :</strong> ${safeTextP(it.why || '')}</div>
+          </div>
+        `).join('')}
+        <div class="qcmz-score" data-qcmz-final style="display:none;">
+          <i class="fas fa-star"></i><span data-qcmz-final-txt></span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function bindQcmShort(rootEl) {
+  rootEl.querySelectorAll('[data-qcmz]').forEach((wrap) => {
+    const items = wrap.querySelectorAll('.qcmz-item');
+    const total = items.length;
+    const update = () => {
+      const done = Number(wrap.dataset.done || 0);
+      const good = Number(wrap.dataset.good || 0);
+      const score = wrap.querySelector('[data-qcmz-score]');
+      if (score) score.textContent = `${done} / ${total}`;
+      const fin = wrap.querySelector('[data-qcmz-final]');
+      if (fin && done >= total) {
+        fin.style.display = 'flex';
+        const txt = wrap.querySelector('[data-qcmz-final-txt]');
+        if (txt) txt.textContent = good === total
+          ? `Sans faute — ${good}/${total} ! Tu maîtrises cette partie.`
+          : `${good}/${total} bonnes réponses — relis les explications puis rejoue les points manqués.`;
+      }
+    };
+    items.forEach((item) => {
+      const answer = Number(item.dataset.answer || 0);
+      item.querySelectorAll('.qcmz-choice').forEach((ch) => {
+        ch.addEventListener('click', () => {
+          if (item.classList.contains('answered')) return;
+          item.classList.add('answered');
+          const pick = Number(ch.dataset.i || 0);
+          item.querySelectorAll('.qcmz-choice').forEach((o, i) => {
+            o.disabled = true;
+            if (i === answer) o.classList.add('good');
+            else if (i === pick) o.classList.add('bad');
+            else o.classList.add('dim');
+          });
+          item.querySelector('.qcmz-why')?.classList.add('show');
+          wrap.dataset.done = String(Number(wrap.dataset.done || 0) + 1);
+          if (pick === answer) wrap.dataset.good = String(Number(wrap.dataset.good || 0) + 1);
+          update();
+        });
+      });
+    });
+    update();
+  });
+}
+
+// ── CARTE MENTALE EN ESCALIER (idée de base → étapes → subdivisions) ──
+function renderMindmap(mm) {
+  if (!mm || !mm.idea || !Array.isArray(mm.steps) || mm.steps.length === 0) return '';
+  const kidsTotal = mm.steps.reduce((n, st) => n + (safeArray(st.children).length || 0), 0);
+  return `
+    <div class="content-section" style="margin-top:2px;">
+      <div class="content-section-title"><i class="fas fa-diagram-project"></i>Carte mentale — de l'idée de base à la fin <span class="count">${mm.steps.length + kidsTotal + 1} cartes</span></div>
+      <div class="mmap-root">
+        <div class="mmap-root-label"><i class="fas fa-lightbulb"></i> Idée de base</div>
+        <div class="mmap-root-text">${safeTextP(mm.idea)}</div>
+      </div>
+      <div class="mmap-stairs">
+        ${mm.steps.map((st, i) => `
+          <div class="mmap-step lvl1">
+            <div class="mmap-step-head">
+              <div class="mmap-step-num">${i + 1}</div>
+              <div class="mmap-step-title">${safeTextP(st.title)}</div>
+            </div>
+            ${st.detail ? `<div class="mmap-step-detail">${safeTextP(st.detail)}</div>` : ''}
+            ${safeArray(st.children).length > 0 ? `
+              <div class="mmap-kids">
+                ${safeArray(st.children).map((c) => `
+                  <div class="mmap-kid">
+                    <div class="mmap-kid-title">${safeTextP(c.title)}</div>
+                    ${c.detail ? `<div class="mmap-kid-detail">${safeTextP(c.detail)}</div>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+      <div class="mmap-summit"><i class="fas fa-flag-checkered"></i> Fin de la leçon — toute la carte est gravie, étape par étape.</div>
+    </div>
+  `;
+}
+
+// ── Écran « l'IA prépare… » + écran d'erreur des extras ──
+function extrasGeneratingHtml(kind) {
+  const label = kind === 'qcm' ? 'ton QCM court' : 'ta carte mentale';
+  return `
+    <div class="extras-gen">
+      <div class="eg-icon"><span class="mini-spinner" style="width:18px;height:18px;border-width:2px;"></span></div>
+      <h3>L'IA prépare ${label}…</h3>
+      <p>Quelques secondes — la chaîne IA est robuste : si un fournisseur ralentit, un autre prend le relais.</p>
+    </div>
+  `;
+}
+function extrasErrorHtml(kind, message) {
+  const label = kind === 'qcm' ? 'le QCM' : 'la carte mentale';
+  return `
+    <div class="extras-gen">
+      <div class="eg-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+      <h3>Générer ${label}</h3>
+      <p>${escapeHtml(message || 'Lance la génération — elle sera enregistrée pour tes prochaines visites.')}</p>
+      <button type="button" class="btn-full primary" data-extras-gen="${kind}">
+        <span class="btn-icon"><i class="fas fa-bolt"></i></span>
+        <span class="btn-text">${kind === 'qcm' ? 'Générer le QCM' : 'Générer la carte mentale'}</span>
+        <span class="spinner"></span>
+      </button>
+    </div>
+  `;
+}
+
 async function renderSectionView(params) {
   const el = $('view-section');
   const { subject, chapterId, sectionId } = params;
@@ -3378,6 +3886,16 @@ async function renderSectionView(params) {
     const a = s.analysis || {};
     const profile = s.profile || 'scientific';
     const chapterTitle = state.cache.chapter[`${subject}/${chapterId}`]?.chapter?.title || '';
+
+    // ✅ v8.40 — extras pré-cachés si la section en possède déjà (anciennes
+    // sections ou retour de génération) : les onglets s'ouvrent instantanément.
+    const ex = getExtras(subject, chapterId, sectionId);
+    if (!ex.qcm && Array.isArray(a.qcm) && a.qcm.length > 0) ex.qcm = a.qcm;
+    if (!ex.mindmap && a.mindmap && a.mindmap.idea) ex.mindmap = a.mindmap;
+
+    // onglet actif mémorisé par section (retour = on se retrouve où on était)
+    const tabKey = `arvexa_sm_tab_${extrasKey(subject, chapterId, sectionId)}`;
+    const initialTab = (sessionStorage.getItem(tabKey) || 'resume');
 
     el.innerHTML = `
       <div class="section-hero">
@@ -3397,16 +3915,32 @@ async function renderSectionView(params) {
         ` : ''}
       </div>
 
-      <div class="content-section">
-        <div class="content-section-title"><i class="fas fa-paste"></i>Ton cours</div>
-        <div class="raw-input" id="rawInput">${safeText(s.rawInput)}</div>
-        <button class="expand-btn" id="expandRawBtn">
-          <i class="fas fa-chevron-down"></i>
-          <span>Voir tout</span>
-        </button>
+      <div class="sm-tabs" id="smTabs" role="tablist">
+        <span class="sm-ind" id="smInd"></span>
+        <button class="sm-tab" data-sm-tab="resume" role="tab"><i class="fas fa-book-open"></i> Résumé</button>
+        <button class="sm-tab" data-sm-tab="qcm" role="tab"><i class="fas fa-circle-question"></i> Questionnaires</button>
+        <button class="sm-tab" data-sm-tab="mindmap" role="tab"><i class="fas fa-diagram-project"></i> Carte mentale</button>
       </div>
 
-      <div id="analysisContainer"></div>
+      <div class="sm-panel" data-sm-panel="resume">
+        <div class="content-section">
+          <div class="content-section-title"><i class="fas fa-paste"></i>Ton cours</div>
+          <div class="raw-input" id="rawInput">${safeText(s.rawInput)}</div>
+          <button class="expand-btn" id="expandRawBtn">
+            <i class="fas fa-chevron-down"></i>
+            <span>Voir tout</span>
+          </button>
+        </div>
+        <div id="analysisContainer"></div>
+      </div>
+
+      <div class="sm-panel" data-sm-panel="qcm">
+        <div id="qcmPanel"></div>
+      </div>
+
+      <div class="sm-panel" data-sm-panel="mindmap">
+        <div id="mmPanel"></div>
+      </div>
 
       <div class="content-section">
         <div class="content-section-title"><i class="fas fa-pen"></i>Mes notes</div>
@@ -3436,7 +3970,85 @@ async function renderSectionView(params) {
     `;
 
     const container = $('analysisContainer');
-    container.innerHTML = renderAnalysis(a, profile);
+    container.innerHTML = renderAnalysis(a, profile, { noQuestions: true });
+
+    // ═══ Onglets — pastille coulissante + navigation fluide (v8.40) ═══
+    const tabsBar = $('smTabs');
+    const ind = $('smInd');
+    const TABS = ['resume', 'qcm', 'mindmap'];
+
+    function mountQcmPanel() {
+      const panel = $('qcmPanel');
+      if (!panel) return;
+      const questions = safeArray(a.questions);
+      if (ex.qcm) {
+        panel.innerHTML = renderQcmShort(ex.qcm) + (questions.length > 0 ? `
+          <div class="content-section">
+            <div class="content-section-title"><i class="fas fa-circle-question"></i>Questionnaires possibles — réponses rédigées <span class="count">${questions.length}</span></div>
+            <div class="qa-list">${questions.map((q, i) => renderQuestion(q, i)).join('')}</div>
+          </div>` : '');
+        bindQcmShort(panel);
+        panel.querySelectorAll('.qa-item').forEach((item) => {
+          item.querySelector('.qa-question')?.addEventListener('click', () => item.classList.toggle('open'));
+        });
+      } else if (ex.loading.qcm) {
+        panel.innerHTML = extrasGeneratingHtml('qcm');
+      } else {
+        panel.innerHTML = extrasErrorHtml('qcm');
+        panel.querySelector('[data-extras-gen="qcm"]')?.addEventListener('click', () => launchExtras('qcm'));
+      }
+    }
+
+    function mountMmPanel() {
+      const panel = $('mmPanel');
+      if (!panel) return;
+      if (ex.mindmap) {
+        panel.innerHTML = renderMindmap(ex.mindmap);
+      } else if (ex.loading.mindmap) {
+        panel.innerHTML = extrasGeneratingHtml('mindmap');
+      } else {
+        panel.innerHTML = extrasErrorHtml('mindmap');
+        panel.querySelector('[data-extras-gen="mindmap"]')?.addEventListener('click', () => launchExtras('mindmap'));
+      }
+    }
+
+    async function launchExtras(kind) {
+      if (ex.loading[kind] || ex[kind]) return;
+      ex.loading[kind] = true;
+      const panel = kind === 'qcm' ? $('qcmPanel') : $('mmPanel');
+      if (panel) panel.innerHTML = extrasGeneratingHtml(kind);
+      try {
+        await fetchSectionExtras(subject, chapterId, sectionId, [kind]);
+        if (kind === 'qcm') mountQcmPanel(); else mountMmPanel();
+        showToast(kind === 'qcm' ? 'QCM prêt — bon entraînement !' : 'Carte mentale prête !', 'success');
+      } catch (e) {
+        ex.loading[kind] = false;
+        if (panel) {
+          panel.innerHTML = extrasErrorHtml(kind, e.message || 'La génération a échoué — réessaie dans quelques secondes.');
+          panel.querySelector(`[data-extras-gen="${kind}"]`)?.addEventListener('click', () => launchExtras(kind));
+        }
+      }
+    }
+
+    function setSmTab(name) {
+      const idx = Math.max(0, TABS.indexOf(name));
+      tabsBar.querySelectorAll('.sm-tab').forEach((b) => b.classList.toggle('active', b.dataset.smTab === name));
+      // pastille coulissante : 2 gaps de 4px entre les 3 onglets
+      ind.style.transform = `translateX(calc(${idx * 100}% + ${idx * 8}px))`;
+      el.querySelectorAll('.sm-panel').forEach((p) => p.classList.toggle('active', p.dataset.smPanel === name));
+      try { sessionStorage.setItem(tabKey, name); } catch (e) {}
+      if (name === 'qcm') {
+        mountQcmPanel();
+        // ✅ génération à la demande : premier ouvert → l'IA la lance toute seule
+        if (!ex.qcm && !ex.loading.qcm) launchExtras('qcm');
+      } else if (name === 'mindmap') {
+        mountMmPanel();
+        if (!ex.mindmap && !ex.loading.mindmap) launchExtras('mindmap');
+      }
+    }
+
+    tabsBar.querySelectorAll('.sm-tab').forEach((b) => b.addEventListener('click', () => setSmTab(b.dataset.smTab)));
+    setSmTab(TABS.includes(initialTab) ? initialTab : 'resume');
 
     $('expandRawBtn')?.addEventListener('click', () => {
       const raw = $('rawInput');
@@ -3460,29 +4072,8 @@ async function renderSectionView(params) {
       });
     });
 
-    el.querySelectorAll('.qa-item').forEach((item) => {
-      item.querySelector('.qa-question').addEventListener('click', () => {
-        item.classList.toggle('open');
-      });
-    });
-
-    el.querySelectorAll('.qcm-item').forEach((qcm) => {
-      const correct = qcm.dataset.correct;
-      const options = qcm.querySelectorAll('.qcm-option');
-      const explanation = qcm.querySelector('.qcm-explanation');
-      options.forEach((opt) => {
-        opt.addEventListener('click', () => {
-          if (qcm.dataset.answered === '1') return;
-          qcm.dataset.answered = '1';
-          const letter = opt.dataset.letter;
-          options.forEach((o) => {
-            if (o.dataset.letter === correct) o.classList.add('correct');
-            else if (o.dataset.letter === letter) o.classList.add('wrong');
-          });
-          if (explanation) explanation.classList.add('show');
-        });
-      });
-    });
+    // ✅ v8.40 — les liaisons qa-item / qcm-item vivent maintenant dans
+    // mountQcmPanel() (onglet Questionnaires) ; plus de bindings fantômes ici.
 
     let notesTimer = null;
     $('notesArea')?.addEventListener('input', () => {
@@ -3529,7 +4120,7 @@ async function renderSectionView(params) {
 // ══════════════════════════════════════════════════════════════
 // RENDU ANALYSE (identique à la version précédente)
 // ══════════════════════════════════════════════════════════════
-function renderAnalysis(a, profile) {
+function renderAnalysis(a, profile, opts = {}) {
   let html = '';
   const expl = a.explanation || {};
   if (expl.understanding) {
@@ -3551,7 +4142,9 @@ function renderAnalysis(a, profile) {
     </div>`;
   }
   if (a.structure) html += renderStructure(a.structure, profile);
-  const questions = safeArray(a.questions);
+  // ✅ v8.40 — la banque de questions vit dans l'onglet « Questionnaires » :
+  // l'onglet Résumé montre JUSTE le cours (demande propriétaire).
+  const questions = opts.noQuestions ? [] : safeArray(a.questions);
   if (questions.length > 0) {
     html += `<div class="content-section">
       <div class="content-section-title"><i class="fas fa-circle-question"></i>Banque de questions <span class="count">${questions.length}</span></div>
@@ -4826,6 +5419,7 @@ async function acExtractPdfText(file, onProgress) {
   let text = '';
   for (let p = 1; p <= maxPages; p++) {
     if (onProgress) onProgress(p, maxPages, pdf.numPages);
+    if (window.__acJobApi && window.__acJobApi.cancelled()) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' }); // ✅ v8.40
     try {
       const page = await pdf.getPage(p);
       const tc = await page.getTextContent();
@@ -4862,6 +5456,7 @@ async function acOcrImages(images, onProgress) {
   const parts = [];
   for (let b = 0; b < batches.length; b++) {
     if (onProgress) onProgress(b + 1, batches.length, images.length);
+    if (window.__acJobApi && window.__acJobApi.cancelled()) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' }); // ✅ v8.40
     const imgs = batches[b];
     let t = '';
     for (let tries = 0; tries < 3 && !t; tries++) {
@@ -4871,6 +5466,7 @@ async function acOcrImages(images, onProgress) {
     if (!t && imgs.length > 1) {
       const chunk = [];
       for (const im of imgs) {
+        if (window.__acJobApi && window.__acJobApi.cancelled()) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' }); // ✅ v8.40
         let one = '';
         for (let tries = 0; tries < 2 && !one; tries++) {
           try { one = await askOnce([im]); }
@@ -4884,6 +5480,194 @@ async function acOcrImages(images, onProgress) {
   }
   return parts.join('\n\n');
 }
+
+// ══════════════════════════════════════════════════════════════
+// ✅ v8.40 — JOB D'EXTRACTION EN ARRIÈRE-PLAN + POURCENTAGE FIABLE
+// (demandes propriétaire : « tout près de la barre ronde tu ajoutes un
+// pourcentage fiable, du début jusqu'à 100 % — 100 % = extraction finie » ;
+// « fais en sorte que l'extraction continue même si on est sur la page
+// d'accueil, en arrière-plan, pour naviguer librement sans attendre »).
+// - le pourcentage est CALCULÉ depuis les étapes réellement terminées
+//   (images préparées, lots OCR finis, pages PDF lues) : monotone 0 → 100 ;
+// - la PASTILLE flottante vit au niveau de la page : l'élève peut fermer la
+//   modale, changer de vue dans le Résumé — l'extraction continue ; à la fin
+//   la modale se rouvre toute seule sur la vérification du texte ;
+// - l'ANALYSE IA finale part avec keepalive : même en quittant vers
+//   l'accueil du site, la section est créée côté serveur.
+// ══════════════════════════════════════════════════════════════
+const acJob = {
+  active: false,        // job (extraction ou analyse) en cours
+  kind: '',             // 'photos' | 'pdf' | 'analyse'
+  pct: 0,               // pourcentage monotone 0..100 (null pour l'analyse)
+  label: '',
+  cancelled: false,
+  seq: 0,               // séquence pour identifier le propriétaire de la modale
+  modalToken: 0         // token de la modale qui a démarré le job
+};
+
+function acPillEnsure() {
+  let pill = document.getElementById('extractPill');
+  if (!pill) {
+    pill = document.createElement('div');
+    pill.id = 'extractPill';
+    pill.setAttribute('role', 'status');
+    pill.innerHTML = `
+      <div class="extract-pill-row">
+        <span class="mini-spinner"></span>
+        <span class="extract-pill-label"><span data-pill-label>Extraction…</span><small data-pill-sub>Tu peux naviguer, on s'occupe de tout</small></span>
+        <span class="extract-pill-pct" data-pill-pct></span>
+      </div>
+      <div class="pct-bar"><div class="pct-bar-fill" data-pill-bar></div></div>
+    `;
+    document.body.appendChild(pill);
+    pill.addEventListener('click', () => {
+      // rouvrir la modale d'ajout : l'élève retrouve l'écran en cours
+      if (acJob.active && (acJob.kind === 'photos' || acJob.kind === 'pdf')) {
+        openAddCourseModal();
+      }
+    });
+  }
+  return pill;
+}
+
+function acPillUpdate() {
+  const pill = document.getElementById('extractPill');
+  if (!pill) return;
+  const show = acJob.active && !__isAddCourseModalOpen;
+  pill.classList.toggle('show', show);
+  if (!show) return;
+  const label = pill.querySelector('[data-pill-label]');
+  const pct = pill.querySelector('[data-pill-pct]');
+  const bar = pill.querySelector('[data-pill-bar]');
+  const sub = pill.querySelector('[data-pill-sub]');
+  if (label) label.textContent = acJob.label;
+  if (sub) sub.textContent = acJob.kind === 'analyse'
+    ? 'Section créée automatiquement à la fin — tu peux même quitter la page'
+    : 'Touche la pastille pour rouvrir — extraction en arrière-plan';
+  if (pct) pct.textContent = (acJob.pct !== null && acJob.pct !== undefined) ? `${acJob.pct} %` : '';
+  if (bar) bar.style.width = `${acJob.pct || 0}%`;
+}
+
+// Étapes réellement finies → pourcentage FIABLE (jamais de saut, jamais 100 avant la fin)
+function acJobStep(pct, label) {
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  acJob.pct = Math.max(acJob.pct || 0, p); // monotone
+  if (label) acJob.label = label;
+  // modale : % près de la barre ronde + barre fine
+  const pctEl = document.getElementById('acPct');
+  const barEl = document.getElementById('acBarFill');
+  const txtEl = document.getElementById('acProgTxt');
+  if (pctEl) pctEl.textContent = `${acJob.pct} %`;
+  if (barEl) barEl.style.width = `${acJob.pct}%`;
+  if (txtEl && label) txtEl.textContent = label;
+  acPillUpdate();
+}
+
+function acJobBegin(kind, label) {
+  acJob.active = true;
+  acJob.kind = kind;
+  acJob.cancelled = false;
+  acJob.pct = 0;
+  acJob.label = label;
+  acPillEnsure();
+  acPillUpdate();
+  acJobStep(1, label);
+}
+
+function acJobEnd(label) {
+  acJob.pct = 100;
+  if (label) acJob.label = label;
+  acJobStep(100, label);
+  acJob.active = false;
+  acPillUpdate();
+}
+
+function acJobStop() {
+  acJob.active = false;
+  acJob.cancelled = false;
+  acPillUpdate();
+}
+
+function acJobCancel() {
+  if (!acJob.active) return;
+  acJob.cancelled = true;
+  acJobStop();
+}
+
+// ✅ v8.40 — poignée console/debug + annulation depuis les helpers de page
+// (les bindings de module ne sont pas visibles depuis window) :
+window.__acJobApi = {
+  begin: acJobBegin,
+  step: acJobStep,
+  end: acJobEnd,
+  stop: acJobStop,
+  cancel: acJobCancel,
+  updatePill: acPillUpdate,
+  cancelled: () => acJob.cancelled,
+  state: () => ({ active: acJob.active, kind: acJob.kind, pct: acJob.pct, label: acJob.label })
+};
+
+// Écran de progression DANS la modale — % près de la barre ronde + barre + arrière-plan
+function acProgressScreenHtml(initialLabel) {
+  return `
+    <div class="extract-progress">
+      <span class="mini-spinner"></span>
+      <span class="pct-badge" id="acPct">0 %</span>
+      <span id="acProgTxt">${escapeHtml(initialLabel || 'Préparation…')}</span>
+    </div>
+    <div class="pct-bar"><div class="pct-bar-fill" id="acBarFill" style="width:0%"></div></div>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
+      <button type="button" class="btn-full secondary" id="acBgBtn">
+        <span class="btn-icon"><i class="fas fa-layer-group"></i></span>
+        <span class="btn-text">Continuer en arrière-plan</span>
+      </button>
+      <button type="button" class="mode-back" id="acCancelBtn"><i class="fas fa-times"></i> Annuler l'extraction</button>
+    </div>
+  `;
+}
+
+function acWireProgressButtons(showModeChoice, onCancel) {
+  $('acBgBtn')?.addEventListener('click', () => {
+    // ✅ arrière-plan : la modale se ferme, le job continue — la pastille
+    // flottante prend le relais et l'élève navigue librement.
+    closeModal();
+    __isAddCourseModalOpen = false;
+    acPillUpdate();
+    showToast('Extraction en arrière-plan — tu peux naviguer librement', 'info', 4000);
+  });
+  $('acCancelBtn')?.addEventListener('click', () => {
+    acJobCancel();
+    if (typeof onCancel === 'function') onCancel();
+    showToast('Extraction annulée', 'info');
+    showModeChoice();
+  });
+}
+
+// À la fin d'une extraction : rouvrir la vérification (même modale si ouverte,
+// sinon la modale se rouvre toute seule sur le texte extrait).
+function acFinishExtraction(text, sourceLabel) {
+  acJobEnd('Extraction terminée');
+  if (!text || String(text).trim().length === 0) {
+    showToast('Aucun texte lisible — essaie d\'autres images ou un PDF texte', 'error', 5000);
+    acJobStop();
+    if (__isAddCourseModalOpen) showModeChoiceSafe();
+    return false;
+  }
+  const finished = String(text);
+  if (__isAddCourseModalOpen && acJob.modalToken === acJob.seq) {
+    try { __acSetExtractedText(finished, sourceLabel); } catch (e) { window.__acResumeText = finished; }
+  } else {
+    // l'élève était ailleurs (arrière-plan) → la modale se rouvre sur SON texte
+    window.__acResumeText = finished;
+    window.__acResumeNotice = sourceLabel || 'Extraction terminée';
+    openAddCourseModal();
+    showToast('Extraction terminée — vérifie ton texte', 'success', 4000);
+  }
+  return true;
+}
+
+// pont vers la modale active (défini dans openAddCourseModal)
+function showModeChoiceSafe() { try { if (typeof window.__acShowModeChoice === 'function') window.__acShowModeChoice(); } catch (e) {} }
 
 let __isAddCourseModalOpen = false;
 
@@ -4913,9 +5697,22 @@ function openAddCourseModal() {
   let stopAcDictation = () => {};
   let acBusy = false;       // extraction OCR/PDF en cours
 
+  // ✅ v8.40 — ponts vers le job d'arrière-plan : la fin d'une extraction
+  // (même démarrée avant une fermeture de modale) alimente CETTE modale ;
+  // et showModeChoice reste joignable depuis les helpers de page.
+  window.__acShowModeChoice = () => { try { showModeChoice(); } catch (e) {} };
+  window.__acSetExtractedText = (txt, sourceLabel) => {
+    acBusy = false;
+    acText = String(txt || '');
+    if (sourceLabel) setSubtitle(`${sourceLabel} — vérifie et corrige ton texte avant l'analyse`);
+    showVerifyMode();
+  };
+
   const releaseGarde = () => {
     __isAddCourseModalOpen = false;
     try { stopAcDictation(); } catch (e) {}
+    // ✅ v8.40 — si une extraction tourne, la pastille flottante reprend le relais
+    try { acPillUpdate(); } catch (e) {}
   };
   $('modalBackdrop')?.addEventListener('click', (e) => {
     if (e.target === $('modalBackdrop')) releaseGarde();
@@ -5026,6 +5823,8 @@ function openAddCourseModal() {
   }
 
   // ═══ Mode PHOTOS — galerie / appareil → OCR ═══
+  // ✅ v8.40 — pourcentage FIABLE (0 → 100 calculé sur les étapes réellement
+  // finies) + extraction en ARRIÈRE-PLAN possible (« Continuer en arrière-plan »).
   function startPhotoPicker() {
     acMode = 'photos';
     const input = document.createElement('input');
@@ -5039,35 +5838,40 @@ function openAddCourseModal() {
       input.remove();
       if (files.length === 0) { showModeChoice(); return; }
       if (!window.ARVX_AI) { showToast('Kit IA indisponible — réessaie', 'error'); showModeChoice(); return; }
+
       acBusy = true;
-      acBody.innerHTML = `
-        <div class="extract-progress"><span class="mini-spinner"></span><span id="acProgTxt">Préparation des images…</span></div>
-        <button type="button" class="mode-back" id="acCancelBtn"><i class="fas fa-times"></i> Annuler</button>
-      `;
-      $('acCancelBtn').addEventListener('click', () => { acBusy = false; showModeChoice(); });
-      const prog = (t) => { const el = $('acProgTxt'); if (el) el.textContent = t; };
+      acBody.innerHTML = acProgressScreenHtml(`Préparation de ${files.length} image${files.length > 1 ? 's' : ''}…`);
+      acWireProgressButtons(showModeChoice, () => { acBusy = false; });
+
+      const myToken = ++acJob.seq;
+      acJob.modalToken = myToken;
+      acJobBegin('photos', `Extraction de ${files.length} image${files.length > 1 ? 's' : ''}`);
       try {
         const images = [];
         for (let i = 0; i < files.length; i++) {
-          prog(`Image ${i + 1}/${files.length} — préparation…`);
+          if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
+          acJobStep(1 + Math.round(((i + 1) / files.length) * 19), `Image ${i + 1}/${files.length} — préparation…`);
           images.push(await window.ARVX_AI.compressImageFile(files[i], { maxSide: 1400, quality: 0.8 }));
         }
+        // OCR par lots : de 20 % à 90 % — chaque lot fini fait vraiment avancer
         const text = await acOcrImages(images, (b, total) => {
-          prog(`Lecture IA des images… (${b}/${total})`);
+          if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
+          acJobStep(20 + Math.round((b / total) * 70), `Lecture IA des images… (${b}/${total})`);
         });
+        if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
+        acJobStep(95, 'Assemblage du texte…');
         acBusy = false;
-        if (!text || text.trim().length === 0) {
-          showToast('Aucun texte lisible sur ces images', 'error');
-          showModeChoice();
-          return;
+        acFinishExtraction(text, 'Photos (OCR)');
+        if (text && String(text).trim().length > 0 && text.length > MAX_CONTENT_LENGTH) {
+          showToast(`Extrait ramené à ${MAX_CONTENT_LENGTH} caractères`, 'info');
         }
-        acText = clampAc(text);
-        if (text.length > MAX_CONTENT_LENGTH) showToast(`Extrait ramené à ${MAX_CONTENT_LENGTH} caractères`, 'info');
-        showVerifyMode();
       } catch (e) {
         acBusy = false;
-        showToast(window.ARVX_AI?.errMessage ? window.ARVX_AI.errMessage(e?.code || '') : (e.message || 'Extraction impossible'), 'error', 5000);
-        showModeChoice();
+        acJobStop();
+        if (e.code !== 'AC_CANCELLED') {
+          showToast(window.ARVX_AI?.errMessage ? window.ARVX_AI.errMessage(e?.code || '') : (e.message || 'Extraction impossible'), 'error', 5000);
+          showModeChoice();
+        }
       }
     }, { once: true });
     setTimeout(() => input.click(), 50);
@@ -5095,39 +5899,49 @@ function openAddCourseModal() {
         return;
       }
       acBusy = true;
-      acBody.innerHTML = `
-        <div class="extract-progress"><span class="mini-spinner"></span><span id="acProgTxt">Lecture du PDF…</span></div>
-        <button type="button" class="mode-back" id="acCancelBtn"><i class="fas fa-times"></i> Annuler</button>
-      `;
-      $('acCancelBtn').addEventListener('click', () => { acBusy = false; showModeChoice(); });
-      const prog = (t) => { const el = $('acProgTxt'); if (el) el.textContent = t; };
+      acBody.innerHTML = acProgressScreenHtml('Lecture du PDF…');
+      acWireProgressButtons(showModeChoice, () => { acBusy = false; });
+
+      const myToken = ++acJob.seq;
+      acJob.modalToken = myToken;
+      acJobBegin('pdf', `Extraction du PDF (${(file.size / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo)`);
       try {
         let text = '';
+        // étapes réellement finies → pourcentage fiable :
+        // parse 1-8 % · couche texte 8-70 % · rendu scanné 8-30 % · OCR 30-92 %
         const res = await acExtractPdfText(file, (p, total, all) => {
-          prog(`Extraction du texte — page ${p}/${total}${all > total ? ` (sur ${all})` : ''}…`);
+          if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
+          acJobStep(8 + Math.round((p / Math.max(total, 1)) * 62), `Extraction du texte — page ${p}/${total}${all > total ? ` (sur ${all})` : ''}…`);
         });
         if (res.scanned) {
           // PDF scanné : pages rendues en images → OCR (kit IA, 10 pages max — v8.39)
           if (!window.ARVX_AI) throw new Error('Kit IA indisponible.');
-          prog('PDF scanné — lecture IA des pages…');
-          const pages = await window.ARVX_AI.pdfToImages(file, { maxPages: 10, scale: 1.6, onProgress: (p, n) => prog(`Rendu page ${p}/${n}…`) });
-          text = await acOcrImages(pages, (b, total) => prog(`Lecture IA des pages… (${b}/${total})`));
+          acJobStep(10, 'PDF scanné — rendu des pages…');
+          const pages = await window.ARVX_AI.pdfToImages(file, { maxPages: 10, scale: 1.6, onProgress: (p, n) => {
+            if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
+            acJobStep(10 + Math.round((p / Math.max(n, 1)) * 20), `Rendu page ${p}/${n}…`);
+          } });
+          text = await acOcrImages(pages, (b, total) => {
+            if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
+            acJobStep(30 + Math.round((b / total) * 62), `Lecture IA des pages… (${b}/${total})`);
+          });
         } else {
           text = res.text;
         }
+        if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
+        acJobStep(95, 'Assemblage du texte…');
         acBusy = false;
-        if (!text || text.trim().length === 0) {
-          showToast('Aucun texte extrait de ce PDF', 'error');
-          showModeChoice();
-          return;
+        const ok = acFinishExtraction(text, 'PDF');
+        if (ok && text && String(text).trim().length > 0 && text.length > MAX_CONTENT_LENGTH) {
+          showToast(`Extrait ramené à ${MAX_CONTENT_LENGTH} caractères — le reste peut être ajouté en une 2ᵉ section`, 'info', 5000);
         }
-        acText = clampAc(text);
-        if (text.length > MAX_CONTENT_LENGTH) showToast(`Extrait ramené à ${MAX_CONTENT_LENGTH} caractères — le reste peut être ajouté en une 2ᵉ section`, 'info', 5000);
-        showVerifyMode();
       } catch (e) {
         acBusy = false;
-        showToast(e.message || 'Extraction impossible', 'error', 5000);
-        showModeChoice();
+        acJobStop();
+        if (e.code !== 'AC_CANCELLED') {
+          showToast(e.message || 'Extraction impossible', 'error', 5000);
+          showModeChoice();
+        }
       }
     }, { once: true });
     setTimeout(() => input.click(), 50);
@@ -5364,6 +6178,13 @@ function openAddCourseModal() {
   }
 
   // ═══ Soumission — autoAddSection (l'IA classe tout) ═══
+  // ═══ Analyse IA — ✅ v8.40 EN ARRIÈRE-PLAN ═══
+  // (demande propriétaire : « l'extraction continue même si on est sur la
+  // page d'accueil, en arrière-plan, naviguer librement sans attendre ») —
+  // la modale se ferme, une pastille discrète suit l'analyse, l'élève peut
+  // naviguer dans TOUTES les vues du Résumé et même quitter la page : l'appel
+  // part avec keepalive, la section est créée côté serveur et l'élève la
+  // retrouve à son retour.
   async function submitAutoAdd() {
     if (acBusy) return;
     const rawInput = (acText || '').trim();
@@ -5371,28 +6192,38 @@ function openAddCourseModal() {
       showToast(`Contenu trop court (min ${MIN_CONTENT_LENGTH} caractères)`, 'error');
       return;
     }
+    if (acJob.active && acJob.kind === 'analyse') {
+      showToast('Une analyse est déjà en cours — la section arrive', 'info');
+      return;
+    }
 
     const submitBtn = $('acSubmitBtn') || $('acSubmitBtn2');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add('loading'); }
     stopAcDictation();
 
-    const container = $('view-section');
-    document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
-    container.classList.add('active');
-    const cleanupProgress = showGeneratingState(container, 'auto');
+    closeModal();
+    __isAddCourseModalOpen = false;
+
+    acJob.active = true;
+    acJob.kind = 'analyse';
+    acJob.cancelled = false;
+    acJob.pct = null;
+    acJob.label = 'Analyse IA en cours — ton résumé se prépare';
+    acJob.modalToken = ++acJob.seq;
+    acPillEnsure();
+    acPillUpdate();
 
     try {
-      closeModal();
-      __isAddCourseModalOpen = false;
-      const result = await callApi('autoAddSection', { rawInput });
-      cleanupProgress();
+      // keepalive : l'appel aboutit côté serveur même si l'élève quitte la page
+      const result = await callApi('autoAddSection', { rawInput }, 1, false, { keepalive: true });
+      acJobStop();
       state.autoAdded = { chapterId: result.chapterId, sectionId: result.sectionId, createdChapter: !!result.createdChapter };
       delete state.cache.chapters[result.subject];
       delete state.cache.chapter[`${result.subject}/${result.chapterId}`];
       showToast(`IA : ${result.subjectLabel || 'Matière'} › ${result.chapterTitle || 'Chapitre'}${result.createdChapter ? ' (nouveau chapitre)' : ''} — renomme si tu veux`, 'success', 6000);
       navigate('section', { subject: result.subject, chapterId: result.chapterId, sectionId: result.sectionId });
     } catch (e) {
-      cleanupProgress();
+      acJobStop();
       if (e.code === 'FREE_SECTION_LIMIT') {
         showPremiumModal();
         applyRoute({ view: 'notebooks', params: {} });
@@ -5404,14 +6235,31 @@ function openAddCourseModal() {
         __isAddCourseModalOpen = false;
         openAddCourseModal();
       } else {
-        showToast('Erreur : ' + (e.message || 'analyse impossible'), 'error', 5000);
-        applyRoute({ view: 'notebooks', params: {} });
+        // ✅ v8.40 — RIEN n'est perdu : la saisie de l'élève est retrouvée dans
+        // la modale, il relance en un tap (les pannes passagères sont déjà
+        // absorbées par la chaîne IA robuste côté serveur).
+        window.__acResumeText = rawInput;
+        showToast(e.message || 'Analyse impossible — ta leçon est conservée, réessaie', 'error', 6000);
+        __isAddCourseModalOpen = false;
+        openAddCourseModal();
       }
     }
   }
 
   showModeChoice();
   if (resumeText.trim().length > 0) { acMode = 'texte'; showVerifyMode(); }
+  else if (acJob.active && (acJob.kind === 'photos' || acJob.kind === 'pdf')) {
+    // ✅ v8.40 — modale rouverte via la pastille : l'écran reflète la
+    // progression LIVE de l'extraction en cours (même pourcentage, même label).
+    acBusy = true;
+    acBody.innerHTML = acProgressScreenHtml(acJob.label || 'Extraction en cours…');
+    acWireProgressButtons(showModeChoice, () => {});
+    const pctEl = $('acPct'); const barEl = $('acBarFill'); const txtEl = $('acProgTxt');
+    if (pctEl) pctEl.textContent = `${acJob.pct || 0} %`;
+    if (barEl) barEl.style.width = `${acJob.pct || 0}%`;
+    if (txtEl) txtEl.textContent = acJob.label || 'Extraction en cours…';
+    acJob.modalToken = ++acJob.seq; // la fin de l'extraction alimentera CETTE modale
+  }
 }
 
 // ── Modale de renommage (v8.38 — ajuster la proposition de l'IA) ──
@@ -5576,6 +6424,7 @@ setInterval(cacheToken, 30 * 60 * 1000);
 requireAuth({
   onUser: async (user) => {
     state.user = user;
+    try { __authReadyResolve(); } catch (e) {} // ✅ v8.40 — débloque les appels en attente
     try {
       // ⚡ Cache-first : cahier peint depuis le cache Firestore local,
       // revalidé silencieusement en arrière-plan (réapplication seulement
@@ -5593,6 +6442,7 @@ requireAuth({
     cacheToken();
   },
   onNoUser: () => {
+    try { __authReadyResolve(); } catch (e) {} // ✅ v8.40
     window.location.replace('auth-choice.html');
   }
 });
@@ -5610,12 +6460,13 @@ function isPremiumUser(data) {
   return false;
 }
 
-console.log('🚀 ARVEXA — Mon cahier — serveur progress v8.9 (chaîne IA robuste · matières dynamiques · PDF 7 Mo · détection non-cours)');
+console.log("🚀 ARVEXA — Mon cahier — serveur progress v8.10 (3 onglets Résumé/Questionnaires/Carte mentale · pourcentage d'extraction fiable · extraction en arrière-plan · 0 échec d'authentification)");
 
 // ✅ v8.0 — SYNC FIREBASE : la carte « Ma progression — révisions officielles »
 // se recalcule quand la progression fusionne/arrive du cloud (autre appareil).
 window.addEventListener('arvexa-progress-updated', () => {
   if (state.view !== 'notebooks') return; // ne pas yanker l'élève hors de son cahier
+  if (!state.user) return; // ✅ v8.40 — attendre l'auth : jamais de rendu sans session
   try { renderNotebooksView(); } catch (e) {}
 });
 </script>

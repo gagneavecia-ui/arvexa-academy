@@ -1,7 +1,15 @@
 // ================================================================
-// API PROGRESS v8.9 — ARVEXA School
+// API PROGRESS v8.10 — ARVEXA School
 // Cahier intelligent + Fan-out IA + Tracking temps d'étude
-// v8.9 « chaîne IA robuste · matières dynamiques · PDF 7 Mo » :
+// v8.10 « onglets Résumé · Questionnaires · Carte mentale » :
+//   - generateSectionExtras : QCM COURT (6 questions à 3 choix, interactif)
+//     + CARTE MENTALE en escalier (idée de base → étapes → subdivisions,
+//     nombre dicté par le volume de la leçon), générés À LA DEMANDE au
+//     premier ouvert de l'onglet puis cachés dans analysis.qcm / analysis.mindmap
+//     — même chaîne robuste callProvider (Gemini → Mistral → OpenRouter → Groq),
+//     réponse bornée/sanitizée avant écriture ; zéro quota (la section a déjà
+//     payé 1 à sa création), rate limit 6/min ;
+//   - v8.9 « chaîne IA robuste · matières dynamiques · PDF 7 Mo » :
 //   - callProvider CASCADE : modèle principal → replis (Groq llama-3.1-8b,
 //     OpenRouter gpt-oss/llama-3.3:free, Gemini flash-latest) + 1 retente
 //     auto sur 429/5xx/réseau — « si l'un tombe en panne, un autre prend le
@@ -47,6 +55,7 @@ const RATE_LIMITS = {
   deleteSection: 10,
   deleteChapter: 10,
   getFullLesson: 15,
+  generateSectionExtras: 6, // ✅ v8.40 — IA à la demande (QCM court + carte mentale)
   trackStudyTime: 60      // léger, fréquent
 };
 
@@ -2993,6 +3002,172 @@ async function writeAiCache(key, profile, analysis) {
   } catch (_) { /* le cache est un bonus, jamais bloquant */ }
 }
 
+// ────────────────────────────────────────────────────────────────
+// ✅ v8.40 — EXTRAS DE SECTION À LA DEMANDE (QCM court + carte mentale)
+// Générés au PREMIER ouvert des onglets « Questionnaires » / « Carte
+// mentale », puis cachés dans analysis.qcm / analysis.mindmap — les
+// ouvertures suivantes sont instantanées. Chaîne robuste : chaque tâche
+// essaie les fournisseurs dans son ordre de préférence (callProvider gère
+// déjà les replis de modèles + retentes) — si l'un tombe, le suivant prend
+// le relais. Réponse bornée avant écriture : l'élève ne voit QUE des
+// données exploitables.
+// ────────────────────────────────────────────────────────────────
+function extrasSectionRef(uid, body) {
+  const { subject, chapterId, sectionId } = body;
+  if (!ALLOWED_SUBJECTS.has(subject)) throw { status: 400, message: 'Matière invalide.' };
+  if (!chapterId || !sectionId) throw { status: 400, message: 'IDs manquants.' };
+  const { db } = getAdminServices();
+  return db.collection('users').doc(uid)
+    .collection('notebooks').doc(subject)
+    .collection('chapters').doc(chapterId)
+    .collection('sections').doc(sectionId);
+}
+
+function clampStr(v, max) {
+  const s = String(v || '').trim();
+  return s.slice(0, max);
+}
+
+// QCM COURT : 4 à 6 questions, 3 choix (A/B/C), 1 réponse exacte,
+// 1 ligne d'explication — « quelque chose de court » (demande propriétaire).
+function sanitizeQcm(raw) {
+  if (!Array.isArray(raw)) return null;
+  const out = [];
+  for (const it of raw.slice(0, 6)) {
+    const q = clampStr(it?.q || it?.question || '', 220);
+    const choices = Array.isArray(it?.choices) ? it.choices.map((c) => clampStr(c, 120)).filter(Boolean).slice(0, 3) : [];
+    let answer = Number(it?.answer);
+    if (!q || choices.length !== 3 || !Number.isInteger(answer) || answer < 0 || answer > 2) continue;
+    const why = clampStr(it?.why || it?.explanation || '', 260);
+    out.push({ q, choices, answer, why });
+  }
+  return out.length >= 3 ? out : null;
+}
+
+// CARTE MENTALE EN ESCALIER : 1 idée de base → 3-6 étapes (volume de la
+// leçon) → chaque étape 2-4 subdivisions (ça se multiplie en remontant).
+function sanitizeMindmap(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const idea = clampStr(raw.idea || raw.title || '', 180);
+  if (!idea) return null;
+  const rawSteps = Array.isArray(raw.steps) ? raw.steps : (Array.isArray(raw.branches) ? raw.branches : []);
+  const steps = [];
+  for (const st of rawSteps.slice(0, 6)) {
+    const title = clampStr(st?.title || '', 120);
+    if (!title) continue;
+    const detail = clampStr(st?.detail || st?.description || '', 260);
+    const children = [];
+    const rawKids = Array.isArray(st?.children) ? st.children : (Array.isArray(st?.sub) ? st.sub : []);
+    for (const c of rawKids.slice(0, 4)) {
+      const ct = clampStr(c?.title || c?.q || '', 110);
+      if (!ct) continue;
+      children.push({ title: ct, detail: clampStr(c?.detail || '', 200) });
+    }
+    steps.push({ title, detail, children });
+  }
+  return steps.length >= 2 ? { idea, steps } : null;
+}
+
+async function callExtrasTask(taskName, providers, { systemPrompt, userPrompt, maxTokens, deadline }) {
+  const pref = { qcm: ['Gemini', 'Mistral', 'OpenRouter', 'Groq'], mindmap: ['Groq', 'Gemini', 'Mistral', 'OpenRouter'] }[taskName]
+    || ['Gemini', 'Mistral', 'OpenRouter', 'Groq'];
+  const byName = new Map(providers.map((p) => [p.name, p]));
+  let lastErr = null;
+  for (const name of pref) {
+    const provider = byName.get(name);
+    if (!provider) continue;
+    try {
+      return await callProvider(provider, { systemPrompt, userPrompt, maxTokens, deadline });
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[EXTRAS v8.40] ${taskName} → ${name} a échoué (${e.message.slice(0, 90)}) — relais suivant`);
+    }
+  }
+  throw lastErr || new Error('Aucun fournisseur IA disponible.');
+}
+
+const EXTRAS_SYSTEM = 'Tu es un pédagogue expert. Tu réponds UNIQUEMENT en JSON valide, sans texte autour, sans balises de code. JSON en français, correct, exploitable directement.';
+
+async function generateSectionExtras(uid, body) {
+  const parts = Array.isArray(body.parts) ? body.parts.filter((p) => p === 'qcm' || p === 'mindmap') : ['qcm', 'mindmap'];
+  if (parts.length === 0) throw { status: 400, message: 'Aucune partie demandée.' };
+
+  const ref = extrasSectionRef(uid, body);
+  const snap = await ref.get();
+  if (!snap.exists) throw { status: 404, message: 'Section introuvable.' };
+  const s = snap.data();
+  const analysis = s.analysis || {};
+  const title = clampStr(s.title || 'Leçon', 150);
+  const raw = clampStr(s.rawInput || '', 4200);
+  if (!raw || raw.length < 40) throw { status: 400, message: 'Le contenu de la section est trop court pour générer des extras.' };
+
+  const need = [];
+  const hasQcm = Array.isArray(analysis.qcm) && analysis.qcm.length >= 3;
+  const hasMindmap = Boolean(analysis.mindmap && analysis.mindmap.idea && Array.isArray(analysis.mindmap.steps) && analysis.mindmap.steps.length >= 2);
+  if (parts.includes('qcm') && !hasQcm) need.push('qcm');
+  if (parts.includes('mindmap') && !hasMindmap) need.push('mindmap');
+
+  const result = { success: true };
+  if (hasQcm) result.qcm = analysis.qcm;
+  if (hasMindmap) result.mindmap = analysis.mindmap;
+  if (need.length === 0) return result; // tout est déjà en base — instantané
+
+  const providers = getProviders();
+  if (providers.length === 0) throw { status: 503, message: 'Aucun fournisseur IA configuré.' };
+  const deadline = Date.now() + 52000;
+
+  const update = {};
+
+  if (need.includes('qcm')) {
+    const data = await callExtrasTask('qcm', providers, {
+      systemPrompt: EXTRAS_SYSTEM,
+      userPrompt: `Section de cours intitulée « ${title} ».
+
+CONTENU DE LA LEÇON :
+"""
+${raw}
+"""
+
+Génère un QCM COURT d'auto-évaluation : 4 à 6 questions MAXIMUM, chacune avec exactement 3 choix (A/B/C), UNE seule bonne réponse et une explication d'UNE ligne. Questions courtes et directes (définitions, applications immédiates, pièges classiques). Choix plausibles, jamais absurdes.
+
+Réponds EXACTEMENT dans ce format :
+{"qcm":[{"q":"…","choices":["…","…","…"],"answer":0,"why":"…"}]}`,
+      maxTokens: 1600,
+      deadline
+    });
+    const qcm = sanitizeQcm(data?.qcm);
+    if (!qcm) throw new Error('QCM illisible — réessaie.');
+    update['analysis.qcm'] = qcm;
+    result.qcm = qcm;
+  }
+
+  if (need.includes('mindmap')) {
+    const data = await callExtrasTask('mindmap', providers, {
+      systemPrompt: EXTRAS_SYSTEM,
+      userPrompt: `Section de cours intitulée « ${title} ».
+
+CONTENU DE LA LEÇON :
+"""
+${raw}
+"""
+
+Construis une CARTE MENTALE en escalier qui part de l'IDÉE DE BASE et monte jusqu'au bout de la leçon : une idée centrale, puis 3 à 6 étapes (le nombre dépend du volume de la leçon), et chaque étape se subdivise en 2 à 4 points précis. Titres ultra courts, détails d'une phrase. L'ensemble doit raconter la leçon pas à pas, de l'idée de base jusqu'à la fin.
+
+Réponds EXACTEMENT dans ce format :
+{"idea":"…","steps":[{"title":"…","detail":"…","children":[{"title":"…","detail":"…"}]}]}`,
+      maxTokens: 1800,
+      deadline
+    });
+    const mindmap = sanitizeMindmap(data);
+    if (!mindmap) throw new Error('Carte mentale illisible — réessaie.');
+    update['analysis.mindmap'] = mindmap;
+    result.mindmap = mindmap;
+  }
+
+  try { await ref.update(update); } catch (e) { /* écriture best-effort : l'élève a déjà son contenu */ }
+  return result;
+}
+
 module.exports = async function handler(request, response) {
   applyCors(request, response);
 
@@ -3022,7 +3197,7 @@ module.exports = async function handler(request, response) {
 
   const uid = user.uid;
 
-  console.log(`[PROGRESS v8.9] ${action} | uid=${uid.slice(0, 8)}`);
+  console.log(`[PROGRESS v8.10] ${action} | uid=${uid.slice(0, 8)}`);
 
   try {
     switch (action) {
@@ -3035,6 +3210,7 @@ module.exports = async function handler(request, response) {
       case 'renameSection':    return response.status(200).json(await renameSection(uid, body));
       case 'renameChapter':    return response.status(200).json(await renameChapter(uid, body));
       case 'getSection':       return response.status(200).json(await getSection(uid, body));
+      case 'generateSectionExtras': return response.status(200).json(await generateSectionExtras(uid, body));
       case 'updateNotes':      return response.status(200).json(await updateNotes(uid, body));
       case 'deleteSection':    return response.status(200).json(await deleteSection(uid, body));
       case 'deleteChapter':    return response.status(200).json(await deleteChapter(uid, body));
@@ -3044,7 +3220,7 @@ module.exports = async function handler(request, response) {
         return jsonError(response, 400, `Action inconnue : "${action}"`);
     }
   } catch (error) {
-    console.error(`[PROGRESS v8.9] "${action}" failed:`, error.message);
+    console.error(`[PROGRESS v8.10] "${action}" failed:`, error.message);
     if (error.status) return jsonError(response, error.status, error.message, error.code);
     return jsonError(response, 500, error.message || 'Erreur serveur.');
   }
