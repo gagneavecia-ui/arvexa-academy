@@ -37,6 +37,10 @@
     '.pc-links a{color:var(--text-dim,#8A8A7A);text-decoration:none}',
     '.pc-links a:hover{color:var(--pc-b)}',
     '.pc-done-note{display:inline-flex;align-items:center;gap:8px;color:#7AE04A;font-weight:600}',
+    '.pc-class{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--text-dim,#8A8A7A);margin:2px 0 12px}',
+    '.pc-class i{color:var(--pc-b)}',
+    '.pc-class strong{color:var(--text-light,#F5F0E8);font-weight:600}',
+    '.pc-hero .pc-class{margin:0 0 6px}',
     '@media (max-width:560px){.pc-title{font-size:21px}.pc-btn{width:100%;justify-content:center}}'
   ].join('\n');
 
@@ -122,6 +126,23 @@
     } catch (e) { return iso; }
   }
 
+  /* ✅ v8.34 — la VRAIE classe complète de l'élève (index.html publie
+     window.ARVEXA_USER_PROFILE + l'événement « arvexa:profile ») :
+     « Terminale C », « Troisième », « Bac Pro comptabilité »… */
+  function classLineHtml() {
+    var c = '';
+    try {
+      var up = window.ARVEXA_USER_PROFILE || {};
+      var CL = window.ARVEXA_CLASSES;
+      if (CL && (up.classId || up.customClass)) {
+        c = CL.full(up.classId, up.customClass, up.series) || '';
+      }
+    } catch (e) { c = ''; }
+    return c
+      ? '<div class="pc-class"><i class="fas fa-graduation-cap"></i> Ta classe : <strong>' + esc(c) + '</strong></div>'
+      : '';
+  }
+
   function currentStep() {
     for (var i = 0; i < M.steps.length; i++) {
       if (status(M.steps[i]) !== 'done') return M.steps[i];
@@ -148,6 +169,7 @@
       + '<div class="pc-top">' + head + '</div>'
       + '<span class="pc-subject" style="background:' + subj.color + '"><i class="fas ' + subj.icon + '"></i> ' + esc(subj.label) + '</span>'
       + '<div class="pc-title">' + esc(step.title) + '</div>'
+      + classLineHtml()
       + '<div class="pc-meta">'
       +   '<span><i class="fas fa-clock"></i> ~' + step.durationMin + ' min</span>'
       +   '<span><i class="fas fa-list-check"></i> ' + step.totalSections + ' sections</span>'
@@ -166,6 +188,7 @@
   function doneBannerHtml() {
     return '<div class="pc-top"><span class="pc-badge"><i class="fas fa-trophy"></i> Parcours terminé</span></div>'
       + '<div class="pc-title">Les 57 chapitres sont maîtrisés !</div>'
+      + classLineHtml()
       + '<div class="pc-meta"><span><i class="fas fa-stopwatch"></i> Il reste ' + (daysToBac() || '—') + ' jours avant le BAC : passe dans Test moi.</span></div>'
       + '<div class="pc-actions"><a class="pc-btn pc-btn-main" href="exam.html"><i class="fas fa-stopwatch"></i> Test moi</a>'
       + '<a class="pc-btn pc-btn-ghost" href="parcours.html"><i class="fas fa-map"></i> Revoir mon parcours</a></div>';
@@ -195,6 +218,7 @@
       + '<h1 class="pc-hero-title">Une seule route, ' + M.steps.length + ' étapes, <em>zéro hésitation</em></h1>'
       + '<p class="pc-hero-sub">Le programme mêle toutes les matières semaine par semaine jusqu\'au BAC. '
       + 'Valide une étape dès que tu maîtrises son chapitre — le parcours avance, toi aussi.</p>'
+      + classLineHtml()
       + '<div class="pc-hero-stats">'
       +   '<div class="pc-stat"><strong>' + doneCount() + '</strong><span>étapes faites</span></div>'
       +   '<div class="pc-stat"><strong>' + pct + '%</strong><span>du parcours</span></div>'
@@ -291,6 +315,14 @@
         if (el) el.innerHTML = '<div class="pc-wrap"><div class="pc-title">Parcours indisponible hors connexion.</div></div>';
       });
   }
+
+  /* ✅ v8.34 — quand le profil arrive (index.html), la carte affiche
+     immédiatement la vraie classe, sans attendre un re-rendu. */
+  window.addEventListener('arvexa:profile', function () {
+    if (!M) return;
+    renderIndexCard();
+    renderPage();
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);

@@ -357,63 +357,9 @@
       line-height: 1.55;
     }
 
-    /* Cartes de classe (étape 3) */
-    .class-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .class-card {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      padding: 16px 10px 14px;
-      border: 1px solid var(--input-border);
-      border-radius: var(--radius);
-      background: var(--input-bg);
-      cursor: pointer;
-      transition: var(--transition-fast);
-      text-align: center;
-      user-select: none;
-    }
-    .class-card:hover { border-color: rgba(224, 184, 74, 0.4); }
-    .class-card input {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .class-card.selected {
-      border-color: var(--accent-bright);
-      background: rgba(224, 184, 74, 0.07);
-      box-shadow: 0 0 0 3px rgba(224, 184, 74, 0.12);
-    }
-    .class-card:focus-within {
-      outline: 2px solid var(--accent-bright);
-      outline-offset: 2px;
-    }
-    .class-icon { font-size: 18px; color: var(--text-muted); transition: var(--transition-fast); }
-    .class-card.selected .class-icon { color: var(--accent-bright); }
-    .class-name { font-size: 17px; font-weight: 700; color: var(--text-light); }
-    .class-sub { font-size: 11.5px; color: var(--text-muted); }
-    .class-exam {
-      font-size: 10.5px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: var(--accent-bright);
-      background: rgba(224, 184, 74, 0.10);
-      border: 1px solid rgba(224, 184, 74, 0.25);
-      padding: 2px 9px;
-      border-radius: 999px;
-      margin-top: 5px;
-    }
-    .class-exam.none {
-      color: var(--text-muted);
-      background: transparent;
-      border-color: rgba(255, 255, 255, 0.10);
-    }
+    /* ✅ v8.34 — les 4 cartes de classe ont laissé place à la MODALE
+       uniforme (bouton .picker-btn + feuille custom, 10 classes +
+       « Écrire ta classe »). Plus aucun CSS de cartes ici. */
 
     .exam-note {
       font-size: 12.5px;
@@ -538,14 +484,12 @@
     }
     .picker-btn:hover .picker-chevron { color: var(--accent-bright); }
 
-    /* Session d'examen (étape 3) — visible UNIQUEMENT pour 3ᵉ (BEPC) et
-       Terminale (BAC) : « en bas il y aura le champ de choisir combien de
-       temps il reste pour l'examen pour les deux classes, mais pour les
-       autres ça s'ouvre pas » (consigne propriétaire v8.32). */
-    .session-block { margin-bottom: 16px; }
+    /* ✅ v8.34 — champ « durée / temps restant avant l'examen » SUPPRIMÉ :
+       il y a plusieurs domaines, et d'autres classes n'ont même pas
+       d'examen national (consigne propriétaire). */
 
     /* ============================================================
-       MODALE DE SÉLECTION UNIFORME (pays, session, …) — v8.32
+       MODALE DE SÉLECTION UNIFORME (classe, pays, …) — v8.32/8.34
        Feuille montant du bas sur mobile, fenêtre centrée ≥ 768px.
        100 % tokens du site : zéro style navigateur.
        ============================================================ */
@@ -723,6 +667,55 @@
       color: var(--text-muted);
       font-size: 13px;
     }
+
+    /* ✅ v8.34 — groupes, séparateur et champ libre de la modale */
+    .picker-group {
+      list-style: none;
+      padding: 12px 18px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--accent-bright);
+      opacity: 0.9;
+      user-select: none;
+    }
+    .picker-divider {
+      list-style: none;
+      height: 1px;
+      margin: 8px 16px;
+      background: rgba(224, 184, 74, 0.22);
+    }
+    .picker-item .pi-flag.flag-short {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-bright);
+      letter-spacing: 0.3px;
+    }
+    .picker-custom-wrap { padding: 6px 18px 18px; }
+    .picker-custom-wrap .field-label { margin-bottom: 8px; }
+    .picker-custom-ok {
+      margin-top: 12px;
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 18px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #0A0A0A;
+      background: linear-gradient(135deg, var(--accent-bright, #E0B84A), var(--accent, #B8860B));
+      box-shadow: 0 6px 18px rgba(184, 134, 11, 0.25);
+      transition: var(--transition-fast);
+    }
+    .picker-custom-ok:hover { filter: brightness(1.06); }
+    .picker-custom-ok:active { transform: scale(0.98); }
+
     @media (min-width: 768px) {
       .picker-overlay { align-items: center; padding: 24px; }
       .picker-sheet {
@@ -1281,7 +1274,6 @@
 
     @media (max-width: 400px) {
       .name-row { grid-template-columns: 1fr; gap: 16px; }
-      .class-grid { gap: 10px; }
     }
 
     @media (max-width: 360px) {
@@ -1556,52 +1548,21 @@
           <div class="step-title"><i class="fas fa-graduation-cap"></i> Ta classe</div>
           <p class="step-desc">Tout ARVEXA s'adapte à ta classe : cours, question du jour et épreuves.</p>
 
-          <div class="class-grid" role="radiogroup" aria-label="Choisis ta classe">
-            <label class="class-card">
-              <input type="radio" name="classId" value="troisieme">
-              <span class="class-icon"><i class="fas fa-book-open"></i></span>
-              <span class="class-name">3ᵉ</span>
-              <span class="class-sub">Troisième</span>
-              <span class="class-exam">BEPC</span>
-            </label>
-            <label class="class-card">
-              <input type="radio" name="classId" value="seconde">
-              <span class="class-icon"><i class="fas fa-book"></i></span>
-              <span class="class-name">2ᵉ</span>
-              <span class="class-sub">Seconde</span>
-              <span class="class-exam none">Plus tard</span>
-            </label>
-            <label class="class-card">
-              <input type="radio" name="classId" value="premiere">
-              <span class="class-icon"><i class="fas fa-pen"></i></span>
-              <span class="class-name">1ʳᵉ</span>
-              <span class="class-sub">Première</span>
-              <span class="class-exam none">Plus tard</span>
-            </label>
-            <label class="class-card">
-              <input type="radio" name="classId" value="terminale">
-              <span class="class-icon"><i class="fas fa-award"></i></span>
-              <span class="class-name">Tle</span>
-              <span class="class-sub">Terminale</span>
-              <span class="class-exam">BAC</span>
-            </label>
-          </div>
-
-          <div class="exam-note" id="examNote">Choisis ta classe pour continuer.</div>
-
-          <!-- v8.32 — Temps restant avant l'examen : visible UNIQUEMENT pour
-               la 3ᵉ (BEPC) et la Terminale (BAC). Les 2ᵉ et 1ʳᵉ n'ont pas
-               d'examen national : ce champ ne s'ouvre pas pour elles. -->
-          <div class="session-block" id="sessionBlock" hidden>
-            <label class="field-label" for="sessionPickerBtn" id="sessionLabel">
-              Temps restant avant l'examen
-            </label>
-            <button type="button" class="picker-btn" id="sessionPickerBtn" aria-haspopup="dialog">
-              <span class="picker-icon"><i class="fas fa-hourglass-half"></i></span>
-              <span class="picker-label is-placeholder" id="sessionPickerLabel">Choisis ta session d'examen</span>
+          <!-- ✅ v8.34 — UNE modale custom remplace les 4 cartes : bouton
+               maison qui ouvre LA MÊME feuille uniforme que le choix du
+               pays, avec 10 classes (collège → université) + en fin de
+               liste « Écrire ta classe » qui ouvre un champ de saisie
+               libre. Aucune popup native du navigateur. -->
+          <div class="field">
+            <label class="field-label" for="classPickerBtn">Ta classe</label>
+            <button type="button" class="picker-btn" id="classPickerBtn" aria-haspopup="dialog">
+              <span class="picker-icon"><i class="fas fa-graduation-cap"></i></span>
+              <span class="picker-label is-placeholder" id="classPickerLabel">Choisis ta classe</span>
               <i class="fas fa-chevron-down picker-chevron" aria-hidden="true"></i>
             </button>
           </div>
+
+          <div class="exam-note" id="examNote">Choisis ta classe pour continuer.</div>
 
           <div class="serie-block" id="serieBlock" hidden>
             <div class="field-label">Série du BAC</div>
@@ -1748,9 +1709,10 @@
   </main>
 
   <!-- ============================================================
-       MODALE DE SÉLECTION UNIFORME (v8.32) — ouverte par les boutons
-       .picker-btn : choix du pays (étape 4) et de la session d'examen
-       (étape 3), et tout futur choix. Styles 100 % maison : la popup
+       MODALE DE SÉLECTION UNIFORME (v8.32, étendue v8.34) — ouverte par
+       les boutons .picker-btn : choix de la CLASSE (étape 3 — 10 classes
+       groupées Collège / Lycée / Université + « Écrire ta classe »), du
+       PAYS (étape 4) et tout futur choix. Styles 100 % maison : la popup
        native du navigateur ne prend JAMAIS le dessus.
        ============================================================ -->
   <div class="picker-overlay" id="pickerOverlay" role="dialog" aria-modal="true" aria-labelledby="pickerTitle" hidden>
@@ -1767,6 +1729,27 @@
         <input type="text" id="pickerSearch" placeholder="Rechercher un pays…" autocomplete="off">
       </div>
       <ul class="picker-list" id="pickerList" role="listbox"></ul>
+
+      <!-- ✅ v8.34 — champ de saisie libre « Écrire ta classe » : il
+           s'ouvre DANS la même modale uniforme (100 % custom, jamais la
+           popup native du navigateur). L'élève tape sa classe réelle ou
+           un niveau professionnel, puis valide. -->
+      <div class="picker-custom-wrap" id="pickerCustomWrap" hidden>
+        <label class="field-label" for="pickerCustomInput">Ta classe</label>
+        <div class="field-input-wrap">
+          <input
+            type="text"
+            id="pickerCustomInput"
+            maxlength="80"
+            autocomplete="off"
+            placeholder="Ex. : Bac Pro comptabilité, 1ʳᵉ AA, niveau Master…"
+          >
+        </div>
+        <div class="field-help" id="pickerCustomError"></div>
+        <button type="button" class="picker-custom-ok" id="pickerCustomOk">
+          <i class="fas fa-check"></i> Valider
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1788,16 +1771,19 @@
 
   <script type="module">
   // ================================================================
-  // REGISTER — v8.32 : inscription guidée en 5 étapes
-  // 1 Identité → 2 Compte → 3 Classe (BEPC/BAC) + SESSION D'EXAMEN
-  //   (temps restant — 3ᵉ et Terminale SEULEMENT) → 4 WhatsApp
-  //   (pays + indicatif intelligent, modale custom) → 5 Récapitulatif.
-  // v8.32 (consigne propriétaire) : (a) sous le choix de classe, un champ
-  //   « Temps restant avant l'examen » s'ouvre UNIQUEMENT pour les deux
-  //   classes qui ont un examen national (3ᵉ → BEPC, Terminale → BAC) ;
-  //   pour la 2ᵉ et la 1ʳᵉ il ne s'ouvre pas. (b) ZÉRO style navigateur :
-  //   le choix du pays et tout autre sélecteur ouvrent une MODALE 100 %
-  //   custom aux couleurs du site (fini la popup native des selects).
+  // REGISTER — v8.34 : inscription guidée en 5 étapes
+  // 1 Identité → 2 Compte → 3 Classe (MODALE custom : 10 classes
+  //   Collège 6ᵉ→3ᵉ · Lycée Seconde→Terminale + séries A/C/D ·
+  //   Université L1→L3 · + « Écrire ta classe » champ libre)
+  //   → 4 WhatsApp (pays + indicatif intelligent, modale custom)
+  //   → 5 Récapitulatif.
+  // v8.34 (consigne propriétaire) : (a) les 4 cartes deviennent UNE
+  //   modale 100 % custom, uniforme au site, avec 10 classes et, en
+  //   fin de liste, « Écrire ta classe » : un champ de saisie libre où
+  //   l'élève tape sa classe réelle ou un niveau professionnel.
+  //   (b) La SÉRIE (A/C/D) existe UNIQUEMENT pour la Terminale.
+  //   (c) La « durée / temps restant avant l'examen » est SUPPRIMÉE :
+  //   plusieurs domaines n'ont pas d'examen national.
   // Le compte Firebase Auth n'est créé QU'À L'ÉTAPE 5 : zéro compte
   // orphelin si l'élève abandonne en route. Une seule écriture Firestore.
   // ================================================================
@@ -1863,10 +1849,10 @@
   const panels = Array.from(document.querySelectorAll('.step-panel'));
   const examNote = $('examNote');
   const serieBlock = $('serieBlock');
-  // v8.32 — session d'examen (étape 3) + modale de sélection uniforme
-  const sessionBlock = $('sessionBlock');
-  const sessionPickerBtn = $('sessionPickerBtn');
-  const sessionPickerLabel = $('sessionPickerLabel');
+  // ✅ v8.34 — choix de classe par MODALE custom (10 classes + champ libre)
+  const classPickerBtn = $('classPickerBtn');
+  const classPickerLabel = $('classPickerLabel');
+  // ✅ v8.32 — modale de sélection uniforme (pays + tout futur choix)
   const countryPickerBtn = $('countryPickerBtn');
   const countryFlag = $('countryFlag');
   const countryName = $('countryName');
@@ -1877,6 +1863,11 @@
   const pickerSearchWrap = $('pickerSearchWrap');
   const pickerSearch = $('pickerSearch');
   const pickerList = $('pickerList');
+  // ✅ v8.34 — champ libre « Écrire ta classe » (dans la modale)
+  const pickerCustomWrap = $('pickerCustomWrap');
+  const pickerCustomInput = $('pickerCustomInput');
+  const pickerCustomOk = $('pickerCustomOk');
+  const pickerCustomError = $('pickerCustomError');
   const dialChip = $('dialChip');
   const phoneInput = $('phoneInput');
   const phoneWrap = $('phoneWrap');
@@ -1900,7 +1891,7 @@
       confirmPassword: '',
       classId: '',
       series: '',
-      examYear: null, // v8.32 — session d'examen (3ᵉ/Tle) : 2027, 2028…
+      customClass: '', // ✅ v8.34 — classe libre tapée par l'élève ('custom')
       phone: ''
     },
     countryIso: 'NE',
@@ -1920,18 +1911,37 @@
     { id: 5, label: 'Confirmation', fields: [] }
   ];
 
-  // Classe → libellés + examen national associé (consigne propriétaire :
-  // « on se base sur les classes du lycée et la troisième »).
-  // exam : 'bepc' (3ᵉ) | 'bac' (terminale) | '' (2ᵉ, 1ʳᵉ — pas d'examen national).
+  // ✅ v8.34 — LES 10 CLASSES (liste validée par le propriétaire) :
+  // Collège (6ᵉ → 3ᵉ) · Lycée (Seconde → Terminale) · Université (L1→L3)
+  // + « custom » = classe libre tapée par l'élève dans la modale.
+  // exam : 'bepc' (3ᵉ) | 'bac' (terminale) | '' (aucun examen national).
+  // PLUS DE SESSION/DURÉE : examLabel devient un objectif simple par
+  // domaine (plusieurs classes n'ont pas d'examen national).
   const CLASS_INFO = {
+    sixieme: { short: '6ᵉ', long: 'Sixième', exam: '', examLabel: 'Collège en route',
+      note: 'Bienvenue au collège : ARVEXA construit tes bases dans chaque matière, à ton rythme.' },
+    cinquieme: { short: '5ᵉ', long: 'Cinquième', exam: '', examLabel: 'Collège en route',
+      note: "On consolide tes bases et on prend de l'avance, matière par matière." },
+    quatrieme: { short: '4ᵉ', long: 'Quatrième', exam: '', examLabel: 'BEPC en vue',
+      note: 'Les bases se durcissent : ARVEXA te prépare déjà, tranquillement, vers le BEPC.' },
     troisieme: { short: '3ᵉ', long: 'Troisième', exam: 'bepc', examLabel: 'BEPC',
-      note: 'Objectif : BEPC — ton examen national de fin de 3ᵉ. On prépare chaque matière avec toi.' },
-    seconde: { short: '2ᵉ', long: 'Seconde', exam: '', examLabel: 'BAC plus tard',
+      sub: 'BEPC en fin de cycle',
+      note: 'Objectif : BEPC — ton examen national de fin de collège. On prépare chaque matière avec toi.' },
+    seconde: { short: '2ᵉ', long: 'Seconde', exam: '', examLabel: 'BAC en vue',
       note: "Pas d'examen national cette année : tu poses des bases solides et tu prends de l'avance sur le BAC." },
-    premiere: { short: '1ʳᵉ', long: 'Première', exam: '', examLabel: 'BAC plus tard',
+    premiere: { short: '1ʳᵉ', long: 'Première', exam: '', examLabel: 'BAC en vue',
       note: "Pas d'examen national cette année : tu prends de l'avance pour aborder le BAC sereinement." },
     terminale: { short: 'Tle', long: 'Terminale', exam: 'bac', examLabel: 'BAC',
-      note: 'Objectif : BAC — choisis ta série et ta session ci-dessous pour un accompagnement adapté.' }
+      sub: 'BAC · séries A, C, D',
+      note: 'Objectif : BAC — choisis ta série ci-dessous pour un accompagnement adapté.' },
+    licence1: { short: 'L1', long: 'Licence 1', exam: '', examLabel: 'Réussir ta licence',
+      note: "Bienvenue à la fac : ARVEXA t'aide à suivre, comprendre et réussir tes cours." },
+    licence2: { short: 'L2', long: 'Licence 2', exam: '', examLabel: 'Réussir ta licence',
+      note: 'Deuxième année de licence : on renforce tes acquis et ta méthode de travail.' },
+    licence3: { short: 'L3', long: 'Licence 3', exam: '', examLabel: 'Réussir ta licence',
+      note: 'Dernière année de licence : objectif réussir et préparer la suite.' },
+    custom: { short: 'Ta classe', long: 'Classe personnalisée', exam: '', examLabel: 'Ton objectif',
+      note: 'Ta classe à toi : ARVEXA adapte son aide à ce que tu prépares — examen, études ou niveau professionnel.' }
   };
   const SERIES_INFO = { A: 'Lettres', C: 'Sciences maths', D: 'Sciences exp' };
 
@@ -2015,12 +2025,14 @@
   })();
 
   const L = {
-    sessionPlaceholder: { fr: "Choisis ta session d'examen", en: 'Choose your exam session' },
-    whenExam: { fr: 'Quand passes-tu ton examen ?', en: 'When do you take your exam?' },
+    chooseClass: { fr: 'Choisis ta classe', en: 'Choose your class' },
+    classPlaceholder: { fr: 'Choisis ta classe', en: 'Choose your class' },
+    writeClass: { fr: 'Écrire ta classe', en: 'Type your class' },
+    writeClassSub: { fr: 'Pas dans la liste ? Tape-la toi-même', en: 'Not listed? Type it yourself' },
+    customRequired: { fr: 'Écris ta classe (2 caractères minimum).', en: 'Type your class (at least 2 characters).' },
     chooseCountry: { fr: 'Choisis ton pays', en: 'Choose your country' },
     searchCountry: { fr: 'Rechercher un pays…', en: 'Search a country…' },
-    noCountry: { fr: 'Aucun pays trouvé', en: 'No country found' },
-    sessionWord: { fr: 'Session', en: 'Session' }
+    noCountry: { fr: 'Aucun pays trouvé', en: 'No country found' }
   };
   const T = (o) => (LANG === 'en' ? o.en : o.fr);
 
@@ -2028,36 +2040,10 @@
     return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/['’`]/g, '').toLowerCase();
   }
 
-  // Mois restants avant l'examen (les BEPC/BAC du Niger ont lieu vers juin).
-  function monthsUntil(year) {
-    const now = new Date();
-    return (year - now.getFullYear()) * 12 + (5 - now.getMonth());
-  }
-
-  function monthsLabel(m) {
-    if (LANG === 'en') {
-      if (m <= 1) return 'in ~1 month';
-      if (m < 12) return 'in ~' + m + ' months';
-      const y = Math.floor(m / 12);
-      const r = m % 12;
-      if (!r) return y === 1 ? 'in ~1 year' : 'in ~' + y + ' years';
-      return 'in ~' + y + (y > 1 ? ' years ' : ' year ') + r + ' mo';
-    }
-    if (m <= 1) return 'dans ~1 mois';
-    if (m < 12) return 'dans ~' + m + ' mois';
-    const y = Math.floor(m / 12);
-    const r = m % 12;
-    if (!r) return y === 1 ? 'dans ~1 an' : 'dans ~' + y + ' ans';
-    return 'dans ~' + y + ' an' + (y > 1 ? 's' : '') + ' ' + r + ' mois';
-  }
-
-  // Sessions proposées : l'année civile est valable tant que l'examen
-  // (juin) n'a pas eu lieu — sinon on démarre à l'année suivante.
-  function sessionOptions() {
-    const now = new Date();
-    const first = now.getMonth() < 5 ? now.getFullYear() : now.getFullYear() + 1;
-    return [first, first + 1, first + 2];
-  }
+  // ✅ v8.34 — durée/session d'examen SUPPRIMÉE : plusieurs domaines
+  // (lycées techniques, université, formations professionnelles…) n'ont
+  // pas d'examen national. L'objectif est déduit de la classe via
+  // examLabel — plus aucun calcul de temps restant.
 
   // Indicatif intelligent : détecte le pays d'un numéro international tapé
   // avec « + » par préfixe d'indicatif LE PLUS LONG (indicatifs uniques).
@@ -2082,17 +2068,16 @@
   // STORAGE — Sauvegarde de progression (jamais les mots de passe)
   // ================================================================
   const SAVE_KEY = 'arvexa_register_draft_v2';
-  // Jamais de mot de passe dans le brouillon ; classId/series sont des
-  // choix non sensibles : les restaurer évite de perdre la classe si
-  // l'élève recharge la page au milieu du wizard.
-  const DRAFT_KEYS = ['firstName', 'lastName', 'email', 'establishment', 'phone', 'classId', 'series'];
+  // Jamais de mot de passe dans le brouillon ; classId/series/customClass
+  // sont des choix non sensibles : les restaurer évite de perdre la
+  // classe si l'élève recharge la page au milieu du wizard.
+  const DRAFT_KEYS = ['firstName', 'lastName', 'email', 'establishment', 'phone', 'classId', 'series', 'customClass'];
 
   function saveDraft() {
     try {
       const draft = {};
       DRAFT_KEYS.forEach((k) => { draft[k] = state.values[k]; });
       draft.countryIso = state.countryIso;
-      draft.examYear = state.values.examYear || null; // v8.32
       draft.step = state.currentStep;
       localStorage.setItem(SAVE_KEY, JSON.stringify(draft));
     } catch (e) {}
@@ -2114,9 +2099,6 @@
       if (draft.countryIso && countryByIso(draft.countryIso)) {
         state.countryIso = draft.countryIso;
         COUNTRY = countryByIso(draft.countryIso);
-      }
-      if (Number.isInteger(draft.examYear)) {
-        state.values.examYear = draft.examYear; // v8.32
       }
       if (Number.isInteger(draft.step) && draft.step >= 1 && draft.step <= 5) {
         state.currentStep = draft.step;
@@ -2354,14 +2336,11 @@
       }
       return false;
     }
-    // ✅ v8.32 — session d'examen obligatoire pour les DEUX classes qui
-    // passent un examen national (3ᵉ → BEPC, Terminale → BAC) ; les 2ᵉ
-    // et 1ʳᵉ passent sans ce champ.
-    if ((state.values.classId === 'troisieme' || state.values.classId === 'terminale')
-      && !Number.isInteger(state.values.examYear)) {
+    // ✅ v8.34 — classe libre : le texte tapé est OBLIGATOIRE (2 car. min).
+    if (state.values.classId === 'custom' && state.values.customClass.trim().length < 2) {
       if (markError) {
         examNote.classList.add('error');
-        examNote.textContent = "Choisis ta session d'examen pour continuer.";
+        examNote.textContent = 'Écris ta classe dans le champ pour continuer.';
       }
       return false;
     }
@@ -2442,22 +2421,21 @@
   }
 
   function renderRecap() {
-    const info = state.values.classId ? CLASS_INFO[state.values.classId] : null;
-    const EXAM_DISPLAY = { bepc: 'BEPC', bac: 'BAC' };
+    const cid = state.values.classId;
+    const info = cid ? CLASS_INFO[cid] : null;
     $('recapName').textContent =
       `${state.values.firstName.trim()} ${state.values.lastName.trim()}`.trim() || '—';
     $('recapEmail').textContent = state.values.email.trim() || '—';
-    $('recapClass').textContent = info ? `${info.short} (${info.long})` : '—';
-    // ✅ v8.32 — objectif = examen + session choisie + temps restant
-    // (« BEPC 2027 · dans ~7 mois ») ; 2ᵉ/1ʳᵉ : « BAC en vue ».
-    $('recapExam').textContent = info
-      ? (EXAM_DISPLAY[info.exam]
-        ? EXAM_DISPLAY[info.exam] + ' ' + state.values.examYear
-          + ' · ' + monthsLabel(monthsUntil(state.values.examYear))
-        : 'BAC en vue')
-      : '—';
+    // ✅ v8.34 — classe exacte : le texte tapé pour une classe libre,
+    // « Tle (Terminale) » pour les classes du registre.
+    $('recapClass').textContent = cid === 'custom'
+      ? (state.values.customClass.trim() || 'Ta classe')
+      : (info ? `${info.short} (${info.long})` : '—');
+    // ✅ v8.34 — plus de durée : objectif simple selon le domaine
+    // (« BEPC », « BAC », « BAC en vue », « Réussir ta licence »…).
+    $('recapExam').textContent = info ? info.examLabel : '—';
     const serieRow = $('recapSerieRow');
-    if (state.values.classId === 'terminale' && state.values.series) {
+    if (cid === 'terminale' && state.values.series) {
       serieRow.style.display = 'flex';
       $('recapSerie').textContent = state.values.series + ' · ' + SERIES_INFO[state.values.series];
     } else {
@@ -2489,48 +2467,98 @@
   });
 
   // ================================================================
-  // ÉTAPE 3 — CLASSE + SÉRIE
+  // ÉTAPE 3 — CLASSE (modale 10 classes + champ libre) + SÉRIE
   // ================================================================
-  const classInputs = Array.from(document.querySelectorAll('input[name="classId"]'));
   const serieInputs = Array.from(document.querySelectorAll('input[name="series"]'));
 
-  classInputs.forEach((input) => {
-    input.addEventListener('change', () => {
-      state.values.classId = input.value;
-      state.touched.classId = true;
-      classInputs.forEach((r) => r.closest('.class-card').classList.toggle('selected', r.checked));
-      const info = CLASS_INFO[input.value];
-      examNote.classList.remove('error');
-      examNote.textContent = info.note;
-      // ✅ v8.32 — « Temps restant avant l'examen » : le champ s'ouvre
-      // UNIQUEMENT pour les deux classes avec examen national (3ᵉ → BEPC,
-      // Terminale → BAC) ; pour la 2ᵉ et la 1ʳᵉ il ne s'ouvre pas.
-      sessionBlock.hidden = !info.exam;
-      if (!info.exam) {
-        // 2ᵉ/1ʳᵉ : pas de session d'examen — on la remise à zéro.
-        state.values.examYear = null;
-        state.touched.examYear = false;
-        renderSessionButton();
-      } else {
-        // 3ᵉ ↔ Terminale : l'année de session choisie reste valable
-        // (même année civile), seul l'examen change (BEPC ↔ BAC).
-        renderSessionButton();
+  // Libellé du bouton « Ta classe » selon le choix (ou la restauration
+  // d'un brouillon).
+  function renderClassButton() {
+    const cid = state.values.classId;
+    if (!cid) {
+      classPickerLabel.textContent = T(L.classPlaceholder);
+      classPickerLabel.classList.add('is-placeholder');
+      return;
+    }
+    classPickerLabel.classList.remove('is-placeholder');
+    classPickerLabel.textContent = cid === 'custom'
+      ? (state.values.customClass.trim() || CLASS_INFO.custom.short)
+      : (CLASS_INFO[cid] ? CLASS_INFO[cid].short + ' — ' + CLASS_INFO[cid].long : cid);
+  }
+
+  // Application d'un choix de classe (modale OU champ libre).
+  function applyClassChoice(cid, customText) {
+    state.values.classId = cid;
+    state.touched.classId = true;
+    state.values.customClass = cid === 'custom' ? String(customText || '').trim() : '';
+    renderClassButton();
+    const info = CLASS_INFO[cid];
+    examNote.classList.remove('error');
+    examNote.textContent = info.note;
+    // ✅ v8.34 — la série n'existe QUE pour la Terminale (BAC) ; plus
+    // aucun champ de durée/session pour aucune classe.
+    serieBlock.hidden = cid !== 'terminale';
+    if (cid !== 'terminale') {
+      state.values.series = '';
+      serieInputs.forEach((r) => {
+        r.checked = false;
+        r.closest('.serie-chip').classList.remove('selected');
+      });
+    }
+    try {
+      if (window.arvexaAnalytics && window.arvexaAnalytics.trackFeature) {
+        window.arvexaAnalytics.trackFeature('inscription_classe_' + cid);
       }
-      // La série n'existe que pour la Terminale (BAC)
-      serieBlock.hidden = input.value !== 'terminale';
-      if (input.value !== 'terminale') {
-        state.values.series = '';
-        serieInputs.forEach((r) => {
-          r.checked = false;
-          r.closest('.serie-chip').classList.remove('selected');
-        });
+    } catch (e) {}
+    saveDraft();
+  }
+
+  // Les 10 classes groupées (Collège / Lycée / Université) + en fin de
+  // liste « Écrire ta classe » → champ de saisie libre dans la modale.
+  function classPickerItems() {
+    const sel = state.values.classId;
+    const item = (id) => ({
+      value: id,
+      flag: CLASS_INFO[id].short,
+      shortFlag: true,
+      name: CLASS_INFO[id].long,
+      sub: CLASS_INFO[id].sub || '',
+      selected: sel === id
+    });
+    return [
+      { header: 'Collège' },
+      item('sixieme'),
+      item('cinquieme'),
+      item('quatrieme'),
+      item('troisieme'),
+      { header: 'Lycée' },
+      item('seconde'),
+      item('premiere'),
+      item('terminale'),
+      { header: 'Université' },
+      item('licence1'),
+      item('licence2'),
+      item('licence3'),
+      { divider: true },
+      {
+        action: 'write',
+        flag: '✏️',
+        name: T(L.writeClass),
+        sub: T(L.writeClassSub),
+        selected: sel === 'custom'
       }
-      try {
-        if (window.arvexaAnalytics && window.arvexaAnalytics.trackFeature) {
-          window.arvexaAnalytics.trackFeature('inscription_classe_' + input.value);
-        }
-      } catch (e) {}
-      saveDraft();
+    ];
+  }
+
+  classPickerBtn.addEventListener('click', () => {
+    openPicker({
+      title: T(L.chooseClass),
+      searchable: false,
+      trigger: classPickerBtn,
+      items: classPickerItems(),
+      onPick: (cid) => applyClassChoice(cid, ''),
+      // ✅ v8.34 — « Écrire ta classe » : le texte tapé devient la classe
+      onCustom: (txt) => applyClassChoice('custom', txt)
     });
   });
 
@@ -2557,7 +2585,8 @@
   function renderPickerItems(filter) {
     const f = normSearch(filter);
     const items = ((pickerCtx && pickerCtx.items) || []).filter((it) =>
-      !f || normSearch(it.name).includes(f)
+      it.header || it.divider
+      || !f || normSearch(it.name).includes(f)
         || normSearch(it.sub || '').includes(f)
         || (it.dial || '').includes(f)
     );
@@ -2570,12 +2599,28 @@
       return;
     }
     items.forEach((it) => {
+      // ✅ v8.34 — titres de groupe (Collège / Lycée / Université)
+      if (it.header) {
+        const li = document.createElement('li');
+        li.className = 'picker-group';
+        li.textContent = it.header;
+        pickerList.appendChild(li);
+        return;
+      }
+      // ✅ v8.34 — séparateur avant « Écrire ta classe »
+      if (it.divider) {
+        const li = document.createElement('li');
+        li.className = 'picker-divider';
+        li.setAttribute('aria-hidden', 'true');
+        pickerList.appendChild(li);
+        return;
+      }
       const li = document.createElement('li');
       li.className = 'picker-item' + (it.selected ? ' selected' : '');
       li.setAttribute('role', 'option');
       li.setAttribute('aria-selected', it.selected ? 'true' : 'false');
       const flag = document.createElement('span');
-      flag.className = 'pi-flag';
+      flag.className = 'pi-flag' + (it.shortFlag ? ' flag-short' : '');
       flag.textContent = it.flag || '';
       const name = document.createElement('span');
       name.className = 'pi-name';
@@ -2593,6 +2638,9 @@
       check.style.visibility = it.selected ? 'visible' : 'hidden';
       li.appendChild(check);
       li.addEventListener('click', () => {
+        // ✅ v8.34 — « Écrire ta classe » : on ne ferme pas, on montre
+        // le champ de saisie libre DANS la modale.
+        if (it.action === 'write') { openCustomBox(); return; }
         const ctx = pickerCtx;
         closePicker();
         if (ctx && ctx.onPick) ctx.onPick(it.value);
@@ -2625,6 +2673,7 @@
     document.body.style.overflow = '';
     setTimeout(() => { pickerOverlay.hidden = true; }, 320);
     pickerCtx = null;
+    pickerCustomWrap.hidden = true; // ✅ v8.34 — champ libre réinitialisé
     if (pickerTrigger) {
       try { pickerTrigger.focus({ preventScroll: true }); } catch (e) {}
       pickerTrigger = null;
@@ -2641,53 +2690,49 @@
   pickerSearch.addEventListener('input', () => renderPickerItems(pickerSearch.value));
 
   // ================================================================
-  // ÉTAPE 3 — SESSION D'EXAMEN (temps restant avant l'examen)
+  // ÉTAPE 3 — « ÉCRIRE TA CLASSE » : champ libre DANS la modale uniforme
+  // (l'élève tape sa classe réelle ou un niveau professionnel — 100 %
+  // custom, jamais une popup native du navigateur).
   // ================================================================
-  function sessionExamLabel() {
-    return state.values.classId === 'troisieme' ? 'BEPC' : 'BAC';
-  }
-
-  function renderSessionButton() {
-    const y = state.values.examYear;
-    if (!Number.isInteger(y)) {
-      sessionPickerLabel.textContent = T(L.sessionPlaceholder);
-      sessionPickerLabel.classList.add('is-placeholder');
-    } else {
-      sessionPickerLabel.textContent =
-        sessionExamLabel() + ' ' + y + ' · ' + monthsLabel(monthsUntil(y));
-      sessionPickerLabel.classList.remove('is-placeholder');
+  function openCustomBox() {
+    pickerCustomWrap.hidden = false;
+    pickerCustomWrap.classList.remove('is-error');
+    pickerCustomError.classList.remove('visible', 'error');
+    if (!pickerCustomInput.value.trim() && state.values.classId === 'custom') {
+      pickerCustomInput.value = state.values.customClass;
     }
+    setTimeout(() => {
+      try { pickerCustomInput.focus({ preventScroll: true }); } catch (e) {}
+    }, 60);
+    // La feuille peut dépasser l'écran : on descend jusqu'au champ.
+    const sheet = pickerCustomWrap.closest('.picker-sheet');
+    if (sheet) sheet.scrollTop = sheet.scrollHeight;
   }
 
-  sessionPickerBtn.addEventListener('click', () => {
-    if (!state.values.classId) return;
-    openPicker({
-      title: T(L.whenExam),
-      searchable: false,
-      trigger: sessionPickerBtn,
-      items: sessionOptions().map((y) => ({
-        value: y,
-        flag: '📅',
-        name: T(L.sessionWord) + ' ' + y,
-        sub: sessionExamLabel() + ' · ' + monthsLabel(monthsUntil(y)),
-        selected: y === state.values.examYear
-      })),
-      onPick: (y) => {
-        state.values.examYear = y;
-        state.touched.examYear = true;
-        renderSessionButton();
-        if (examNote.classList.contains('error')) {
-          examNote.classList.remove('error');
-          examNote.textContent = CLASS_INFO[state.values.classId].note;
-        }
-        try {
-          if (window.arvexaAnalytics && window.arvexaAnalytics.trackFeature) {
-            window.arvexaAnalytics.trackFeature('inscription_session_' + y);
-          }
-        } catch (e) {}
-        saveDraft();
-      }
-    });
+  function validateCustomClass() {
+    const txt = pickerCustomInput.value.trim().replace(/\s+/g, ' ');
+    if (txt.length < 2 || txt.length > 80) {
+      pickerCustomWrap.classList.add('is-error');
+      pickerCustomError.textContent = T(L.customRequired);
+      pickerCustomError.classList.add('visible', 'error');
+      try { pickerCustomInput.focus({ preventScroll: true }); } catch (e) {}
+      return;
+    }
+    const ctx = pickerCtx;
+    closePicker();
+    if (ctx && ctx.onCustom) ctx.onCustom(txt);
+  }
+
+  pickerCustomOk.addEventListener('click', validateCustomClass);
+  pickerCustomInput.addEventListener('input', () => {
+    pickerCustomWrap.classList.remove('is-error');
+    pickerCustomError.classList.remove('visible', 'error');
+  });
+  pickerCustomInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      validateCustomClass();
+    }
   });
 
   // ================================================================
@@ -2875,17 +2920,19 @@
     const firstNameValue = state.values.firstName.trim();
     const lastNameValue = state.values.lastName.trim();
     const establishmentValue = state.values.establishment.trim() || '';
-    const classInfo = CLASS_INFO[state.values.classId];
+    // ✅ v8.34 — 10 classes du registre ou classe libre « custom »
     const classIdValue = state.values.classId;
-    const examValue = classInfo.exam; // 'bepc' | 'bac' | ''
-    // ✅ v8.32 — session d'examen choisie à l'étape 3 (3ᵉ et Terminale)
-    const examYearValue = (examValue && Number.isInteger(state.values.examYear))
-      ? state.values.examYear : null;
+    const classInfo = CLASS_INFO[classIdValue] || CLASS_INFO.custom;
+    const customClassValue = classIdValue === 'custom'
+      ? state.values.customClass.trim() : '';
+    const examValue = classInfo.exam; // 'bepc' | 'bac' | '' (plus de session)
     const seriesValue = classIdValue === 'terminale' ? state.values.series : '';
     const whatsappValue = normalizePhone(phoneInput.value); // E.164, validé à l'étape 4
     const whatsappCountryValue = state.countryIso;
     const whatsappDialValue = COUNTRY.dial;
-    const classAdminLabel = classInfo.short + ' (' + classInfo.long + ')';
+    const classAdminLabel = classIdValue === 'custom'
+      ? customClassValue
+      : classInfo.short + ' (' + classInfo.long + ')';
 
    try {
   // 1. Création du compte Firebase Auth — UNIQUEMENT à l'étape 5
@@ -2900,10 +2947,10 @@
     fullName: `${firstNameValue} ${lastNameValue}`.trim(),
     email: emailValue,
     establishment: establishmentValue,
-    // ✅ v8.31 — la VRAIE classe choisie à l'étape 3 (fini le hardcode
-    // terminale_d) : troisieme | seconde | premiere | terminale
+    // ✅ v8.34 — la VRAIE classe choisie à l'étape 3 : 10 classes du
+    // registre (collège / lycée / université) ou « custom » (classe libre)
     classId: classIdValue,
-    // Examen national associé : bepc (3ᵉ) | bac (terminale) | '' (2ᵉ, 1ʳᵉ)
+    // Examen national associé : bepc (3ᵉ) | bac (terminale) | '' (aucun)
     exam: examValue,
     // ✅ v8.31 — étape WhatsApp intégrée : numéro E.164 + pays + indicatif
     whatsapp: whatsappValue,
@@ -2919,10 +2966,10 @@
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
+  // ✅ v8.34 — classe libre : le texte EXACT tapé par l'élève
+  if (customClassValue) profileData.customClass = customClassValue;
   // Série uniquement pour la Terminale (A | C | D)
   if (seriesValue) profileData.series = seriesValue;
-  // ✅ v8.32 — session d'examen (année) uniquement pour 3ᵉ et Terminale
-  if (examYearValue) profileData.examYear = examYearValue;
 
   // ⚡ Retry : si Firestore échoue, on réessaie 2 fois avant d'abandonner
   let profileSaved = false;
@@ -2974,8 +3021,7 @@ try {
       establishment: establishmentValue || '',
       classId: classIdValue,
       className: classAdminLabel,
-      exam: examValue,
-      examYear: examYearValue || null
+      exam: examValue
     })
   });
 
@@ -3001,7 +3047,6 @@ try {
     establishment: establishmentValue || '',
     classId: classIdValue,
     exam: examValue,
-    examYear: examYearValue || null,
     type: 'success',
     read: false,
     createdAt: serverTimestamp()
@@ -3142,12 +3187,18 @@ try {
 
   renderCountryButton();
   if (state.values.phone) validatePhoneField();
-  // Restaure la sélection de classe depuis un éventuel aller-retour
+  // ✅ v8.34 — restaure la classe (bouton modale) + le champ libre éventuel
   if (state.values.classId) {
-    const input = classInputs.find((r) => r.value === state.values.classId);
-    if (input) {
-      input.checked = true;
-      input.dispatchEvent(new Event('change'));
+    renderClassButton();
+    const info = CLASS_INFO[state.values.classId];
+    if (info) {
+      examNote.classList.remove('error');
+      examNote.textContent = info.note;
+    }
+    serieBlock.hidden = state.values.classId !== 'terminale';
+    if (state.values.classId !== 'terminale') {
+      // Classe sans série (ou classe libre) : on purge une série obsolète
+      state.values.series = '';
     }
   }
   // Restaure la série si l'élève était en Terminale
@@ -3158,14 +3209,12 @@ try {
       sInput.dispatchEvent(new Event('change'));
     }
   }
-  // ✅ v8.32 — restaure la session d'examen choisie (si classe à examen)
-  renderSessionButton();
 
   // Restaure l'étape du brouillon (recharge de page au milieu du wizard) :
   // les champs 1-4 et le pays reviennent du draft, on repart où l'élève était.
   goToStep(Math.min(Math.max(state.currentStep, 1), 5));
 
-  console.log('ARVEXA School — Inscription v8.32 (wizard 5 étapes · session examen · modales custom)');
+  console.log('ARVEXA School — Inscription v8.34 (wizard 5 étapes · modale 10 classes + classe libre · séries Terminale)');
   </script>
 </body>
 </html>

@@ -188,9 +188,10 @@ async function buildStudentContext(uid) {
       context.profile = {
         firstName: u.firstName || '',
         lastName: u.lastName || '',
-        // ✅ v8.31 — vraie classe (3ᵉ → Terminale) + examen visé (BEPC/BAC/'')
-        // ✅ v8.32 — + session d'examen choisie à l'inscription (examYear)
+        // ✅ v8.31 — vraie classe (6ᵉ → Licence 3, custom ou legacy)
+        // ✅ v8.34 — + customClass : texte de la classe libre tapée à l'inscription
         classId: u.classId || 'terminale_d',
+        customClass: typeof u.customClass === 'string' ? u.customClass : '',
         exam: u.exam || '',
         examYear: Number.isInteger(u.examYear) ? u.examYear : null,
         establishment: u.establishment || ''
@@ -277,8 +278,8 @@ async function buildStudentContext(uid) {
 function buildSystemPrompt(context) {
   const lines = [];
   lines.push('Tu es ARV Assistant, le tuteur personnel IA d\'ARVEXA School.');
-  // ✅ v8.31 — ARV accompagne maintenant de la 3ᵉ au BAC (BEPC inclus)
-  lines.push('Tu aides des élèves d\'Afrique francophone, de la 3ᵉ à la Terminale, à préparer le BEPC et le BAC.');
+  // ✅ v8.34 — ARV accompagne du collège (6ᵉ) à l'université (Licence 3)
+  lines.push('Tu aides des élèves et étudiants d\'Afrique francophone, du collège (6ᵉ) à l\'université (Licence 3), à réussir leurs études, le BEPC et le BAC.');
   lines.push('');
   lines.push('═══ TON RÔLE ═══');
   lines.push('- Expliquer clairement, avec pédagogie, sans jargon inutile');
@@ -294,14 +295,23 @@ function buildSystemPrompt(context) {
     const p = context.profile;
     // ✅ v8.31 — registre des classes (miroir serveur d'arvexa-classes.js)
     const CLASS_LABELS = {
+      sixieme: '6ᵉ (Sixième) — collège',
+      cinquieme: '5ᵉ (Cinquième) — collège',
+      quatrieme: '4ᵉ (Quatrième) — collège, BEPC en vue',
       troisieme: '3ᵉ (Troisième) — examen visé : BEPC',
       seconde: '2ᵉ (Seconde) — préparation du BAC',
       premiere: '1ʳᵉ (Première) — préparation du BAC',
       terminale: 'Terminale — examen visé : BAC',
+      licence1: 'Licence 1 (L1) — université',
+      licence2: 'Licence 2 (L2) — université',
+      licence3: 'Licence 3 (L3) — université',
+      custom: 'Classe personnalisée — voir « Classe exacte »',
       terminale_d: 'Terminale D — examen visé : BAC'
     };
     lines.push(`Prénom : ${p.firstName || 'élève'}`);
     lines.push(`Classe : ${CLASS_LABELS[p.classId] || p.classId}`);
+    // ✅ v8.34 — classe libre : le texte exact tapé par l'élève prime
+    if (p.customClass) lines.push(`Classe exacte : ${p.customClass}`);
     if (p.exam) {
       lines.push(`Examen : ${p.exam === 'bepc' ? 'BEPC' : 'BAC'}`);
       // ✅ v8.32 — temps restant avant l'examen (session choisie à l'inscription,

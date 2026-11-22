@@ -1739,11 +1739,14 @@
     const lastName = data.lastName || '';
     const email = data.email || 'email@exemple.com';
     const establishment = data.establishment || 'Non renseigné';
-    // ✅ v8.31 — libellé dynamique : 3ᵉ / 2ᵉ / 1ʳᵉ / Tle / Terminale D (legacy)
+    // ✅ v8.34 — libellé dynamique : 6ᵉ → Licence 3, classe libre (texte
+    // tapé par l'élève) ou Terminale D (legacy v ≤ 8.30).
     const CL = window.ARVEXA_CLASSES;
-    const className = CL
-      ? `${CL.label(data.classId)} · ${CL.long(data.classId)}`
-      : (data.classId || 'Terminale D');
+    const className = (data.classId === 'custom' && data.customClass)
+      ? data.customClass
+      : (CL
+        ? `${CL.label(data.classId)} · ${CL.long(data.classId)}`
+        : (data.classId || 'Terminale D'));
     const createdAt = data.createdAt || null;
     const isPremium = isUserPremium(data);
     const isPending = data.subscriptionStatus === 'pending';

@@ -3630,6 +3630,17 @@
         if (docSnap.exists()) {
           userData = docSnap.data();
 
+          // ✅ v8.34 — publie la vraie classe complète pour la carte
+          // « Ton parcours » (parcours.js lit ARVEXA_USER_PROFILE).
+          try {
+            window.ARVEXA_USER_PROFILE = {
+              classId: userData.classId || '',
+              series: userData.series || '',
+              customClass: userData.customClass || ''
+            };
+            window.dispatchEvent(new Event('arvexa:profile'));
+          } catch (e) {}
+
           if (userData.accountStatus === 'blocked') {
             if (unsubscribeUser) { unsubscribeUser(); unsubscribeUser = null; }
             lastSnapshotUid = null;
@@ -3655,6 +3666,13 @@
           hideSyncPill();
         } else if (cached) {
           userData = cached;
+          try {
+            window.ARVEXA_USER_PROFILE = {
+              classId: userData.classId || '',
+              series: userData.series || '',
+              customClass: userData.customClass || ''
+            };
+          } catch (e) {}
           renderUserData(cached);
           showDashboard();
         } else {
