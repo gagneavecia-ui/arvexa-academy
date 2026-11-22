@@ -13,6 +13,7 @@
      ARVX_AI.pdfToImages(file)         → [dataURL] pages du PDF (pdf.js CDN)
      ARVX_AI.errMessage(code)          → message FR/AN pour afficher
      ARVX_AI.endpoint = 'https://...'  → si l'API vit sur un autre domaine
+   (sur ARVEXA l'API vit sur /api/arv?kit=1 — le handler du kit y est délégué)
 
    Les clés restent côté serveur : ce script n'en contient aucune.
    ═══════════════════════════════════════════════════════════════════ */
@@ -171,6 +172,6 @@
     fileToDataURL,
     compressImageFile,
     pdfToImages,
-    endpoint: '/api/ai',
+    endpoint: '/api/arv?kit=1',
   };
 })();

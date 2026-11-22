@@ -62,6 +62,10 @@
   ],
   "routes": [
     {
+      "src": "^/_shared(/.*)?$",
+      "status": 404
+    },
+    {
       "src": "^/(firebase\\.json|firestore\\.rules|storage\\.rules)(/.*)?$",
       "status": 404
     },

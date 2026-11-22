@@ -536,10 +536,12 @@ async function loadRecentMessages(uid, conversationId, limit = MAX_HISTORY_MESSA
 // HANDLER
 // ────────────────────────────────────────────────────────────────
 module.exports = async function handler(request, response) {
-
-// ✅ FIX — la config DOIT être assignée APRÈS module.exports, sinon elle
-// est écrasée et maxDuration retombe à la valeur par défaut (10s sur Vercel).
-module.exports.config = { maxDuration: 60 };
+  // ✅ v8.37 — IA ARVX (images/documents/chat) : le kit appelle
+  // /api/arv?kit=1 ; on délègue au handler du kit (limité à 12 fonctions
+  // sur le plan Hobby, donc une seule fonction pour les deux IA).
+  if (request.url && /[?&]kit=1/.test(request.url)) {
+    return require('../_shared/arvx-ai-handler.js')(request, response);
+  }
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
     return jsonError(response, 405, 'Méthode non autorisée.');
@@ -660,3 +662,9 @@ module.exports.config = { maxDuration: 60 };
     });
   }
 };
+
+// ✅ v8.37 — config au niveau module : Vercel lit module.exports.config au
+// chargement (l'ancienne affectation était DANS le corps de la fonction,
+// donc jamais exécutée au chargement → maxDuration retombait à 10 s).
+// 60 s : budget nécessaire aux chaînes IA (vision OpenRouter/Gemini/Groq).
+module.exports.config = { maxDuration: 60 };
