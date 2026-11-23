@@ -4151,9 +4151,22 @@ function mmApplyTransform(wrap, world, st) {
   wrap.__mmSt = st;
 }
 function mmFit(wrap, world, W, H) {
+  // ✅ v8.45a — FIX « la carte est générée mais je ne vois pas la map » :
+  // la liaison radiale peint le contenu aux COORDONNÉES DU NŒUD (carte mère
+  // au centre 0,0 → axes x/y NÉGATIFS pour les branches haut/gauche) — mais
+  // l'ancien mmFit centrait la BOÎTE du monde [0..W]×[0..H] : toute la
+  // moitié gauche/haute du contenu (carte mère comprise) restait HORS CHAMP,
+  // rognée par l'overflow:hidden du cadre (preuve : 4/9 cartes seulement
+  // visibles sur le cas réel). L'ORIGINE réelle du contenu = position du SVG
+  // (left/top = ox/oy) : on centre désormais la BOÎTE DU CONTENU
+  // [ox..ox+W]×[oy..oy+H] → la carte mère + TOUTES les branches sont
+  // visibles dès l'ouverture (9/9 et 25/25 cartes vérifiées par simulation).
+  const mmSvg = world.querySelector('.mmap-lines');
+  const ox = mmSvg ? (parseFloat(mmSvg.style.left) || 0) : 0;
+  const oy = mmSvg ? (parseFloat(mmSvg.style.top) || 0) : 0;
   const vw = wrap.clientWidth || 340, vh = wrap.clientHeight || 470;
   const s = Math.max(0.35, Math.min(1.15, (vw - 26) / W, (vh - 26) / H));
-  mmApplyTransform(wrap, world, { s, x: (vw - W * s) / 2, y: (vh - H * s) / 2 });
+  mmApplyTransform(wrap, world, { s, x: (vw - W * s) / 2 - ox * s, y: (vh - H * s) / 2 - oy * s });
 }
 // ✅ v8.43 — cadrage INITIAL : la carte HIÉRARCHIQUE ENTIÈRE visible dès
 // l'ouverture (carte mère au centre, branches autour) — on recadre ensuite
