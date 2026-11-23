@@ -1437,8 +1437,12 @@ main {
   color: var(--danger-light);
 }
 
+/* ✅ v8.48a — z-index 11000 : la modale doit flotter AU-DESSUS de la carte
+   mentale en PLEIN ÉCRAN (.mm-fs z-index 10000) — avant, l'explication d'une
+   carte était invisible en plein écran (il fallait sortir du plein écran).
+   Les toasts suivent à 12000 pour rester visibles dans le plein écran aussi. */
 .modal-backdrop {
-  position: fixed; inset: 0; z-index: 200;
+  position: fixed; inset: 0; z-index: 11000;
   display: none; align-items: flex-end; justify-content: center;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(12px);
@@ -1446,6 +1450,58 @@ main {
 }
 .modal-backdrop.show { display: flex; animation: fadeIn 0.2s ease; }
 .modal-backdrop.center { align-items: center; padding: 16px; }
+
+/* ✅ v8.48a — SIGNATURE DE COMPLÉTION (fin du résumé) : sceau doré qui prouve
+   que l'IA a terminé la section entière ; variante « partial » avec bouton
+   « Terminer » quand des parties manquent (coupure de la 1re passe). */
+.ai-signature {
+  display: flex; align-items: center; gap: 12px;
+  margin: 16px 0 4px; padding: 13px 15px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.14), rgba(224, 184, 74, 0.07));
+  border: 1px solid rgba(184, 134, 11, 0.35);
+  box-shadow: 0 2px 14px rgba(184, 134, 11, 0.10);
+}
+.ai-signature.partial {
+  background: linear-gradient(135deg, rgba(212, 160, 23, 0.12), rgba(212, 160, 23, 0.05));
+  border-color: rgba(212, 160, 23, 0.4);
+}
+.ai-signature-seal {
+  flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--accent, #B8860B), var(--accent-bright, #E0B84A));
+  color: #0A1A12; font-size: 14px;
+}
+.ai-signature-seal.warn {
+  background: linear-gradient(135deg, #D4A017, #E8B93A);
+}
+.ai-signature-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ai-signature-txt strong { font-size: 13.5px; color: var(--accent-bright, #E0B84A); letter-spacing: 0.2px; }
+.ai-signature-txt span { font-size: 11.5px; color: var(--text-dim); line-height: 1.4; }
+.ai-signature-award { color: var(--accent, #B8860B); font-size: 18px; opacity: 0.85; }
+.ai-signature-btn {
+  flex-shrink: 0;
+  border: none; cursor: pointer;
+  padding: 8px 14px; border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent, #B8860B), var(--accent-bright, #E0B84A));
+  color: #0A1A12; font-weight: 700; font-size: 12.5px;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.ai-signature-btn:disabled { opacity: 0.6; cursor: wait; }
+
+/* ✅ v8.48a — mini-signature des onglets Questionnaires / Carte mentale :
+   ligne discrète qui prouve la complétion de chaque contenu généré. */
+.mini-signature {
+  display: flex; align-items: center; gap: 7px;
+  margin: 0 0 10px; padding: 7px 11px;
+  border-radius: 10px;
+  background: rgba(184, 134, 11, 0.10);
+  border: 1px dashed rgba(184, 134, 11, 0.4);
+  font-size: 11.5px; font-weight: 600;
+  color: var(--accent-bright, #E0B84A);
+}
+.mini-signature i { color: var(--success-light, #3AB67E); }
 
 .modal {
   width: 100%; max-width: 640px; max-height: 92vh;
@@ -1849,7 +1905,7 @@ main {
 
 .toast-container {
   position: fixed; top: calc(var(--safe-top) + 16px); left: 50%;
-  transform: translateX(-50%); z-index: 9999;
+  transform: translateX(-50%); z-index: 12000;
   width: calc(100% - 32px); max-width: 420px;
   display: flex; flex-direction: column; gap: 8px;
   pointer-events: none;
@@ -4592,7 +4648,29 @@ async function renderSectionView(params) {
     `;
 
     const container = $('analysisContainer');
-    container.innerHTML = renderAnalysis(a, profile, { noQuestions: true });
+    // ✅ v8.48a — signature de complétion : « complete » si explication + parties
+    // + structure + questions sont réellement là ; sinon « partial » → le bloc
+    // « Terminer la section » appelle l'action completeSection (seules les
+    // parties manquantes sont régénérées, puis la vue se repeint).
+    const comp = analysisCompleteness(a);
+    const sigMode = comp.all ? 'complete' : 'partial';
+    container.innerHTML = renderAnalysis(a, profile, { noQuestions: true, signature: sigMode });
+
+    // ✅ v8.48a — « Terminer la section » : finit ce que la 1re passe a laissé
+    // en plan (fenêtre TPM saturée, budget) — le contenu est fusionné puis la
+    // vue est repeinte avec la signature complète.
+    $('finishSectionBtn')?.addEventListener('click', async () => {
+      const btn = $('finishSectionBtn');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Terminaison…'; }
+      try {
+        await callApi('completeSection', { subject, chapterId, sectionId });
+        showToast('Section terminée — résumé complet signé ARVEXA IA', 'success');
+        await renderSectionView(params);
+      } catch (e) {
+        showToast(e.message || 'Complétion impossible — réessaie dans un instant', 'error', 5000);
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-flag-checkered"></i> Terminer'; }
+      }
+    });
 
     // ═══ Onglets — pastille coulissante + navigation fluide (v8.40) ═══
     const tabsBar = $('smTabs');
@@ -4605,7 +4683,10 @@ async function renderSectionView(params) {
       const questions = safeArray(a.questions);
       const rendered = ex.qcm ? renderQcmShort(ex.qcm) : '';
       if (ex.qcm && rendered) {
-        panel.innerHTML = rendered + (questions.length > 0 ? `
+        // ✅ v8.48a — signature visible : le questionnaire a été écrit en entier
+        // (la réponse IA sans signature de complétion est rejetée côté serveur).
+        const qcmSig = `<div class="mini-signature"><i class="fas fa-circle-check"></i> QCM complet — signé ARVEXA IA</div>`;
+        panel.innerHTML = qcmSig + rendered + (questions.length > 0 ? `
           <div class="content-section">
             <div class="content-section-title"><i class="fas fa-circle-question"></i>Questionnaires possibles — réponses rédigées <span class="count">${questions.length}</span></div>
             <div class="qa-list">${questions.map((q, i) => renderQuestion(q, i)).join('')}</div>
@@ -4636,7 +4717,9 @@ async function renderSectionView(params) {
         catch (e) { console.warn('[MM v8.44a] rendu impossible — régénération', e); mmBuilt = null; }
       }
       if (ex.mindmap && mmBuilt) {
-        panel.innerHTML = mmBuilt.html;
+        // ✅ v8.48a — signature visible : la carte a été générée ENTIÈREMENT
+        // (dernière branche incluse) — preuve de complétion exigée du modèle.
+        panel.innerHTML = `<div class="mini-signature"><i class="fas fa-circle-check"></i> Carte mentale complète — signé ARVEXA IA</div>` + mmBuilt.html;
         // ✅ v8.42 — données des cartes + clé de positions pour la modale/sauvegarde
         const wrapEl = panel.querySelector('[data-mmap]');
         if (wrapEl) { wrapEl.__mmNodes = mmBuilt.byId; wrapEl.__mmMeta = { idea: mmBuilt.idea, posKey: mmBuilt.posKey }; }
@@ -4802,6 +4885,59 @@ async function renderSectionView(params) {
 // EN TÊTE du résumé, alimenté par explanation.keyFacts (tous les profils IA
 // le produisent désormais). Filet de sécurité : si une ancienne analyse
 // n'a pas keyFacts, on dérive les points des « À retenir » des parties.
+// ════════════════════════════════════════════════════════════════
+// ✅ v8.48a — SIGNATURE DE COMPLÉTION (demande du propriétaire : « à la fin
+// tu mets une signature qui prouve que l'IA a terminé la section complète du
+// résumé — elle signe pour donner une preuve »). Côté serveur, chaque réponse
+// IA doit porter "signature":"ARVEXA-COMPLETE" en dernier champ (une sortie
+// coupée est rejetée et relais au modèle suivant). Côté client, le badge
+// visible n'est affiché QUE si toutes les parties sont réellement présentes.
+// Si des parties manquent → bouton « Terminer la section » → action
+// completeSection qui régénère UNIQUEMENT ce qui manque.
+// ════════════════════════════════════════════════════════════════
+function analysisCompleteness(a) {
+  const x = a || {};
+  const expl = x.explanation || {};
+  const explReal = typeof expl.understanding === 'string'
+    && expl.understanding.trim().length > 20
+    && !expl.understanding.includes("n'a pas pu être générée")
+    && !expl.understanding.includes('Analyse automatique indisponible');
+  const structOk = Boolean(x.structure && typeof x.structure === 'object' && Object.keys(x.structure).length > 0);
+  const qOk = safeArray(x.questions).length >= 4;
+  return {
+    explanation: explReal,
+    parts: explReal && safeArray(expl.parts).length > 0,
+    structure: structOk,
+    questions: qOk,
+    get all() { return explReal && safeArray(expl.parts).length > 0 && structOk && qOk; }
+  };
+}
+
+function renderCompletionSignature(opts = {}) {
+  const { complete = false, withButton = false } = opts;
+  if (complete) {
+    return `<div class="ai-signature" data-ai-signature="1">
+      <span class="ai-signature-seal"><i class="fas fa-check"></i></span>
+      <div class="ai-signature-txt">
+        <strong>Résumé complet</strong>
+        <span>L'IA a terminé la section entière — signé ARVEXA IA</span>
+      </div>
+      <i class="fas fa-award ai-signature-award"></i>
+    </div>`;
+  }
+  if (!withButton) return '';
+  return `<div class="ai-signature partial" data-ai-signature="1">
+    <span class="ai-signature-seal warn"><i class="fas fa-triangle-exclamation"></i></span>
+    <div class="ai-signature-txt">
+      <strong>Section incomplète</strong>
+      <span>Des parties du résumé manquent — termine-la en un tap</span>
+    </div>
+    <button class="ai-signature-btn" id="finishSectionBtn">
+      <i class="fas fa-flag-checkered"></i> Terminer
+    </button>
+  </div>`;
+}
+
 function renderKeyFacts(expl, parts) {
   let facts = safeArray(expl.keyFacts)
     .map((f) => String(f || '').trim())
@@ -4848,6 +4984,15 @@ function renderAnalysis(a, profile, opts = {}) {
       <div class="content-section-title"><i class="fas fa-circle-question"></i>Banque de questions <span class="count">${questions.length}</span></div>
       <div class="qa-list">${questions.map((q, i) => renderQuestion(q, i)).join('')}</div>
     </div>`;
+  }
+  // ✅ v8.48a — SIGNATURE DE COMPLÉTION en toute fin de résumé (preuve visible
+  // que l'IA a terminé la section complète) — ou bloc « Terminer la section »
+  // si des parties manquent (coupure historique). opts.signature est fourni
+  // par renderSectionView : 'complete' | 'partial' | null.
+  if (opts.signature === 'complete') {
+    html += renderCompletionSignature({ complete: true });
+  } else if (opts.signature === 'partial') {
+    html += renderCompletionSignature({ complete: false, withButton: true });
   }
   // ✅ v4.14 — QCM retiré (débordements récurrents sur mobile) :
   // la section livre l'explication du prof + la banque de questions.
@@ -5328,6 +5473,27 @@ function openModal(html, { center = false } = {}) {
   $('modalBackdrop').addEventListener('click', (e) => {
     if (e.target === $('modalBackdrop')) closeModal();
   });
+  // ✅ v8.48a — APPUI SIMPLE SUR LES CARTES DE LA CARTE MENTALE : quand la
+  // modale est ouverte depuis un `pointerup` (tap sur une carte), le navigateur
+  // mobile synthétise le `click` du tap APRÈS le pointerup — il tombait sur le
+  // fond de la modale fraîchement affichée → la modale se fermait aussitôt.
+  // L'élève devait alors faire un APPUI LONG pour voir l'explication. On
+  // avale donc le PREMIER click qui suit l'ouverture (fenêtre 700 ms) : un
+  // tap simple ouvre désormais l'explication, et un vrai tap de fermeture
+  // (après 700 ms) fonctionne normalement.
+  if (!openModal.__swallowInit) {
+    openModal.__swallowInit = true;
+    openModal.__swallow = ({ swallowMs = 700 } = {}) => {
+      const kill = (ev) => { ev.stopPropagation(); ev.preventDefault(); cleanup(); };
+      const cleanup = () => {
+        document.removeEventListener('click', kill, true);
+        clearTimeout(timer);
+      };
+      const timer = setTimeout(cleanup, swallowMs);
+      document.addEventListener('click', kill, true);
+    };
+  }
+  openModal.__swallow();
 }
 
 function confirmDelete({ title, message, onConfirm }) {

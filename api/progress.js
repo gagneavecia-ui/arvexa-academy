@@ -102,7 +102,27 @@ const MIN_CONTENT_LENGTH = 40;
 const MAX_CONTENT_LENGTH = 2500; // calibré IA : aligné sur le cahier (budget analyse)
 
 const FREE_SECTION_LIMIT = 5;
-const GLOBAL_AI_TIME_BUDGET_MS = 78000;
+// ✅ v8.48a — Vercel HOBBY = plafond RÉEL 60 s par exécution de fonction
+// (constaté : plan hobby sur l'équipe gagneavecia-9207s-projects). L'ancien
+// budget 78 s + maxDuration 90 dépassaient le plafond → la fonction était
+// TUÉE à 60 s → le fetch du client mourait sans réponse → « la génération ne
+// termine jamais ». Budget calé à 56 s (marge pour auth + Firestore) —
+// le reste du travail de complétion est assuré par l'action completeSection
+// (bouton « Terminer la section ») et la signature IA ci-dessous.
+const GLOBAL_AI_TIME_BUDGET_MS = 56000;
+
+// ✅ v8.48a — SIGNATURE DE COMPLÉTION (demande du propriétaire : « à la fin
+// tu mets une signature qui prouve que l'IA a terminé la section complète »).
+// Chaque réponse JSON DOIT se terminer par ce champ : si la sortie du modèle
+// a été COUPÉE (max_tokens atteint), la signature manque → la réponse est
+// REJETÉE et le relais passe au modèle suivant — jamais de contenu tronqué
+// affiché comme complet.
+const AI_SIGNATURE = 'ARVEXA-COMPLETE';
+const SIGNATURE_RULE = `
+SIGNATURE DE COMPLÉTION — OBLIGATOIRE :
+- Le DERNIER champ de l'objet JSON doit être "signature": "ARVEXA-COMPLETE".
+- C'est la preuve que tu as écrit le JSON ENTIÈREMENT jusqu'au bout.
+- Si tu manques de place, écourte les phrases de chaque élément MAIS termine TOUJOURS par la signature — un objet sans signature est rejeté et tout ton travail est perdu.`.trim();
 
 let adminServices = null;
 
@@ -832,7 +852,8 @@ async function attemptProviderOnce(provider, model, timeoutMs, { systemPrompt, u
         const reason = data?.candidates?.[0]?.finishReason || data?.promptFeedback?.blockReason || 'réponse vide';
         return { ok: false, status, errMsg: reason, kind: 'empty' };
       }
-      return { ok: true, rawContent, status };
+      // ✅ v8.48a — finishReason : MAX_TOKENS = sortie COUPÉE en plein JSON
+      return { ok: true, rawContent, status, finishReason: data?.candidates?.[0]?.finishReason || null };
     }
 
     const body = {
@@ -870,7 +891,8 @@ async function attemptProviderOnce(provider, model, timeoutMs, { systemPrompt, u
 
     rawContent = data?.choices?.[0]?.message?.content;
     if (!rawContent) return { ok: false, status, errMsg: 'réponse vide', kind: 'empty' };
-    return { ok: true, rawContent, status };
+    // ✅ v8.48a — finish_reason « length » = sortie COUPÉE (max_tokens atteint)
+    return { ok: true, rawContent, status, finishReason: data?.choices?.[0]?.finish_reason || null };
   } catch (err) {
     return {
       ok: false,
@@ -915,7 +937,7 @@ function parseProviderJson(provider, rawContent) {
   }
 }
 
-async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 4000, deadline, validate }) {
+async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 4000, deadline, validate, requireSignature }) {
   // ✅ v8.46b — POLYTAPE 2 PASSES SANS SOMMEIL : les modèles :free d'OpenRouter
   // sont PARTAGÉS entre tous les utilisateurs — la saturation (HTTP 429
   // « temporarily rate-limited upstream ») varie MINUTE PAR MINUTE et revient
@@ -928,6 +950,12 @@ async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 40
   // - PASSE 2 : si au moins un 429 a été vu et qu'il reste ≥ 12 s — on
   //   REPASSE toute la liste (les fenêtres :free se libèrent en secondes) ;
   // - l'échec d'un modèle ne bloque plus jamais l'essai du suivant.
+  // ✅ v8.48a — SIGNATURE DE COMPLÉTION + TRONCATURE :
+  // - requireSignature : le JSON doit porter "signature":"ARVEXA-COMPLETE"
+  //   en dernier champ — absent = sortie coupée → modèle suivant ;
+  // - finish_reason « length » / « MAX_TOKENS » = troncature OFFICIELLE du
+  //   fournisseur → modèle suivant ET maxTokens ×1,6 (plafonné 8000) pour la
+  //   suite du tour : la sortie doit FINIR, jamais être coupée.
   const perTry = { 'Groq': 18000, 'OpenRouter': 20000, 'Mistral': 45000, 'Gemini': 38000 };
   const baseTimeout = perTry[provider.name] || 20000;
   const models = [provider.model]
@@ -939,14 +967,32 @@ async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 40
                          // modèle n'a produit de JSON lisible, c'est lui qu'on
                          // lèvera — mais la rotation continue d'abord.
   let sawRateLimit = false;
+  let tokLimit = maxTokens; // grossit si une sortie a été coupée
 
   const tryOne = async (model) => {
     const remaining = absDeadline - Date.now();
     if (remaining < 4000) return 'exhausted';
-    const res = await attemptProviderOnce(provider, model, Math.min(baseTimeout, remaining), { systemPrompt, userPrompt, maxTokens });
+    const res = await attemptProviderOnce(provider, model, Math.min(baseTimeout, remaining), { systemPrompt, userPrompt, maxTokens: tokLimit });
     if (res.ok) {
+      // ✅ v8.48a — troncature officielle du fournisseur : la sortie a atteint
+      // le plafond de tokens → JSON forcément incomplet → on AGRANDIT le
+      // plafond pour les modèles suivants et on passe au suivant.
+      if (/^(length|MAX_TOKENS)$/i.test(String(res.finishReason || ''))) {
+        tokLimit = Math.min(8000, Math.round(tokLimit * 1.6));
+        lastMsg = `${model} : sortie coupée (fin ${res.finishReason})`;
+        return 'parse';
+      }
       try {
         const parsed = parseProviderJson(provider, res.rawContent);
+        // ✅ v8.48a — SIGNATURE DE COMPLÉTION : le champ final prouve que le
+        // modèle a écrit son JSON JUSQU'AU BOUT. Un JSON « réparé » par
+        // repairJson après une coupure n'a PAS la signature (elle est écrite
+        // en dernier, donc coupée en premier) → rejeté → modèle suivant.
+        if (requireSignature && parsed?.signature !== AI_SIGNATURE) {
+          lastMsg = `${model} : JSON sans signature de complétion (sortie coupée ou incomplète)`;
+          tokLimit = Math.min(8000, Math.round(tokLimit * 1.6));
+          return 'parse';
+        }
         // ✅ v8.46c — validation AU NIVEAU MODÈLE : un JSON lisible mais de
         // mauvaise FORME (carte sans étapes, QCM vide) fait tourner la roue
         // vers le modèle SUIVANT du même fournisseur (ex. gpt-oss-120b →
@@ -1070,7 +1116,11 @@ async function runParallelTasks(tasks, providers, deadline) {
         systemPrompt: task.systemPrompt,
         userPrompt: task.userPrompt,
         maxTokens: task.maxTokens,
-        deadline
+        deadline,
+        // ✅ v8.48a — TOUTE tâche principale exige la signature de complétion :
+        // une sortie coupée (max_tokens, coupure réseau) est rejetée et le
+        // relais passe au modèle suivant — jamais de résumé tronqué affiché.
+        requireSignature: true
       });
       return value;
     } catch (e) {
@@ -1236,6 +1286,13 @@ function mergeAnalysis(results, profile) {
 function normalizeAnalysis(analysis) {
   if (!analysis || typeof analysis !== 'object') return analysis;
 
+  // ✅ v8.48a — la signature de complétion a SERVI (preuve à la réception) :
+  // elle est retirée des données stockées — le badge visible de complétion est
+  // calculé par le client sur la présence réelle de toutes les parties.
+  delete analysis.signature;
+  if (analysis.explanation && typeof analysis.explanation === 'object') delete analysis.explanation.signature;
+  if (analysis.structure && typeof analysis.structure === 'object') delete analysis.structure.signature;
+
   // Banque de questions : filtrer + renuméroter + borner
   if (Array.isArray(analysis.questions)) {
     analysis.questions = analysis.questions
@@ -1307,6 +1364,7 @@ RÈGLE JSON STRICTE :
 - INTERDIT les retours à la ligne à l'intérieur d'une valeur : écris chaque valeur sur UNE seule ligne, sépare les idées par des points.
 - Respecte EXACTEMENT les quantités demandées dans la tâche (nombre de parties, de questions, de QCM).
 - Si la réponse risque d'être longue, reste concis sur CHAQUE élément plutôt que de réduire le nombre d'éléments.
+${SIGNATURE_RULE}
 `.trim();
 
 // ✅ v8.47a — QUALITÉ DU RÉSUMÉ (demande du propriétaire : « le résumé doit
@@ -1322,6 +1380,61 @@ QUALITÉ DU RÉSUMÉ — OBLIGATOIRE (compréhension maximale) :
 - RESTE STRICTEMENT DANS LA DISCIPLINE du contenu : applique uniquement SES conventions, SON vocabulaire et SES méthodes. Ne mélange JAMAIS deux disciplines (aucune formule en histoire/littérature/philosophie, aucun récit narratif-littéraire dans un cours scientifique, aucun code en dehors de l'informatique…).
 - Ajoute "keyFacts" : 4 à 8 points clés INDISPENSABLES à retenir, chacun une phrase complète courte — c'est la liste que l'élève relit juste avant l'examen.
 `.trim();
+
+// ✅ v8.48a — RIGUEUR PAR MATIÈRE (demande du propriétaire : « régler la
+// rigueur au niveau des matières surtout maths physique-chimie SVT philosophie
+// français anglais histoire-géo et d'autres matières »). Injecté dans la tâche
+// « explanation » de chaque profil — chaque discipline garde SES conventions
+// strictes, zéro mélange.
+const RIGOR_BY_PROFILE = {
+  scientific: `RIGUEUR MATHÉMATIQUES / PHYSIQUE-CHIMIE — OBLIGATOIRE :
+- Définitions EXACTES du cours (aucune approximation de vocabulaire : « vitesse moyenne » ≠ « vitesse instantanée »).
+- Toute grandeur porte son unité SI (m, s, m·s⁻¹ écrit en LaTeX $m \\cdot s^{-1}$ — le point médian est \\cdot suivi d'un espace) et le calcul montre LES ÉTAPES : formule littérale → substitution → résultat avec unité.
+- Les formules sont en LaTeX entre $...$, les raisonnements numérotés, la cohérence des notations préservée du début à la fin.
+- Aucun récit littéraire, aucune digression historique : uniquement du contenu scientifique de la section.`.trim(),
+  svt: `RIGUEUR SVT — OBLIGATOIRE :
+- Terminologie biologique et anatomique EXACTE (organes, molécules, états physiologiques) — jamais de mot vague à la place du terme du cours.
+- Les mécanismes sont décrits DANS L'ORDRE biologique, étape par étape, avec cause → effet à chaque étape.
+- Aucune formule mathématique hors propos, aucun raisonnement chimique si la leçon est biologique (et inversement).
+- Les schémas décrits le sont en mots précis (structure, fonction, sens de circulation).`.trim(),
+  philosophy: `RIGUEUR PHILOSOPHIE — OBLIGATOIRE :
+- Chaque concept est DÉFINI avec précision avant d'être utilisé ; la distinction thèse / argument / exemple est toujours explicite.
+- Aucune date historique, aucune formule scientifique, aucun code : uniquement les concepts, leurs distinctions et leurs objections.
+- Le raisonnement suit la démarche philosophique : poser le problème → examiner la thèse → objections → dépassement.
+- Citer les auteurs UNIQUEMENT s'ils apparaissent dans le texte de l'élève (périmètre strict).`.trim(),
+  history: `RIGUEUR HISTOIRE-GÉOGRAPHIE — OBLIGATOIRE :
+- Dates, acteurs, lieux et repères EXACTS (jamais approchés) ; causes et conséquences clairement SÉPARÉES et nommées comme telles.
+- Vocabulaire d'historien / géographe (ex : « pays industrialisé », « conflit colonial ») utilisé correctement.
+- AUCUNE formule mathématique, aucun code, aucune notion scientifique : uniquement faits, chronologie, acteurs, espaces.
+- Récit factuel organisé : situation de départ → événements → résultats, sans digression littéraire.`.trim(),
+  french: `RIGUEUR FRANÇAIS — OBLIGATOIRE :
+- Règles de grammaire, d'orthographe et de conjugaison citées AVEC leur nom exact (accord, concordance des temps, valeur des temps).
+- Terminologie littéraire précise : figures de style nommées (métaphore, hyperbole, anaphore…), registres, énonciation — chacune illustrée par un exemple COURT pris dans la leçon.
+- Aucune formule mathématique, aucun code : uniquement langue, textes et notions littéraires.
+- L'IA elle-même écrit un français impeccable (accords, ponctuation) — c'est un modèle de langue.`.trim(),
+  language: `RIGUEUR LANGUE VIVANTE (anglais, espagnol, allemand…) — OBLIGATOIRE :
+- Vocabulaire et règles UNIQUEMENT dans LA langue étudiée ; jamais une autre langue étrangère mélangée.
+- Traductions exactes dans les DEUX sens ; chaque règle de grammaire est illustrée d'un exemple dans la langue + sa traduction française.
+- Les erreurs typiques des francophones sont signalées avec ❌ l'erreur → ✅ la correction.
+- Aucune formule mathématique, aucun fait d'histoire hors contexte culturel de la leçon.`.trim(),
+  info: `RIGUEUR INFORMATIQUE — OBLIGATOIRE :
+- Terminologie exacte (algorithme, variable, boucle, fonction, base de données…) et code CORRECT selon le langage de la leçon.
+- Le code ou le pseudo-code est séparé du texte explicatif ; les comportements décrits sont PRÉCIS (ce que le programme affiche, dans quel ordre).
+- Aucune formule mathématique hors algorithmie, aucun récit historique hors section.
+- Complexité, structures et étapes d'exécution expliquées simplement mais rigoureusement.`.trim(),
+  techno: `RIGUEUR FILIÈRES TECHNOLOGIQUES — OBLIGATOIRE :
+- Composants, systèmes et processus nommés EXACTEMENT comme dans la leçon ; unités techniques correctes (V, A, W, tr/min…).
+- Chaque processus est présenté DANS L'ORDRE de fonctionnement (entrée → traitement → sortie).
+- Aucune digression littéraire : uniquement la logique technique de la section.`.trim(),
+  econ: `RIGUEUR ÉCONOMIE-GESTION — OBLIGATOIRE :
+- Définitions économiques et juridiques EXACTES (production, valeur ajoutée, contrat…) avec le vocabulaire du programme.
+- Les mécanismes sont présentés cause → effet, et tout calcul commercial est POSE (formule → données → résultat, unités comprises : €, %).
+- Aucun mélange avec la littérature ou les sciences physiques.`.trim(),
+  general: `RIGUEUR DE LA DISCIPLINE — OBLIGATOIRE :
+- Identifie la discipline réelle du contenu fourni et applique STRICTEMENT ses conventions, son vocabulaire et ses méthodes.
+- N'importe JAMAIS une notion d'une autre discipline (pas de formule dans un texte littéraire, pas d'analyse littéraire dans un cours scientifique).
+- Chaque terme technique est utilisé à bon escient et expliqué à sa première apparition.`.trim()
+};
 
 // ────────────────────────────────────────────────────────────────
 // PROMPTS PAR PROFIL
@@ -2538,6 +2651,17 @@ function getPromptsForProfile(profile, context) {
   // morts (OpenRouter cap 50/jour, Gemini instable, Mistral non configuré)
   // → « L'explication pédagogique n'a pas pu être générée » en fallback.
   // Le prof d'abord : il reçoit la fenêtre fraîche ; les questions suivent.
+  // ✅ v8.48a — RIGUEUR PAR MATIÈRE : le bloc de rigueur de CE profil est
+  // injecté dans la tâche « explanation » (maths/PC : unités + étapes de
+  // calcul ; SVT : terminologie biologique exacte ; philosophie : concepts ;
+  // français : règles nommées ; langues : traductions exactes ; histoire-géo :
+  // dates/acteurs/causes…). Chaque matière garde SES conventions — zéro mélange.
+  const rigor = RIGOR_BY_PROFILE[profile] || RIGOR_BY_PROFILE.general;
+  for (const t of tasks) {
+    if (t.name === 'explanation' && t.userPrompt) {
+      t.userPrompt += `\n\n${rigor}`;
+    }
+  }
   const order = { explanation: 1, questions_a: 2, questions_b: 3, structure: 4 };
   return tasks.slice().sort((a, b) => (order[a.name] ?? 9) - (order[b.name] ?? 9));
 }
@@ -3926,7 +4050,9 @@ async function callExtrasTask(taskName, providers, { systemPrompt, userPrompt, m
     const provider = byName.get(name);
     if (!provider) continue;
     try {
-      const data = await callProvider(provider, { systemPrompt, userPrompt, maxTokens, deadline, validate });
+      // ✅ v8.48a — signature de complétion exigée : un QCM ou une carte
+      // coupée par max_tokens est rejetée → relais modèle/fournisseur suivant.
+      const data = await callProvider(provider, { systemPrompt, userPrompt, maxTokens, deadline, validate, requireSignature: true });
       if (typeof validate === 'function') {
         const ok = validate(data);
         if (!ok) { lastErr = new Error(`${provider.name}: format inutilisable`); console.warn(`[EXTRAS v8.44a] ${taskName} → ${name} JSON de mauvaise forme — relais suivant`); continue; }
@@ -4021,11 +4147,13 @@ Génère un QCM COURT d'auto-évaluation : 4 à 6 questions MAXIMUM, chacune ave
 ${discipline}
 ${qcmHint}
 
-Réponds EXACTEMENT dans ce format :
-{"qcm":[{"q":"…","choices":["…","…","…"],"answer":0,"why":"…"}]}`,
+Réponds EXACTEMENT dans ce format (la signature en DERNIER champ est OBLIGATOIRE — preuve que le JSON est complet) :
+{"qcm":[{"q":"…","choices":["…","…","…"],"answer":0,"why":"…"}],"signature":"${AI_SIGNATURE}"}`,
       // ✅ v8.46a — 2200 : les modèles :free à RAISONNEMENT consomment 1 300-
       // 2 500 tokens de raisonnement AVANT le JSON — 1600 tronquait la réponse.
-      maxTokens: 2200,
+      // ✅ v8.48a — 2600 : la signature + le QCM complet doivent tenir ; si le
+      // plafond est atteint, callProvider AGRANDIT automatiquement (×1,6).
+      maxTokens: 2600,
       deadline,
       validate: (d) => Boolean(d && Array.isArray(d.qcm) && d.qcm.length >= 2)
     });
@@ -4057,8 +4185,8 @@ Structure attendue :
 
 Chaque carte porte un titre ULTRA COURT (2 à 5 mots, étiquette lisible) et deux textes courts : "detail" = l'explication d'une phrase (ce que ce point veut dire), "signif" = sa signification pour la révision (une phrase : pourquoi ce point compte, ce qu'il faut retenir). La carte mère porte aussi son "detail" et sa "signif". L'ensemble doit couvrir toute la leçon.
 
-Réponds EXACTEMENT dans ce format :
-{"idea":"…","detail":"…","signif":"…","steps":[{"title":"…","detail":"…","signif":"…","children":[{"title":"…","detail":"…","signif":"…"}]}]}`,
+Réponds EXACTEMENT dans ce format (la signature en DERNIER champ est OBLIGATOIRE — preuve que la carte est complète jusqu'à la dernière branche) :
+{"idea":"…","detail":"…","signif":"…","steps":[{"title":"…","detail":"…","signif":"…","children":[{"title":"…","detail":"…","signif":"…"}]}],"signature":"${AI_SIGNATURE}"}`,
       // ✅ v8.46a — 3800 : raisonnement des modèles :free (jusqu'à 2 500 tokens)
       // + carte complète — 3200 tronquait parfois les dernières branches.
       maxTokens: 3800,
@@ -4082,6 +4210,126 @@ Réponds EXACTEMENT dans ce format :
 
   try { await ref.update(update); } catch (e) { /* écriture best-effort : l'élève a déjà son contenu */ }
   return result;
+}
+
+// ════════════════════════════════════════════════════════════════
+// ✅ v8.48a — TERMINER LA SECTION : complétion des parties manquantes.
+// Demande du propriétaire : « la génération ne termine jamais, il y a des
+// coupures — fais en sorte que les IA finissent le résumé, les questionnaires
+// et la carte mentale ». Le budget 56 s peut laisser une tâche sur le carreau
+// (fenêtre TPM saturée) : au lieu de sauvegarder en silence une section
+// amputée, le client affiche « Terminer la section » → CETTE action relance
+// UNIQUEMENT les tâches manquantes (explication / structure / questions),
+// fusionne avec ce qui existe déjà et renvoie la section complète.
+// ════════════════════════════════════════════════════════════════
+function explanationIsReal(expl) {
+  return Boolean(expl
+    && typeof expl.understanding === 'string'
+    && expl.understanding.trim().length > 20
+    && !expl.understanding.includes("n'a pas pu être générée")
+    && !expl.understanding.includes('Analyse automatique indisponible'));
+}
+
+function sectionCompleteness(analysis) {
+  const a = analysis || {};
+  return {
+    explanation: explanationIsReal(a.explanation) &&
+      (Array.isArray(a.explanation.parts) ? a.explanation.parts.length > 0 : false),
+    structure: Boolean(a.structure && typeof a.structure === 'object' && Object.keys(a.structure).length > 0),
+    questions: Array.isArray(a.questions) && a.questions.length >= 4
+  };
+}
+
+async function completeSection(uid, body) {
+  const ref = extrasSectionRef(uid, body); // mêmes validations subject/chapterId/sectionId
+  const snap = await ref.get();
+  if (!snap.exists) throw { status: 404, message: 'Section introuvable.' };
+  const s = snap.data();
+  const analysis = s.analysis || {};
+  const profile = s.profile || 'scientific';
+  const complete = sectionCompleteness(analysis);
+
+  const missing = [];
+  if (!complete.explanation) missing.push('explanation');
+  if (!complete.structure) missing.push('structure');
+  if (!complete.questions) missing.push('questions_a', 'questions_b');
+  if (missing.length === 0) {
+    return {
+      success: true,
+      alreadyComplete: true,
+      section: {
+        id: snap.id,
+        title: s.title || 'Section',
+        subject: body.subject,
+        chapterId: body.chapterId,
+        rawInput: s.rawInput || '',
+        profile,
+        analysis,
+        userNotes: s.userNotes || '',
+        createdAt: toISO(s.createdAt),
+        time: formatRelativeDate(s.createdAt)
+      }
+    };
+  }
+
+  const info = SUBJECT_INFO[body.subject];
+  if (!info || info.profile !== profile) {
+    // profil inconnu → on re-dérive depuis le sujet (anciennes sections)
+    if (!info) throw { status: 400, message: 'Matière invalide.' };
+  }
+  const subjectLabel = info ? info.label : 'Cours';
+  const rawInput = normalizeMathInput(String(s.rawInput || ''));
+  if (rawInput.length < MIN_CONTENT_LENGTH) throw { status: 400, message: 'Contenu de la section trop court pour la complétion.' };
+
+  const context = { subjectLabel, rawInput };
+  const allTasks = getPromptsForProfile(profile, context);
+  const tasks = allTasks.filter((t) => missing.includes(t.name));
+  const providers = getProviders();
+  if (!providers.length) throw { status: 503, message: 'Aucun fournisseur IA disponible.' };
+
+  console.log(`[COMPLETE v8.48a] section ${snap.id} — parties manquantes : ${missing.join(', ')}`);
+  const deadline = Date.now() + GLOBAL_AI_TIME_BUDGET_MS;
+  const results = await runParallelTasks(tasks, providers, deadline);
+  const fresh = mergeAnalysis(results, profile);
+
+  // Fusion : on ne remplace une partie existante que si la nouvelle est RÉELLE.
+  if (explanationIsReal(fresh.explanation) && (Array.isArray(fresh.explanation.parts) && fresh.explanation.parts.length > 0)) {
+    analysis.explanation = fresh.explanation;
+    if (fresh.sectionTitle && !analysis.sectionTitle) analysis.sectionTitle = fresh.sectionTitle;
+  }
+  if (fresh.structure && typeof fresh.structure === 'object' && Object.keys(fresh.structure).length > 0 && !complete.structure) {
+    analysis.structure = fresh.structure;
+  }
+  if (Array.isArray(fresh.questions) && fresh.questions.length > 0 && !complete.questions) {
+    analysis.questions = (Array.isArray(analysis.questions) ? analysis.questions : []).concat(fresh.questions);
+  }
+
+  let cleaned = deepClean(analysis);
+  cleaned = normalizeAnalysis(cleaned);
+
+  const { FieldValue } = getAdminServices();
+  const nowComplete = sectionCompleteness(cleaned);
+  const update = { analysis: cleaned, updatedAt: FieldValue.serverTimestamp() };
+  try { await ref.update(update); } catch (e) { /* best-effort */ }
+
+  return {
+    success: true,
+    alreadyComplete: false,
+    complete: nowComplete,
+    missing: Object.entries(nowComplete).filter(([, ok]) => !ok).map(([k]) => k),
+    section: {
+      id: snap.id,
+      title: cleaned.sectionTitle || s.title || 'Section',
+      subject: body.subject,
+      chapterId: body.chapterId,
+      rawInput: s.rawInput || '',
+      profile,
+      analysis: cleaned,
+      userNotes: s.userNotes || '',
+      createdAt: toISO(s.createdAt),
+      time: formatRelativeDate(s.createdAt)
+    }
+  };
 }
 
 module.exports = async function handler(request, response) {
@@ -4127,6 +4375,7 @@ module.exports = async function handler(request, response) {
       case 'renameSection':    return response.status(200).json(await renameSection(uid, body));
       case 'renameChapter':    return response.status(200).json(await renameChapter(uid, body));
       case 'getSection':       return response.status(200).json(await getSection(uid, body));
+      case 'completeSection':  return response.status(200).json(await completeSection(uid, body));
       case 'generateSectionExtras': return response.status(200).json(await generateSectionExtras(uid, body));
       case 'updateNotes':      return response.status(200).json(await updateNotes(uid, body));
       case 'deleteSection':    return response.status(200).json(await deleteSection(uid, body));
@@ -4146,4 +4395,4 @@ module.exports = async function handler(request, response) {
 // CONFIG VERCEL - assignee APRES module.exports (sinon ecrasee par
 // l'assignation ci-dessus, jamais lue au build -> le budget IA 48 s
 // serait tue par le timeout par defaut des functions Vercel)
-module.exports.config = { maxDuration: 90 };
+module.exports.config = { maxDuration: 60 }; // ✅ v8.48a — plafond RÉEL du plan Vercel HOBBY (60 s) : l'ancien 90 était tronqué à 60 par la plateforme, la fonction mourait en plein IA (fetch client sans réponse → « génération qui ne termine jamais »)
