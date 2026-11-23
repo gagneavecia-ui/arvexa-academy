@@ -3136,7 +3136,7 @@ function getFirstName() {
 // passager elles sont retentées silencieusement côté client. Seule la
 // création de section (IA) affiche immédiatement un message calme.
 const LIGHT_PROGRESS_ACTIONS = new Set([
-  'getDashboard', 'listChapters', 'getChapter', 'getSection',
+  'getDashboard', 'getSmartCard', 'listChapters', 'getChapter', 'getSection',
   'updateNotes', 'deleteSection', 'deleteChapter', 'getFullLesson', 'trackStudyTime',
   'renameSection', 'renameChapter'
 ]);
@@ -3992,59 +3992,80 @@ const MM_COLORS = [
   { main: '#4BC0C8', bg: 'rgba(75,192,200,0.15)', bd: 'rgba(75,192,200,0.58)', bg2: 'rgba(75,192,200,0.08)', bd2: 'rgba(75,192,200,0.34)', fg: '#BCE8EC' }
 ];
 
-// ── CHAÎNE DE CARTES EN LIGNE DROITE (v8.42) ──
-// Demande propriétaire : « on dirait un quart d'historique alors que je veux
-// juste des cartes qui se suivent comme une chaîne, une ligne droite — la
-// carte de base puis la liaison entre les différentes cartes comme sur
-// l'image que je t'avais fournie, bien propre, bien aligné, et déplaçable —
-// tu peux ajuster, les déplacer — tu peux mettre plein écran : toutes les
-// autres pages vont se couvrir et tu vas avoir uniquement la carte. »
-// La hiérarchie reste (idée de base → étapes → sous-points) mais la LECTURE
-// est une CHAÎNE : chaque carte est reliée à la précédente (serpentin 3 par
-// rangée, bien aligné), chaque carte est DÉPLAÇABLE (positions sauvegardées)
-// et ouvre sa modale d'explication ; bouton plein écran qui couvre tout.
-const MM_CW = 170, MM_CH = 96, MM_GX = 58, MM_GY = 46, MM_PER = 3;
+// ── CARTE MENTALE HIÉRARCHIQUE — LIAISON RADIALE (v8.43) ──
+// Demande propriétaire : « c'est une liaison hiérarchique — regarde les
+// cartes comment ils sont de la carte mère, c'est comme la reproduction
+// conforme » (capture : carte mère au centre, branches colorées qui
+// rayonnent — bleu, vert, jaune —, bulles cliquables, déplacement au
+// glissement, zoom avant/arrière, plein écran). La CARTE MÈRE reste au
+// centre, chaque branche rayonne autour d'elle avec SA couleur, chaque
+// carte est DÉPLAÇABLE (positions sauvegardées) et ouvre sa modale
+// d'explication ; plein écran qui couvre tout le reste.
+const MM_CW = 168, MM_CH = 88;
+const MM_R1 = 235;   // rayon carte mère → branches
+const MM_R2 = 175;   // rayon branche → enfants
 
-function mmChainNodes(mm) {
+// Arbre plat avec parentId : carte mère (n0) → branches (s*) → enfants (s*k*)
+function mmTreeNodes(mm) {
   const nodes = [{
-    id: 'n0', level: 0, idx: 0, color: null,
+    id: 'n0', level: 0, idx: 0, parentId: null, color: null,
     title: String(mm.idea || ''), detail: String(mm.detail || ''), signif: String(mm.signif || '')
   }];
-  let chain = 1;
+  let idx = 1;
   safeArray(mm.steps).forEach((st, i) => {
     const col = MM_COLORS[i % MM_COLORS.length];
-    nodes.push({ id: `s${i}`, level: 1, idx: chain++, color: col,
+    nodes.push({ id: `s${i}`, level: 1, idx: idx++, parentId: 'n0', color: col,
       title: String(st.title || ''), detail: String(st.detail || ''), signif: String(st.signif || '') });
     safeArray(st.children).forEach((k, ki) => {
-      nodes.push({ id: `s${i}k${ki}`, level: 2, idx: chain++, color: col,
+      nodes.push({ id: `s${i}k${ki}`, level: 2, idx: idx++, parentId: `s${i}`, color: col,
         title: String(k.title || ''), detail: String(k.detail || ''), signif: String(k.signif || '') });
     });
   });
   return nodes;
 }
 
+// ✅ v8.43 — LIAISON HIÉRARCHIQUE RADIALE : carte mère au centre, branches
+// réparties uniformément AUTOUR d'elle (première en haut, sens horaire —
+// reproduction conforme à la capture), enfants en éventail au-delà de leur
+// branche. Propre et aligné par construction.
 function mmLayout(mm, saved) {
-  const nodes = mmChainNodes(mm);
-  // Position serpentine PAR DÉFAUT, origine FIXE (première carte en haut-gauche)
-  nodes.forEach((nd, i) => {
-    const row = Math.floor(i / MM_PER);
-    const pos = i % MM_PER;
-    const ltr = (row % 2 === 0);
-    const colIdx = ltr ? pos : (MM_PER - 1 - pos);
-    nd.x = MM_GX + colIdx * (MM_CW + MM_GX);
-    nd.y = MM_GY + row * (MM_CH + MM_GY);
+  const nodes = mmTreeNodes(mm);
+  const branches = nodes.filter((n) => n.level === 1);
+  const cx = 0, cy = 0; // centre = carte mère (au centre du monde)
+  const root = nodes[0];
+  root.x = cx - MM_CW / 2; root.y = cy - MM_CH / 2;
+
+  const spread = (2 * Math.PI) / Math.max(3, branches.length); // écart angulaire
+  branches.forEach((br, i) => {
+    // première branche en HAUT (-90°), répartition horaire uniforme
+    const ang = -Math.PI / 2 + i * spread;
+    const bx = cx + Math.cos(ang) * MM_R1;
+    const by = cy + Math.sin(ang) * MM_R1;
+    br.x = bx - MM_CW / 2; br.y = by - MM_CH / 2;
+
+    const kids = nodes.filter((n) => n.parentId === br.id);
+    kids.forEach((k, ki) => {
+      const n = kids.length;
+      // éventail centré sur la direction de la branche (± 24°)
+      const off = (ki - (n - 1) / 2) * (24 * Math.PI / 180);
+      const ka = ang + off;
+      const kx = cx + Math.cos(ka) * (MM_R1 + MM_R2);
+      const ky = cy + Math.sin(ka) * (MM_R1 + MM_R2);
+      k.x = kx - MM_CW / 2; k.y = ky - MM_CH / 2;
+    });
   });
-  // ✅ v8.42 — positions DÉPLACÉES = coordonnées FINALES ABSOLUES, appliquées
-  // après coup et JAMAIS re-décalées : l'élève retrouve exactement sa carte
-  // (le rendu gère les coordonnées négatives via le viewBox du SVG).
+
+  // ✅ positions DÉPLACÉES = coordonnées FINALES ABSOLUES (l'élève retrouve
+  // exactement ses cartes ; le rendu gère les coordonnées négatives).
   if (saved) {
     for (const nd of nodes) {
       const sv = saved[nd.id];
       if (sv && Number.isFinite(sv.x) && Number.isFinite(sv.y)) { nd.x = sv.x; nd.y = sv.y; }
     }
   }
-  // Boîte englobante RÉELLE (défaut ou déplacé) → monde + origine du SVG
-  const padX = 105, padY = 80;
+
+  // Boîte englobante RÉELLE → monde + origine du SVG
+  const padX = 110, padY = 90;
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const nd of nodes) {
     minX = Math.min(minX, nd.x); minY = Math.min(minY, nd.y);
@@ -4092,7 +4113,7 @@ function renderMindmap(mm, posKey) {
     const style = `left:${nd.x.toFixed(1)}px;top:${nd.y.toFixed(1)}px;` + (nd.color
       ? `--mm-bg:${nd.color.bg};--mm-bd:${nd.color.bd};--mm-bg2:${nd.color.bg2};--mm-bd2:${nd.color.bd2};--mm-fg:${nd.color.fg}`
       : '');
-    const tap = nd.level === 0 ? 'Idée de base' : 'Explication';
+    const tap = nd.level === 0 ? 'Carte mère' : (nd.level === 1 ? 'Branche — explication' : 'Explication');
     return `<button type="button" class="mmap-card ${cls}" style="${style}" data-node="${nd.id}" draggable="false">
       <span class="mm-num">${nd.idx + 1}</span>
       <span class="mm-title">${escapeHtml(nd.title)}</span>
@@ -4103,9 +4124,9 @@ function renderMindmap(mm, posKey) {
   return {
     html: `
     <div class="content-section" style="margin-top:2px;">
-      <div class="content-section-title"><i class="fas fa-link"></i>Carte mentale — chaîne d'idées <span class="count">${nodes.length} cartes</span></div>
+      <div class="content-section-title"><i class="fas fa-link"></i>Carte mentale — liaison hiérarchique <span class="count">${nodes.length} cartes</span></div>
       <div class="mmap-wrap" data-mmap>
-        <div class="mmap-hint"><i class="fas fa-hand-pointer"></i> Cartes déplaçables · touche une carte pour son explication</div>
+        <div class="mmap-hint"><i class="fas fa-hand-pointer"></i> Glisse pour déplacer · touche une bulle pour son explication</div>
         <div class="mmap-world" style="width:${Math.round(W)}px;height:${Math.round(H)}px;">
           <svg class="mmap-lines" style="left:${ox.toFixed(1)}px;top:${oy.toFixed(1)}px;" width="${Math.round(W)}" height="${Math.round(H)}" viewBox="${ox.toFixed(1)} ${oy.toFixed(1)} ${Math.round(W)} ${Math.round(H)}">${mmDefs()}</svg>
           ${nodes.map(card).join('')}
@@ -4117,7 +4138,7 @@ function renderMindmap(mm, posKey) {
           <button type="button" data-mm-zoom="fs" aria-label="Plein écran"><i class="fas fa-expand"></i></button>
         </div>
       </div>
-      <div class="mmap-summit" style="margin-top:12px;"><i class="fas fa-link"></i> La chaîne suit ta leçon : carte 1 = idée de base, chaque carte est reliée à la précédente. Déplace-les comme tu veux — plein écran pour te concentrer.</div>
+      <div class="mmap-summit" style="margin-top:12px;"><i class="fas fa-diagram-project"></i> La carte mère reste au centre : chaque branche rayonne autour d'elle avec sa couleur. Déplace les cartes comme tu veux — plein écran pour te concentrer.</div>
     </div>
   `,
     byId, idea: String(mm.idea || ''), posKey: String(posKey || '')
@@ -4134,12 +4155,11 @@ function mmFit(wrap, world, W, H) {
   const s = Math.max(0.35, Math.min(1.15, (vw - 26) / W, (vh - 26) / H));
   mmApplyTransform(wrap, world, { s, x: (vw - W * s) / 2, y: (vh - H * s) / 2 });
 }
-// ✅ v8.42 — cadrage INITIAL de la chaîne : ajusté à la LARGEUR (chaque carte
-// lisible), la chaîne se suit de haut en bas en glissant — « une ligne droite ».
+// ✅ v8.43 — cadrage INITIAL : la carte HIÉRARCHIQUE ENTIÈRE visible dès
+// l'ouverture (carte mère au centre, branches autour) — on recadre ensuite
+// librement (zoom, déplacement, plein écran).
 function mmFitInitial(wrap, world, W, H) {
-  const vw = wrap.clientWidth || 340, vh = wrap.clientHeight || 470;
-  const s = Math.max(0.5, Math.min(1.15, (vw - 26) / W));
-  mmApplyTransform(wrap, world, { s, x: (vw - W * s) / 2, y: Math.min(18, Math.max(8, (vh - H * s) / 2)) });
+  mmFit(wrap, world, W, H);
 }
 function mmZoomAt(wrap, world, px, py, factor) {
   const st = wrap.__mmSt || { s: 1, x: 0, y: 0 };
@@ -4151,12 +4171,14 @@ function openMindmapModal(nd, meta) {
   const idea = meta && meta.idea ? String(meta.idea) : '';
   const det = String(nd.detail || '').trim();
   const sig = String(nd.signif || '').trim();
-  const pos = (Number.isFinite(nd.idx) && nd.idx > 0) ? `Carte ${nd.idx + 1} de la chaîne` : 'Idée de base — départ de la chaîne';
+  const pos = nd.level === 0
+    ? 'Carte mère — au centre de la carte'
+    : (nd.level === 1 ? `Branche · ${idea}` : `Détail de branche · ${idea}`);
   openModal(`
     <div class="modal dicta-modal">
       <button class="modal-close"><i class="fas fa-times"></i></button>
       <div class="mx-card">
-        ${idea && nd.idx > 0 ? `<div class="mx-path"><span class="mx-dot"></span>${escapeHtml(pos)} · ${escapeHtml(idea)}</div>` : `<div class="mx-path"><span class="mx-dot"></span>${escapeHtml(pos)}</div>`}
+        <div class="mx-path"><span class="mx-dot"></span>${escapeHtml(pos)}</div>
         <div class="mx-title">${escapeHtml(nd.title)}</div>
         ${det ? `<div class="mx-sec"><span class="mx-sec-label"><i class="fas fa-book-open"></i> Explication</span><div class="mx-sec-text">${escapeHtml(det)}</div></div>` : ''}
         ${sig ? `<div class="mx-sec"><span class="mx-sec-label"><i class="fas fa-key"></i> Signification</span><div class="mx-sec-text">${escapeHtml(sig)}</div></div>` : ''}
@@ -4198,19 +4220,22 @@ function bindMindmap(rootEl) {
     const worldDims = () => ({ W: parseFloat(world.style.width) || 640, H: parseFloat(world.style.height) || 460 });
     const byId = wrap.__mmNodes || {};
     const order = Object.values(byId).sort((a, b) => (a.idx || 0) - (b.idx || 0));
+    // ✅ v8.43 — liaisons HIÉRARCHIQUES : carte mère → branche, branche → enfant
+    const links = order
+      .filter((nd) => nd.parentId && byId[nd.parentId])
+      .map((nd) => ({ a: byId[nd.parentId], b: nd }));
 
-    // ✅ v8.42 — cadrage initial : ajusté à la largeur, toute la chaîne lisible
+    // ✅ v8.43 — cadrage initial : la carte entière visible (mère au centre)
     (() => { const { W, H } = worldDims(); mmFitInitial(wrap, world, W, H); })();
 
-    // Liaisons entre cartes consécutives — recalculées après chaque déplacement
+    // Liaisons parent → enfant — recalculées après chaque déplacement
     const redraw = () => {
       if (!svg) return;
       let paths = '';
-      for (let i = 1; i < order.length; i++) {
-        const a = byId[order[i - 1].id], b = byId[order[i].id];
+      for (const { a, b } of links) {
         if (!a || !b) continue;
         const lk = mmLinkPath(a, b);
-        paths += `<path d="${lk.d}" fill="none" stroke="${lk.color}" stroke-width="${a.idx === 0 ? 3.2 : 2.2}" stroke-linecap="round" opacity="0.8" marker-end="url(#${mmMarkerRef(lk.color)})"/>`;
+        paths += `<path d="${lk.d}" fill="none" stroke="${lk.color}" stroke-width="${a.level === 0 ? 3.2 : 2.2}" stroke-linecap="round" opacity="0.8" marker-end="url(#${mmMarkerRef(lk.color)})"/>`;
       }
       // ✅ élargit le cadre en direct si une carte déplacée sort du monde —
       // les liaisons ne sont JAMAIS coupées
@@ -6569,6 +6594,16 @@ function getCurrentSubjectFromView() {
   return null;
 }
 
+// ✅ v8.43 — position PRÉCISE : matière + chapitre courant (pour le tracking
+// du temps passé PAR CHAPITRE — la carte intelligente de l'accueil compare
+// ces temps pour détecter les lacunes).
+function getCurrentChapterFromView() {
+  if (state.view === 'chapter' || state.view === 'section' || state.view === 'lesson') {
+    return state.params.chapterId || null;
+  }
+  return null;
+}
+
 async function syncStudyTime(reason = 'heartbeat') {
   if (!state.user) return;
 
@@ -6579,12 +6614,14 @@ async function syncStudyTime(reason = 'heartbeat') {
 
   const minutesToSend = Math.min(120, minutes);
   const subject = getCurrentSubjectFromView();
+  const chapterId = getCurrentChapterFromView();
   studyLastSync = now;
 
   try {
     const token = await getIdToken(state.user, true);
     const payload = { action: 'trackStudyTime', minutes: minutesToSend };
     if (subject) payload.subject = subject;
+    if (subject && chapterId) payload.chapterId = chapterId;
 
     const response = await fetch('/api/progress', {
       method: 'POST',
@@ -6615,7 +6652,9 @@ window.addEventListener('beforeunload', () => {
       if (cachedToken) {
         const payload = { action: 'trackStudyTime', minutes: Math.min(120, minutes) };
         const subject = getCurrentSubjectFromView();
+        const chapterId = getCurrentChapterFromView();
         if (subject) payload.subject = subject;
+        if (subject && chapterId) payload.chapterId = chapterId;
         fetch('/api/progress', {
           method: 'POST',
           headers: {

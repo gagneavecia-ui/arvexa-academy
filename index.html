@@ -1590,8 +1590,9 @@
              ============================================================ -->
         <div class="section-title"><h3>🧭 Ton parcours vers le BAC</h3></div>
         <div class="next-card parcours-card" id="parcoursCard">
-          <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--text-light,#F5F0E8);margin:12px 0 8px;overflow-wrap:anywhere">Chargement de ton parcours…</div>
-          <div style="font-size:13px;color:var(--text-dim,#8A8A7A)"><i class="fas fa-route" style="color:var(--accent-bright,#E0B84A)"></i>&nbsp; Une seule route, 57 étapes, zéro hésitation — toutes les matières mélangées jusqu'au BAC.</div>
+          <div class="ps-wrap">
+            <div class="ps-phrase">Ton parcours se prépare…</div>
+          </div>
         </div>
 
         <!-- ============================================================
@@ -2296,6 +2297,13 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+
+  // ✅ v8.43 — jeton exposé pour la carte intelligente (parcours.js) :
+  // l'accueil compare le temps passé entre chapitres/sections (getSmartCard).
+  window.__arvexaGetIdToken = async () => {
+    try { return auth.currentUser ? await getIdToken(auth.currentUser, false) : null; }
+    catch (e) { return null; }
+  };
 
   const db = initializeFirestore(app, {
     localCache: persistentLocalCache({

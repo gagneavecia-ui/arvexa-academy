@@ -41,6 +41,24 @@
     '.pc-class i{color:var(--pc-b)}',
     '.pc-class strong{color:var(--text-light,#F5F0E8);font-weight:600}',
     '.pc-hero .pc-class{margin:0 0 6px}',
+    /* ✅ v8.43 — CARTE INTELLIGENTE de l\'accueil : simple et luxueuse (demande
+       propriétaire : « les éléments actuels sont trop volumineux, rends-la
+       simple et luxueuse ») — phrase intelligente, 3 mesures fines, trait de
+       progression, une seule action. */
+    '.ps-wrap{display:flex;flex-direction:column;gap:12px;cursor:pointer}',
+    '.ps-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+    '.ps-bac{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--accent-bright,#E0B84A);background:rgba(var(--rgb-soft,224,184,74),.10);border:1px solid rgba(var(--rgb-soft,224,184,74),.25);padding:5px 11px;border-radius:999px}',
+    '.ps-phrase{font-size:15px;font-weight:600;line-height:1.55;color:var(--text-light,#F5F0E8);overflow-wrap:anywhere}',
+    '.ps-phrase em{font-style:normal;color:var(--accent-bright,#E0B84A);font-weight:700}',
+    '.ps-stats{display:flex;gap:10px;flex-wrap:wrap}',
+    '.ps-stat{flex:1 1 80px;background:rgba(var(--rgb-soft,224,184,74),.06);border:1px solid rgba(var(--rgb-soft,224,184,74),.14);border-radius:14px;padding:10px 12px;text-align:center}',
+    '.ps-stat strong{display:block;font-size:15px;font-weight:800;color:var(--text-light,#F5F0E8);line-height:1.2}',
+    '.ps-stat span{display:block;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim,#8A8A7A);margin-top:2px}',
+    '.ps-bar{height:6px;border-radius:999px;background:var(--bg-surface,#141414);overflow:hidden}',
+    '.ps-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent,#B8860B),var(--accent-bright,#E0B84A));transition:width .5s ease}',
+    '.ps-cta{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:700;color:var(--text-light,#F5F0E8);background:rgba(var(--rgb-soft,224,184,74),.10);border:1px solid rgba(var(--rgb-soft,224,184,74),.25);border-radius:999px;padding:12px 16px;transition:background .2s ease}',
+    '.ps-cta i{margin-left:auto;color:var(--accent-bright,#E0B84A);flex-shrink:0}',
+    '.ps-cta:hover{background:rgba(var(--rgb-soft,224,184,74),.16)}',
     '@media (max-width:560px){.pc-title{font-size:21px}.pc-btn{width:100%;justify-content:center}}'
   ].join('\n');
 
@@ -195,13 +213,132 @@
   }
 
   /* ---------- rendu index ---------- */
+  // ✅ v8.43 — CARTE INTELLIGENTE « Ton parcours vers le BAC » : simple et
+  // luxueuse. La carte COMPARE le temps passé entre les chapitres/sections
+  // (getSmartCard — instantané depuis le cache, puis frais) et détecte la
+  // LACUNE ; au toucher, elle mène DIRECTEMENT au chapitre concerné
+  // (demande propriétaire : « il compare les temps entre les différentes
+  // chapitres et sections qu'on a passés, en fonction de ce temps il
+  // déterminera là où l'utilisateur a des lacunes, et quand l'utilisateur
+  // touche la carte il mène directement au chapitre concerné »).
+  var SMART_CACHE_KEY = 'arv_smart_cache_v1';
+  var DASH_CACHE_KEY = 'arvexa_dash_cache_v1'; // écrit par la page Résumé (bloc smart v8.43)
+
+  function readSmartCache() {
+    try {
+      var d = JSON.parse(localStorage.getItem(SMART_CACHE_KEY) || 'null');
+      if (d && d.success && d.study) return d;
+    } catch (e) {}
+    try {
+      var dash = JSON.parse(localStorage.getItem(DASH_CACHE_KEY) || 'null');
+      if (dash && dash.smart && dash.subjects) {
+        return { success: true, study: dash.smart.study || dash.studyTime, summary: dash.summary, subjects: dash.subjects, lacune: dash.smart.lacune || null };
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function fetchSmart() {
+    if (typeof window.__arvexaGetIdToken !== 'function') return Promise.resolve(null);
+    return Promise.resolve()
+      .then(function () { return window.__arvexaGetIdToken(); })
+      .then(function (token) {
+        if (!token) return null;
+        return fetch('/api/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ action: 'getSmartCard' })
+        });
+      })
+      .then(function (r) { return r ? r.json() : null; })
+      .then(function (data) {
+        if (data && data.success && data.study) {
+          try {
+            localStorage.setItem(SMART_CACHE_KEY, JSON.stringify({
+              at: Date.now(), success: true,
+              study: data.study, summary: data.summary,
+              subjects: data.subjects, lacune: data.lacune
+            }));
+          } catch (e) {}
+          renderIndexCard();
+          return data;
+        }
+        return null;
+      })
+      .catch(function () { return null; });
+  }
+
+  function fmtMinLocal(m) {
+    m = Math.max(0, Math.round(Number(m) || 0));
+    if (m < 1) return '0 min';
+    if (m < 60) return m + ' min';
+    var h = Math.floor(m / 60), r = m % 60;
+    return r === 0 ? h + ' h' : h + ' h ' + (r < 10 ? '0' : '') + r;
+  }
+
+  function smartPhrase(d) {
+    var subjects = (d && Array.isArray(d.subjects) ? d.subjects : [])
+      .filter(function (s) { return (s.sectionsCount || 0) > 0; })
+      .slice()
+      .sort(function (a, b) { return (b.minutes || 0) - (a.minutes || 0); });
+    var nS = (d && d.summary && d.summary.totalSections) || 0;
+    if (subjects.length === 0 || nS === 0) {
+      return { html: 'Ton parcours démarre avec toi — ajoute ton premier cours dans <em>Résumé</em>, l\'IA le classe pour toi.', cta: 'Ouvrir le Résumé', href: 'arv-progress.html' };
+    }
+    var top = subjects[0];
+    var lac = d.lacune || null;
+    if (lac && lac.subject && lac.id) {
+      if ((lac.studyMinutes || 0) < 5) {
+        return {
+          html: 'Ton temps va surtout à ' + esc(top.label) + ' — ' + esc(fmtMinLocal(top.minutes)) + ' au total. Mais <em>« ' + esc(lac.title) + ' »</em> en ' + esc(lac.subjectLabel) + ' (' + lac.sectionsCount + ' section' + (lac.sectionsCount > 1 ? 's' : '') + ') attend encore : c\'est ta lacune du moment.',
+          cta: 'Reprendre « ' + lac.title + ' »',
+          href: 'arv-progress.html#/chapter/' + lac.subject + '/' + lac.id
+        };
+      }
+      return {
+        html: 'Bien réparti — mais <em>« ' + esc(lac.title) + ' »</em> en ' + esc(lac.subjectLabel) + ' reste le moins travaillé : ' + esc(fmtMinLocal(lac.studyMinutes)) + ' pour ' + lac.sectionsCount + ' section' + (lac.sectionsCount > 1 ? 's' : '') + '. Un bon point à revoir.',
+        cta: 'Reprendre « ' + lac.title + ' »',
+        href: 'arv-progress.html#/chapter/' + lac.subject + '/' + lac.id
+      };
+    }
+    return { html: 'Ton temps d\'étude est bien réparti sur ' + subjects.length + ' matière' + (subjects.length > 1 ? 's' : '') + ' — continue, chaque chapitre compte.', cta: 'Ouvrir le Résumé', href: 'arv-progress.html' };
+  }
+
+  function renderSmartCard(el, d) {
+    var ph = smartPhrase(d || {});
+    var study = (d && d.study) || {};
+    var summary = (d && d.summary) || {};
+    var bac = daysToBac();
+    var pct = M ? Math.round(doneCount() / Math.max(1, M.steps.length) * 100) : null;
+
+    var html = '<div class="ps-wrap" id="psWrap">';
+    if (bac != null) {
+      html += '<div class="ps-top"><span class="ps-bac"><i class="fas fa-flag-checkered"></i> BAC dans ' + bac + ' jour' + (bac > 1 ? 's' : '') + '</span></div>';
+    }
+    html += '<div class="ps-phrase">' + ph.html + '</div>';
+    html += '<div class="ps-stats">'
+      + '<div class="ps-stat"><strong>' + esc(study.totalLabel || fmtMinLocal(study.totalMinutes || 0)) + '</strong><span>Temps d\'étude</span></div>'
+      + '<div class="ps-stat"><strong>' + Number(summary.totalChapters || 0) + '</strong><span>Chapitres</span></div>'
+      + '<div class="ps-stat"><strong>' + Number(summary.totalSections || 0) + '</strong><span>Sections</span></div>'
+      + '</div>';
+    if (pct != null) {
+      html += '<div class="ps-bar"><div class="ps-bar-fill" style="width:' + pct + '%"></div></div>';
+    }
+    html += '<div class="ps-cta"><i class="fas fa-location-dot"></i> ' + esc(ph.cta) + '<i class="fas fa-arrow-right"></i></div>';
+    html += '</div>';
+    el.innerHTML = html;
+    var wrap = el.querySelector('#psWrap');
+    if (wrap) {
+      wrap.addEventListener('click', function () { window.location.href = ph.href; });
+    }
+  }
+
   function renderIndexCard() {
     var el = document.getElementById('parcoursCard');
     if (!el) return;
     injectCss();
     el.classList.add('parcours-card', 'pc-wrap');
-    var cur = currentStep();
-    el.innerHTML = cur ? stepCardHtml(cur) : doneBannerHtml();
+    renderSmartCard(el, readSmartCache());
   }
 
   /* ---------- rendu parcours.html ---------- */
@@ -300,8 +437,11 @@
     document.addEventListener('click', onClick);
     renderIndexCard();
     renderPage();
+    // ✅ v8.43 — temps réels de la carte intelligente : au démarrage + à
+    // chaque retour sur l'accueil (visible).
+    setTimeout(fetchSmart, 1200);
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible') { loadLocal(); renderIndexCard(); renderPage(); }
+      if (document.visibilityState === 'visible') { loadLocal(); renderIndexCard(); renderPage(); setTimeout(fetchSmart, 400); }
     });
   }
 
@@ -311,16 +451,20 @@
       .then(init)
       .catch(function (err) {
         console.warn('[parcours] manifest indisponible :', err);
-        var el = document.getElementById('parcoursCard');
-        if (el) el.innerHTML = '<div class="pc-wrap"><div class="pc-title">Parcours indisponible hors connexion.</div></div>';
+        // ✅ v8.43 — même sans le manifest, la carte INTELLIGENTE reste
+        // fonctionnelle (cache local + getSmartCard) : seul le trait de
+        // progression du plan officiel disparaît.
+        M = null;
+        renderIndexCard();
+        setTimeout(fetchSmart, 800);
       });
   }
 
   /* ✅ v8.34 — quand le profil arrive (index.html), la carte affiche
      immédiatement la vraie classe, sans attendre un re-rendu. */
   window.addEventListener('arvexa:profile', function () {
+    renderIndexCard(); // ✅ v8.43 — la carte intelligente n'a pas besoin du manifest
     if (!M) return;
-    renderIndexCard();
     renderPage();
   });
 

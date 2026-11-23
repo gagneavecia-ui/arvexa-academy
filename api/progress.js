@@ -56,6 +56,7 @@ const RATE_LIMITS = {
   deleteChapter: 10,
   getFullLesson: 15,
   generateSectionExtras: 6, // ✅ v8.40 — IA à la demande (QCM court + carte mentale)
+  getSmartCard: 30,       // ✅ v8.43 — lecture légère (carte intelligente de l'accueil)
   trackStudyTime: 60      // léger, fréquent
 };
 
@@ -2028,11 +2029,44 @@ async function trackStudyTime(uid, body) {
   const today = todayKey();
   const ref = db.collection('users').doc(uid).collection('dailyActivity').doc(today);
 
-  await ref.set({
+  // ✅ v8.43 — granularité MATIÈRE + CHAPITRE : la carte intelligente de
+  // l'accueil compare le temps passé entre les chapitres/sections pour
+  // détecter les lacunes (demande propriétaire). Agrégats :
+  //  - dailyActivity/{date} : bySubject.{subject} + byChapter.{subject/chapitreId}
+  //  - notebooks/{subject}/chapters/{chapterId}.studyMinutes (total vie du chapitre)
+  const subject = typeof body.subject === 'string' && ALLOWED_SUBJECTS.has(body.subject) ? body.subject : null;
+  const chapterId = typeof body.chapterId === 'string' && body.chapterId.length > 0 && body.chapterId.length < 128
+    ? body.chapterId.replace(/[\n\r]/g, '') : null;
+
+  const patch = {
     date: today,
     studyMinutes: FieldValue.increment(minutes),
     lastAt: FieldValue.serverTimestamp()
-  }, { merge: true });
+  };
+  if (subject) patch[`bySubject.${subject}`] = FieldValue.increment(minutes);
+  if (subject && chapterId) patch[`byChapter.${subject}/${chapterId}`] = FieldValue.increment(minutes);
+
+  await ref.set(patch, { merge: true });
+
+  // Agrégat par chapitre (temps total) — lisible sans balayer 365 jours.
+  if (subject && chapterId) {
+    try {
+      const chapterRef = db.collection('users').doc(uid)
+        .collection('notebooks').doc(subject)
+        .collection('chapters').doc(chapterId);
+      const b = db.batch();
+      b.set(chapterRef, {
+        studyMinutes: FieldValue.increment(minutes),
+        lastStudiedAt: FieldValue.serverTimestamp()
+      }, { merge: true });
+      b.set(db.collection('users').doc(uid).collection('notebooks').doc(subject), {
+        studyMinutesTotal: FieldValue.increment(minutes)
+      }, { merge: true });
+      await b.commit();
+    } catch (e) {
+      console.warn('[STUDY] agrégat chapitre:', e.message);
+    }
+  }
 
   return { success: true, addedMinutes: minutes };
 }
@@ -2063,6 +2097,7 @@ async function computeStudyTime(uid) {
   let totalMinutes = 0;
   let todayMinutes = 0;
   let weekMinutes = 0;
+  const bySubject = {}; // ✅ v8.43 — temps par matière (carte intelligente)
 
   snap.docs.forEach((d) => {
     const data = d.data();
@@ -2070,6 +2105,11 @@ async function computeStudyTime(uid) {
     totalMinutes += minutes;
     if (data.date === today) todayMinutes += minutes;
     if (data.date >= weekAgoKey) weekMinutes += minutes;
+    if (data.bySubject && typeof data.bySubject === 'object') {
+      for (const k of Object.keys(data.bySubject)) {
+        bySubject[k] = (bySubject[k] || 0) + Number(data.bySubject[k] || 0);
+      }
+    }
   });
 
   return {
@@ -2077,6 +2117,7 @@ async function computeStudyTime(uid) {
     totalHours: Math.round((totalMinutes / 60) * 10) / 10,
     todayMinutes,
     weekMinutes,
+    bySubject,
     formatted: {
       total: formatMinutes(totalMinutes),
       week: formatMinutes(weekMinutes),
@@ -2164,6 +2205,7 @@ async function getDashboard(uid) {
         id: d.id,
         title: data.title || 'Chapitre',
         sectionsCount: data.sectionsCount || 0,
+        studyMinutes: Number(data.studyMinutes || 0), // ✅ v8.43 — lacunes
         last: formatRelativeDate(data.updatedAt || data.createdAt)
       };
     });
@@ -2182,6 +2224,36 @@ async function getDashboard(uid) {
   });
 
   subjects.sort((a, b) => b.sectionsCount - a.sectionsCount);
+
+  // ✅ v8.43 — BLOC SMART intégré au dashboard : la carte intelligente de
+  // l'accueil réutilise ce même payload (mis en cache par la page Résumé),
+  // et l'action dédiée getSmartCard fournit la version allégée.
+  const allChaptersSmart = [];
+  subjects.forEach((s) => {
+    const subjChapters = (chaptersResults[ALLOWED_SUBJECTS_ARRAY.indexOf(s.key)].docs || [])
+      .map((d) => {
+        const data = d.data();
+        return {
+          subject: s.key, subjectLabel: s.label, id: d.id,
+          title: data.title || 'Chapitre',
+          sectionsCount: Number(data.sectionsCount || 0),
+          studyMinutes: Number(data.studyMinutes || 0)
+        };
+      });
+    allChaptersSmart.push(...subjChapters);
+    s.minutes = Number((studyTime.bySubject || {})[s.key] ||
+      subjChapters.reduce((acc, c) => acc + c.studyMinutes, 0));
+    s.minutesLabel = formatMinutes(s.minutes);
+  });
+
+  let lacune = null;
+  if (allChaptersSmart.length > 0) {
+    const scored = allChaptersSmart
+      .map((c) => ({ ...c, score: (c.sectionsCount + 1) / (c.studyMinutes + 20) }))
+      .sort((a, b) => b.score - a.score);
+    lacune = scored[0];
+    delete lacune.score;
+  }
 
   let recentActivity = [];
   if (subjects.length > 0) {
@@ -2218,7 +2290,112 @@ async function getDashboard(uid) {
     studyTime,
     subjects,
     recentActivity,
-    activity // ✅ v8.38 — 14 derniers jours [{date, sections, minutes}] pour la courbe
+    activity, // ✅ v8.38 — 14 derniers jours [{date, sections, minutes}] pour la courbe
+    smart: { // ✅ v8.43 — carte intelligente de l'accueil (temps comparés + lacune)
+      study: {
+        totalMinutes: studyTime.totalMinutes,
+        weekMinutes: studyTime.weekMinutes,
+        todayMinutes: studyTime.todayMinutes,
+        totalLabel: studyTime.formatted.total,
+        weekLabel: studyTime.formatted.week
+      },
+      lacune
+    }
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ✅ v8.43 — CARTE INTELLIGENTE DE L'ACCUEIL (demande propriétaire :
+// « en disant par connecter il va comparer les temps entre les différentes
+// chapitres et sections qu'on a passés — en fonction de ce temps il pourra
+// déterminer là où l'utilisateur a des lacunes, et quand l'utilisateur
+// touche la carte il mène directement à la section ou au chapitre concerné »).
+// Détection DÉTERMINISTE (instantanée, 0 appel IA) :
+//  score de lacune d'un chapitre = (sections + 1) / (studyMinutes + 20)
+//  → favorise les chapitres volumineux jamais/pas assez travaillés.
+async function getSmartCard(uid) {
+  const { db } = getAdminServices();
+
+  const chaptersPromises = ALLOWED_SUBJECTS_ARRAY.map((subjectKey) =>
+    db
+      .collection('users').doc(uid)
+      .collection('notebooks').doc(subjectKey)
+      .collection('chapters')
+      .orderBy('updatedAt', 'desc')
+      .limit(50)
+      .get()
+      .catch(() => ({ docs: [] }))
+  );
+  const studyTimePromise = computeStudyTime(uid);
+
+  const [chaptersResults, studyTime] = await Promise.all([
+    Promise.all(chaptersPromises),
+    studyTimePromise
+  ]);
+
+  const subjects = [];
+  const allChapters = [];
+  let totalChapters = 0;
+  let totalSections = 0;
+
+  ALLOWED_SUBJECTS_ARRAY.forEach((subjectKey, index) => {
+    const chaptersSnap = chaptersResults[index];
+    const info = SUBJECT_INFO[subjectKey];
+    if (!chaptersSnap.docs || chaptersSnap.docs.length === 0) return;
+
+    const chapters = chaptersSnap.docs.map((d) => {
+      const data = d.data();
+      return {
+        subject: subjectKey,
+        subjectLabel: info.label,
+        id: d.id,
+        title: data.title || 'Chapitre',
+        sectionsCount: Number(data.sectionsCount || 0),
+        studyMinutes: Number(data.studyMinutes || 0)
+      };
+    });
+
+    totalChapters += chapters.length;
+    const subjSections = chapters.reduce((s, c) => s + c.sectionsCount, 0);
+    totalSections += subjSections;
+    const subjMinutes = Number((studyTime.bySubject || {})[subjectKey] ||
+      chapters.reduce((s, c) => s + c.studyMinutes, 0));
+
+    subjects.push({
+      key: subjectKey,
+      label: info.label,
+      minutes: subjMinutes,
+      minutesLabel: formatMinutes(subjMinutes),
+      chaptersCount: chapters.length,
+      sectionsCount: subjSections
+    });
+    allChapters.push(...chapters);
+  });
+
+  subjects.sort((a, b) => b.minutes - a.minutes);
+
+  // Lacune : chapitre le moins travaillé relativement à son volume.
+  let lacune = null;
+  if (allChapters.length > 0) {
+    const scored = allChapters
+      .map((c) => ({ ...c, score: (c.sectionsCount + 1) / (c.studyMinutes + 20) }))
+      .sort((a, b) => b.score - a.score);
+    lacune = scored[0];
+    delete lacune.score;
+  }
+
+  return {
+    success: true,
+    study: {
+      totalMinutes: studyTime.totalMinutes,
+      weekMinutes: studyTime.weekMinutes,
+      todayMinutes: studyTime.todayMinutes,
+      totalLabel: studyTime.formatted.total,
+      weekLabel: studyTime.formatted.week
+    },
+    summary: { totalChapters, totalSections, subjectsCount: subjects.length },
+    subjects,
+    lacune
   };
 }
 
@@ -3161,7 +3338,14 @@ CONTENU DE LA LEÇON :
 ${raw}
 """
 
-Construis une CARTE MENTALE en CHAÎNE LINÉAIRE de cartes qui SE SUIVENT (v8.42 — demande propriétaire : « des cartes qui se suivent comme une chaîne, une ligne droite : la carte de base puis la liaison entre les différentes cartes, bien propre, bien aligné »). La carte 1 est l'IDÉE DE BASE (l'essentiel de la leçon en une phrase). Puis les cartes suivent dans l'ORDRE DE LA LEÇON, comme un chemin : 3 à 6 étapes ("steps") reliées l'une après l'autre, et chaque étape peut être précisée par 1 à 3 sous-points ("children") qui CONTINUENT la chaîne juste après elle. Chaque carte porte un titre ULTRA COURT (2 à 5 mots, étiquette lisible) et deux textes courts : "detail" = l'explication d'une phrase (ce que ce point veut dire), "signif" = sa signification pour la révision (une phrase : pourquoi ce point compte, ce qu'il faut retenir). L'idée de base porte aussi son "detail" et sa "signif". L'ensemble doit couvrir toute la leçon, de l'idée de base jusqu'à la fin.
+Construis une CARTE MENTALE HIÉRARCHIQUE (v8.43 — demande propriétaire : « c'est une liaison hiérarchique : regarde comment les cartes partent de la carte mère — la carte au centre et ses branches autour d'elle, reproduction conforme à une carte mentale classique »).
+
+Structure attendue :
+- "idea" = la CARTE MÈRE : l'essentiel de la leçon en UNE phrase (elle ira AU CENTRE de la carte).
+- "steps" = 3 à 6 BRANCHES qui rayonnent autour de la carte mère — chaque branche est un GRAND AXE du cours (pas une étape chronologique : les parties thématiques que l'on voit sur une vraie carte mentale).
+- "children" = 1 à 3 cartes qui dépendent d'une branche (détails, exemples, notions précises de CET axe).
+
+Chaque carte porte un titre ULTRA COURT (2 à 5 mots, étiquette lisible) et deux textes courts : "detail" = l'explication d'une phrase (ce que ce point veut dire), "signif" = sa signification pour la révision (une phrase : pourquoi ce point compte, ce qu'il faut retenir). La carte mère porte aussi son "detail" et sa "signif". L'ensemble doit couvrir toute la leçon.
 
 Réponds EXACTEMENT dans ce format :
 {"idea":"…","detail":"…","signif":"…","steps":[{"title":"…","detail":"…","signif":"…","children":[{"title":"…","detail":"…","signif":"…"}]}]}`,
@@ -3212,6 +3396,7 @@ module.exports = async function handler(request, response) {
   try {
     switch (action) {
       case 'getDashboard':     return response.status(200).json(await getDashboard(uid));
+      case 'getSmartCard':     return response.status(200).json(await getSmartCard(uid));
       case 'listChapters':     return response.status(200).json(await listChapters(uid, body));
       case 'createChapter':    return response.status(200).json(await createChapter(uid, body));
       case 'getChapter':       return response.status(200).json(await getChapter(uid, body));
