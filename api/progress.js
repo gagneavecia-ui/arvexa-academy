@@ -1325,7 +1325,7 @@ ${rawInput}
   return [
     {
       name: 'explanation',
-      maxTokens: 3200,
+      maxTokens: 3800,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide, sans commentaire.',
       userPrompt: `Tu es professeur expert du BAC, pédagogue et passionné. Explique cette section comme à un élève qui découvre, devant ta classe.
 
@@ -1451,7 +1451,7 @@ ${rawInput}
   return [
     {
       name: 'explanation',
-      maxTokens: 3200,
+      maxTokens: 3800,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide, sans commentaire.',
       userPrompt: `Tu es professeur de SVT, pédagogue et passionné. Explique cette section comme à un élève qui découvre, devant ta classe.
 
@@ -1578,7 +1578,7 @@ ${rawInput}
   return [
     {
       name: 'explanation',
-      maxTokens: 3200,
+      maxTokens: 3800,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide, sans commentaire.',
       userPrompt: `Tu es professeur de philosophie. Explique cette section COMME SI L'ÉLÈVE N'Y CONNAISSAIT RIEN.
 
@@ -1696,7 +1696,7 @@ ${rawInput}
   return [
     {
       name: 'explanation',
-      maxTokens: 3200,
+      maxTokens: 3800,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
       userPrompt: `Tu es professeur d'histoire-géographie. Présente cette section CLAIREMENT, comme devant ta classe.
 
@@ -1805,7 +1805,7 @@ ${rawInput}
   return [
     {
       name: 'explanation',
-      maxTokens: 3200,
+      maxTokens: 3800,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
       userPrompt: `Tu es professeur de français. Explique cette section clairement.
 
@@ -1920,7 +1920,7 @@ ${rawInput}
   return [
     {
       name: 'explanation',
-      maxTokens: 3200,
+      maxTokens: 3800,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
       userPrompt: `Tu es professeur de LANGUE VIVANTE (${subjectLabel}) pour des FRANCOPHONES DÉBUTANTS.
 
@@ -2041,7 +2041,7 @@ ${rawInput}
   return [
     {
       name: 'explanation',
-      maxTokens: 3200,
+      maxTokens: 3800,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
       userPrompt: `Tu es professeur d'informatique, pédagogue. Explique cette section comme à un élève qui découvre, devant ta classe.
 
@@ -2159,7 +2159,7 @@ ${rawInput}
   return [
     {
       name: 'explanation',
-      maxTokens: 3200,
+      maxTokens: 3800,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
       userPrompt: `Tu es professeur de filière technologique (${subjectLabel}) : mécanique, électronique, énergie, génie civil, procédés… Explique cette section comme à un élève qui découvre.
 
@@ -2279,7 +2279,7 @@ ${rawInput}
   return [
     {
       name: 'explanation',
-      maxTokens: 3200,
+      maxTokens: 3800,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
       userPrompt: `Tu es professeur d'économie et de gestion (${subjectLabel}) : économie, comptabilité, droit, commerce, marketing. Explique cette section comme à un élève qui découvre.
 
@@ -2397,7 +2397,7 @@ ${rawInput}
   return [
     {
       name: 'explanation',
-      maxTokens: 3200,
+      maxTokens: 3800,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
       userPrompt: `Tu es professeur universel et pédagogue. Cette section appartient à une discipline que tu dois d'abord IDENTIFIER précisément (éducation civique, arts, musique, ou toute autre matière du monde), puis expliquer selon les conventions de CETTE discipline et uniquement d'elle.
 
@@ -3404,8 +3404,13 @@ async function classifyLesson(rawInput, chapterMap, providers) {
       const parsed = await callProvider(provider, {
         systemPrompt,
         userPrompt,
-        maxTokens: 300,
-        deadline: Date.now() + 24000
+        // ✅ v8.47b — 300 → 900 : les modèles à RAISONNEMENT (gpt-oss-120b en
+        // tête de chaîne) brûlent des tokens AVANT le JSON — à 300 le JSON
+        // de classification était tronqué → parse échoué → chaîne entière en
+        // échec (« L'IA n'a pas pu identifier la matière » 502 intermittent,
+        // observé sur histoire). 900 laisse la place au raisonnement + JSON.
+        maxTokens: 900,
+        deadline: Date.now() + 32000
       });
       const subject = String(parsed?.subject || '').trim().toLowerCase();
       const chapter = String(parsed?.chapter || '').trim().replace(/^chapitre\s*\d+\s*[:.\-–]?\s*/i, '').slice(0, 100);
