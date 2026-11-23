@@ -127,7 +127,9 @@
   }
 
   function chapterLink(step) {
-    return 'chapitre.html?subject=' + step.subject + '&chapter=' + step.chapterIdx;
+    // ✅ v8.50a — pages matières/chapitres déconnectées : le plan renvoie
+    // vers la page Résumé (cahier IA), nouvelle porte d'entrée du contenu.
+    return 'arv-progress.html';
   }
 
   function daysToBac() {
@@ -400,7 +402,16 @@
       });
       html += '</div>';
     });
-    html += '<a class="pc-milestone bac" href="index.html"><i class="fas fa-graduation-cap"></i><span>BAC 2027 — le grand jour</span><strong>'
+    /* ✅ v8.50a — jalon adapté à la classe figée localement (BEPC 2027 pour la 3ᵉ, etc.) */
+    var mGoal = 'BAC ' + (M.bacDate ? new Date(M.bacDate).getFullYear() : '');
+    try {
+      var mCl = window.ARVEXA_CLASSES || null;
+      var mProf = window.ARVEXA_USER_PROFILE || {};
+      if (mCl && mCl.goal && mProf.classId) {
+        mGoal = mCl.goal(mProf.classId, M.bacDate ? new Date(M.bacDate).getFullYear() : null);
+      }
+    } catch (mE) {}
+    html += '<a class="pc-milestone bac" href="index.html"><i class="fas fa-graduation-cap"></i><span>' + mGoal + ' — le grand jour</span><strong>'
       + fmtDate(M.bacDate) + '</strong></a></section>';
 
     /* matières (accès complet conservé) */
@@ -408,7 +419,7 @@
       + '<p class="pc-note">Le parcours décide de l\'ordre — mais garde la main : ouvre une matière librement.</p><div class="pc-subjgrid">';
     Object.keys(M.subjects).forEach(function (k) {
       var s = M.subjects[k];
-      html += '<a class="pc-subjcard" href="matiere.html?subject=' + k + '">'
+      html += '<a class="pc-subjcard" href="arv-progress.html">'
         + '<span class="pc-ico lg" style="background:' + s.color + '"><i class="fas ' + s.icon + '"></i></span>'
         + '<strong>' + esc(s.label) + '</strong><span class="pc-subjn">' + s.chapters + ' chapitres</span></a>';
     });

@@ -3057,10 +3057,18 @@ try {
 
       // 3. Sauvegarder la session AVANT redirection
       try {
+        // ✅ v8.50a — niveau/examen FIGÉS en local dès l'inscription : l'accueil
+        // affiche la vraie carte (BAC 2027 / BEPC 2027…) sans aucun appel Firebase.
         localStorage.setItem('arvexa_session', JSON.stringify({
           uid: user.uid,
           email: user.email,
-          lastActive: Date.now()
+          lastActive: Date.now(),
+          firstName: firstNameValue,
+          lastName: lastNameValue,
+          classId: classIdValue,
+          series: seriesValue,
+          customClass: customClassValue,
+          exam: examValue
         }));
         localStorage.setItem('arvexa_last_uid', user.uid);
         } catch (e) {}

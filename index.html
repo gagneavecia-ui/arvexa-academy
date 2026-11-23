@@ -1508,84 +1508,7 @@
         </section>
 
         <!-- ============================================================
-             BLOC 0.5 — QUESTION DU JOUR + SÉRIE 🔥 (v8.23 — P0 rétention)
-             ============================================================ -->
-        <a href="quotidien.html" id="qjCard" style="display:flex;align-items:center;gap:13px;margin:14px 0 0;padding:15px 16px;background:linear-gradient(135deg,rgba(184,134,11,.14),rgba(184,134,11,.04));border:1px solid rgba(224,184,74,.28);border-radius:16px;text-decoration:none;box-shadow:0 10px 30px rgba(0,0,0,.25)">
-          <span style="font-size:30px;line-height:1;flex-shrink:0">🎯</span>
-          <span style="flex:1;min-width:0">
-            <span style="display:block;font-size:16px;font-weight:800;color:var(--text-light,#F5F0E8);overflow-wrap:anywhere">Question du jour</span>
-            <span style="display:block;font-size:12.5px;color:var(--text-dim,#8A8A7A);margin-top:3px;overflow-wrap:anywhere" id="qjSub">4 questions · une par matière · 90 secondes</span>
-          </span>
-          <span id="qjStreak" aria-label="Série de jours consécutifs" style="flex-shrink:0;background:rgba(224,184,74,.12);border:1px solid rgba(224,184,74,.35);color:var(--accent-bright,#E0B84A);font-size:13px;font-weight:800;border-radius:999px;padding:7px 12px;white-space:nowrap">🔥 0</span>
-        </a>
-        <!-- RELANCE INTELLIGENTE (v8.24 — P1) : max 1 rappel/jour, seulement si la
-             question du jour n'est pas faite et qu'il est 7h ou plus. Dismissible. -->
-        <div id="qjNudge" style="display:none;align-items:center;gap:10px;margin:8px 0 0;padding:10px 12px;background:rgba(224,184,74,.07);border:1px dashed rgba(224,184,74,.35);border-radius:12px">
-          <span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--text-light,#F5F0E8);overflow-wrap:anywhere">⏰ Ta question du jour t'attend — 90 s pour garder ta série 🔥</span>
-          <button id="qjNudgeClose" type="button" aria-label="Masquer" style="flex-shrink:0;width:28px;height:28px;border-radius:8px;border:none;background:rgba(255,255,255,.06);color:var(--text-dim,#8A8A7A);font-size:13px;cursor:pointer;line-height:1">✕</button>
-        </div>
-        <div style="display:flex;justify-content:flex-end;margin-top:8px">
-          <a href="ma-journee.html" style="font-size:12.5px;font-weight:800;color:var(--accent-bright,#E0B84A);text-decoration:none;overflow-wrap:anywhere">📅 Voir ma journée complète →</a>
-        </div>
-        <script>
-        (function () {
-          function dayKey(d) {
-            var dt = (d instanceof Date) ? d : new Date();
-            var m = String(dt.getMonth() + 1).padStart(2, '0');
-            var j = String(dt.getDate()).padStart(2, '0');
-            return dt.getFullYear() + '-' + m + '-' + j;
-          }
-          function qjFaitAujourdhui() {
-            try {
-              var e = JSON.parse(localStorage.getItem('arvexa-quotidien-v1') || '{}');
-              return e && e.lastDone === dayKey();
-            } catch (err) { return false; }
-          }
-          /* RELANCE INTELLIGENTE (v8.24) : bandeau « question du jour pas faite »,
-             affiché AU MAXIMUM 1 fois par jour (date mémorisée dans
-             localStorage 'arvexa-nudge-v1'), seulement à partir de 7h,
-             et jamais si la question du jour est déjà faite. La décision est
-             prise UNE SEULE FOIS par vue de page (majQJ tourne plusieurs fois :
-             DOMContentLoaded, event série, pageshow) — sinon la 2e passe
-             masquerait le bandeau qu'elle vient d'afficher. */
-          var nudgeDecide = false;
-          function majNudge() {
-            var box = document.getElementById('qjNudge');
-            if (!box || nudgeDecide) return;
-            nudgeDecide = true;
-            var today = dayKey();
-            var vu = '';
-            try { vu = (JSON.parse(localStorage.getItem('arvexa-nudge-v1') || '{}') || {}).date || ''; } catch (err) {}
-            if (qjFaitAujourdhui() || vu === today || new Date().getHours() < 7) {
-              box.style.display = 'none';
-              return;
-            }
-            box.style.display = 'flex';
-            try { localStorage.setItem('arvexa-nudge-v1', JSON.stringify({ date: today })); } catch (err) {}
-          }
-          function majQJ() {
-            if (!window.ARVEXA_STREAK) return;
-            var st = window.ARVEXA_STREAK.get();
-            var chip = document.getElementById('qjStreak');
-            var sub = document.getElementById('qjSub');
-            if (chip) chip.textContent = '🔥 ' + (st.count || 0);
-            if (sub) sub.textContent = st.activeToday ? "✅ Fait pour aujourd'hui — reviens demain à 7h" : '4 questions · une par matière · 90 secondes';
-            majNudge();
-          }
-          window.addEventListener('DOMContentLoaded', majQJ);
-          document.addEventListener('arvexa-streak-change', majQJ);
-          window.addEventListener('pageshow', majQJ);
-          var nudgeClose = document.getElementById('qjNudgeClose');
-          if (nudgeClose) nudgeClose.addEventListener('click', function () {
-            var box = document.getElementById('qjNudge');
-            if (box) box.style.display = 'none';
-            try { localStorage.setItem('arvexa-nudge-v1', JSON.stringify({ date: dayKey() })); } catch (err) {}
-          });
-        })();
-        </script>
 
-
-        <!-- ============================================================
              BLOC 3 — PARCOURS (Modèle A « Ton parcours vers le BAC »)
              ============================================================ -->
         <div class="section-title"><h3>🧭 Ton parcours vers le BAC</h3></div>
@@ -1620,9 +1543,9 @@
             <div class="icon-badge"><i class="fas fa-graduation-cap"></i></div>
             <div class="name">Résumé</div>
           </a>
-          <a href="outils.html" class="tool-card tool-more">
-            <div class="icon-badge"><i class="fas fa-toolbox"></i></div>
-            <div class="name">Plus d'outils</div>
+          <a href="arv.html" class="tool-card">
+            <div class="icon-badge"><i class="fas fa-comments"></i></div>
+            <div class="name">Chat IA</div>
           </a>
         </div>
 
@@ -1656,7 +1579,7 @@
             <div class="sub-icon"><i class="fas fa-crown"></i></div>
             <div class="sub-content">
               <div class="sub-title" id="subTitle">🔓 Débloque tout ARVEXA School</div>
-              <div class="sub-text" id="subText">Accède à tous les chapitres, exercices, corrections et plus de fonctionnalités avec Premium.</div>
+              <div class="sub-text" id="subText">Accède à tout ARVEXA : résumés, questions, cartes mentales, outils et plus encore avec Premium.</div>
               <div class="sub-expiry" id="subExpiry" style="display:none;"></div>
             </div>
             <a href="abonnement.html" class="sub-btn" id="subBtn">Voir les offres</a>
@@ -1794,10 +1717,52 @@
   /* RESTAURATION INSTANTE — réapplique la snapshot de session sur le DOM
      avant même le chargement des modules Firebase (CDN). Le module
      re-validera ensuite discrètement via Firestore (onSnapshot). */
+  /* ✅ v8.50a — PROFIL FIGÉ EN LOCAL (zéro Firebase pour la carte) : dès
+     l'inscription (register.html), classe/série/classe libre/prénom sont
+     écrits dans arvexa_session. Ici ils sont relis AVANT tout le reste pour
+     peindre « BAC 2027 » / « BEPC 2027 » / objectif + le prénom dès la
+     première image ; onSnapshot rafraîchit la copie locale en arrière-plan. */
+  (function () {
+    try {
+      var sess = null;
+      try { sess = JSON.parse(localStorage.getItem('arvexa_session') || 'null'); } catch (e0) { sess = null; }
+      if (!sess || !sess.classId) {
+        // Anciens comptes : pas encore de copie locale → cache utilisateur
+        var uid0 = null;
+        try { uid0 = localStorage.getItem('arvexa_last_uid'); } catch (e1) {}
+        if (uid0) {
+          try {
+            var cache0 = JSON.parse(localStorage.getItem('arvexa_user_data') || 'null');
+            if (cache0 && cache0._uid === uid0 && cache0.classId) {
+              sess = sess || {};
+              sess.classId = cache0.classId;
+              sess.series = cache0.series || '';
+              sess.customClass = cache0.customClass || '';
+              if (cache0.firstName) sess.firstName = cache0.firstName;
+            }
+          } catch (e2) {}
+        }
+      }
+      if (sess && sess.classId && !window.ARVEXA_USER_PROFILE) {
+        window.ARVEXA_USER_PROFILE = {
+          classId: sess.classId,
+          series: sess.series || '',
+          customClass: sess.customClass || ''
+        };
+      }
+      if (sess && sess.firstName) window.__ARVEXA_SEED_NAME__ = sess.firstName;
+    } catch (e3) {}
+  })();
+
   window.__arvexaApplyInstant = function () {
     var snap = window.__ARVEXA_INSTANT__;
     if (!snap || !snap.userData) return;
     var d = snap.userData;
+    try {
+      if (d.classId && !window.ARVEXA_USER_PROFILE) {
+        window.ARVEXA_USER_PROFILE = { classId: d.classId, series: d.series || '', customClass: d.customClass || '' };
+      }
+    } catch (eSeed) {}
     function $(id) { return document.getElementById(id); }
     try {
       var h = new Date().getHours();
@@ -1851,7 +1816,7 @@
 
        ⚠ Garder synchronisé avec majHeroClasse()/majODJ()/renderHero()/
 
-       renderProgress()/renderBadges() du module.
+       renderBadges() du module.
 
        ================================================================ */
 
@@ -2376,6 +2341,22 @@
   }
 
   // ================================================================
+  // ✅ v8.50a — FIGE la classe/examen/prénom dans arvexa_session : l'accueil
+  // affiche la vraie carte (BAC 2027 / BEPC 2027 / objectif) sans aucun appel
+  // Firebase. Le snapshot Firestore rafraîchit cette copie locale.
+  function freezeExamInfoToSession(data) {
+    try {
+      if (!data) return;
+      const sess = JSON.parse(localStorage.getItem('arvexa_session') || '{}') || {};
+      if (data.classId) sess.classId = data.classId;
+      if (typeof data.exam !== 'undefined') sess.exam = data.exam || '';
+      if (typeof data.series !== 'undefined') sess.series = data.series || '';
+      if (typeof data.customClass !== 'undefined') sess.customClass = data.customClass || '';
+      if (data.firstName) sess.firstName = data.firstName;
+      localStorage.setItem('arvexa_session', JSON.stringify(sess));
+    } catch (e) {}
+  }
+
   // ✅ v8.28 — ÉCONOMIE FIRESTORE : PORTES JOUR (day-gate)
   // Demande propriétaire : « réduire les appels Firebase — la 1re fois
   // qu'on ouvre la page dans la journée, on charge, on affiche, puis on
@@ -2521,12 +2502,7 @@
   // ================================================================
   // CONSTANTES
   // ================================================================
-  const SUBJECTS = [
-    { key: 'mathematiques', name: 'Mathématiques', chapters: 11, icon: 'fa-square-root-variable' },
-    { key: 'physique', name: 'Physique', chapters: 17, icon: 'fa-bolt' },
-    { key: 'chimie', name: 'Chimie', chapters: 9, icon: 'fa-flask' },
-    { key: 'svt', name: 'SVT', chapters: 20, icon: 'fa-dna' }
-  ];
+  // ✅ v8.50a — constantes matières retirées (ancien parcours déconnecté).
 
   const VAPID_KEY = 'BKx2iXs_mlCDdDjh_JxsjOQiOlW1-95pJi8myJCr503pB8TkFjJ8bZfpZ7Fv9pYyV_O9_Ca_fbwkO5eGPrnWaHA';
   const FCM_DISMISSED_KEY = 'arvexa_fcm_dismissed';
@@ -2579,7 +2555,25 @@
     });
   }
 
-  if (!window.__ARVEXA_INSTANT__) showProfileLoading();
+  if (!window.__ARVEXA_INSTANT__) {
+    // ✅ v8.50a — prénom déjà connu localement : peinture immédiate (pas de squelette)
+    if (window.__ARVEXA_SEED_NAME__) {
+      try {
+        const gS = getGreeting();
+        greetingText.textContent = gS.text;
+        greetingEmoji.textContent = gS.emoji;
+        const hgS = document.getElementById('heroGreeting');
+        if (hgS) hgS.textContent = gS.text;
+        [userFirstName, document.getElementById('heroName')].forEach((el) => {
+          if (!el) return;
+          el.classList.remove('loading');
+          el.textContent = window.__ARVEXA_SEED_NAME__;
+        });
+      } catch (eS) {}
+    } else {
+      showProfileLoading();
+    }
+  }
 
   // ================================================================
   // HÉROS PAR CLASSE (✅ v8.36)
@@ -2681,66 +2675,6 @@
   // ================================================================
   // PROGRESSION SCOLAIRE (prioritaire)
   // ================================================================
-  function readProgressData() {
-    let readParts = [];
-    try {
-      readParts = JSON.parse(localStorage.getItem(READ_KEY) || '[]');
-    } catch (e) { readParts = []; }
-
-    const perSubject = {};
-    SUBJECTS.forEach(s => { perSubject[s.key] = new Set(); });
-
-    readParts.forEach(key => {
-      const parts = String(key).split('_');
-      if (parts.length >= 2 && perSubject[parts[0]]) {
-        perSubject[parts[0]].add(parts[1]);
-      }
-    });
-
-    let totalChaptersRead = 0;
-    let subjectsTouched = 0;
-    const totalChaptersAll = SUBJECTS.reduce((acc, s) => acc + s.chapters, 0);
-
-    SUBJECTS.forEach(s => {
-      const count = perSubject[s.key].size;
-      if (count > 0) {
-        subjectsTouched++;
-        totalChaptersRead += count;
-      }
-    });
-
-    return {
-      perSubject,
-      totalChaptersRead,
-      totalChaptersAll,
-      subjectsTouched,
-      subjectsTotal: SUBJECTS.length
-    };
-  }
-
-  function renderProgress() {
-    const data = readProgressData();
-
-    // Mettre à jour les cartes matières (compteurs)
-    SUBJECTS.forEach(s => {
-      const el = document.querySelector(`[data-subject="${s.key}"]`);
-      if (el) {
-        const count = data.perSubject[s.key].size;
-        if (count > 0) {
-          el.textContent = `${count}/${s.chapters} chapitres lus`;
-          el.classList.add('has-progress');
-        } else {
-          el.textContent = `${s.chapters} chapitres`;
-          el.classList.remove('has-progress');
-        }
-      }
-    });
-
-    // Badges (gamification)
-    renderBadges();
-  }
-
-  // ================================================================
   // ACTIVITÉ QUOTIDIENNE (série / objectif / semaine)
   // Écrit aussi par lecture.html (hook temps réel) + merge snapshot ici.
   // ================================================================
@@ -2803,28 +2737,46 @@
   // BADGES — réalisations
   // ================================================================
   const badgesScroll = document.getElementById('badgesScroll');
+  // ✅ v8.50a — RÉALISATIONS BRANCHÉES SUR LA PAGE RÉSUMÉ (demande du
+  // propriétaire : fini le comptage matières/parts ouvertes) : les badges
+  // suivent l'évolution réelle du cahier — sections résumées, matières
+  // explorées, temps d'étude cumulé, habitude (série de jours). Tout est lu
+  // dans le cache local écrit par arv-progress.html (arvexa_dash_cache_v1)
+  // + l'activité quotidienne de l'appareil : ZÉRO appel Firebase.
+  function readResumeStats() {
+    let dash = null;
+    try { dash = JSON.parse(localStorage.getItem('arvexa_dash_cache_v1') || 'null'); } catch (e) { dash = null; }
+    const summary = (dash && dash.summary) || {};
+    const studyTime = (dash && dash.studyTime) || {};
+    const dashStreak = (dash && dash.streak && Number(dash.streak.current || 0)) || 0;
+    return {
+      sections: Number(summary.totalSections || 0) || 0,
+      subjects: Number(summary.subjectsCount || 0) || 0,
+      minutes: Number(studyTime.totalMinutes || 0) || 0,
+      dashStreak: dashStreak
+    };
+  }
+
   const BADGES = [
-    { icon: '📖', name: 'Première section', check: (st) => st.totalParts >= 1 },
-    { icon: '📚', name: '5 sections', check: (st) => st.totalParts >= 5 },
-    { icon: '🎓', name: '15 sections', check: (st) => st.totalParts >= 15 },
-    { icon: '🏅', name: '30 sections', check: (st) => st.totalParts >= 30 },
-    { icon: '🌍', name: 'Toutes matières', check: (st) => st.subjectsTouched >= 4 },
+    { icon: '🧠', name: 'Premier résumé', check: (st) => st.sections >= 1 },
+    { icon: '📚', name: '5 sections résumées', check: (st) => st.sections >= 5 },
+    { icon: '🎓', name: '15 sections résumées', check: (st) => st.sections >= 15 },
+    { icon: '🏅', name: '30 sections résumées', check: (st) => st.sections >= 30 },
+    { icon: '🗂️', name: '3 matières explorées', check: (st) => st.subjects >= 3 },
+    { icon: '⏱️', name: "1 heure d'étude", check: (st) => st.minutes >= 60 },
+    { icon: '💎', name: "5 heures d'étude", check: (st) => st.minutes >= 300 },
     { icon: '🔥', name: 'Série de 3 jours', check: (st) => st.streak >= 3 },
-    { icon: '🚀', name: 'Série de 7 jours', check: (st) => st.streak >= 7 },
-    { icon: '💎', name: 'Programme complet', check: (st) => st.chaptersRead >= st.chaptersTotal }
+    { icon: '🚀', name: 'Série de 7 jours', check: (st) => st.streak >= 7 }
   ];
 
   function renderBadges() {
     if (!badgesScroll) return;
-    const activity = computeActivity();
-    const streak = computeStreak(activity);
-    const prog = readProgressData();
+    const rs = readResumeStats();
     const st = {
-      totalParts: getTotalParts(),
-      subjectsTouched: prog.subjectsTouched,
-      chaptersRead: prog.totalChaptersRead,
-      chaptersTotal: prog.totalChaptersAll,
-      streak: streak
+      sections: rs.sections,
+      subjects: rs.subjects,
+      minutes: rs.minutes,
+      streak: Math.max(rs.dashStreak, computeStreak(computeActivity()))
     };
     badgesScroll.textContent = '';
     BADGES.forEach((b) => {
@@ -2842,11 +2794,12 @@
     });
   }
 
-  // ✅ v8.0 — SYNC FIREBASE : re-rendu quand la progression fusionne/arrive du
-  // cloud (compteurs matières, badges, série quotidienne). Les lectures faites
-  // sur un autre appareil apparaissent ici sans recharger.
   window.addEventListener('arvexa-progress-updated', () => {
-    try { renderProgress(); renderBadges(); } catch (e) {}
+    try { renderBadges(); } catch (e) {}
+  });
+  window.addEventListener('pageshow', () => { try { renderBadges(); } catch (e) {} });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) { try { renderBadges(); } catch (e) {} }
   });
 
   // ================================================================
@@ -2931,7 +2884,7 @@
     });
   }
 
-  renderProgress();
+  renderBadges();
 
 
   // ================================================================
@@ -3016,7 +2969,7 @@
     if (!isPremium) {
       reminder.style.display = 'block';
       subTitle.textContent = '🔓 Débloque tout ARVEXA School';
-      subText.textContent = 'Accède à tous les chapitres, exercices, corrections et plus de fonctionnalités avec Premium.';
+      subText.textContent = 'Accède à tout ARVEXA : résumés, questions, cartes mentales, outils et plus encore avec Premium.';
       subExpiry.style.display = 'none';
       subBtn.textContent = 'Voir les offres';
       subBtn.className = 'sub-btn';
@@ -3595,6 +3548,7 @@
             };
             window.dispatchEvent(new Event('arvexa:profile'));
           } catch (e) {}
+          freezeExamInfoToSession(userData);
 
           if (userData.accountStatus === 'blocked') {
             if (unsubscribeUser) { unsubscribeUser(); unsubscribeUser = null; }
@@ -3628,6 +3582,7 @@
               customClass: userData.customClass || ''
             };
           } catch (e) {}
+          freezeExamInfoToSession(cached);
           renderUserData(cached);
           showDashboard();
         } else {
@@ -3708,7 +3663,7 @@
         saveUserDataToCache(fresh, user.uid);
         renderUserData(fresh);
       }
-      renderProgress();
+      renderBadges();
       showToast('Données actualisées', 'success');
     } catch (e) {
       console.warn('[Refresh] erreur:', e.message);
@@ -3806,7 +3761,7 @@
     }
 
     loadUserData(user);
-    renderProgress();
+    renderBadges();
 
     // Retour instantané : signal discret « mise à jour en arrière-plan »
     // ✅ v5.9 — PLUS JAMAIS À CHAQUE RAFRAÎCHISSEMENT. La snapshot miroir
@@ -3974,11 +3929,11 @@
 
   // Rafraîchir la progression quand l'utilisateur revient sur la page
   window.addEventListener('pageshow', (e) => {
-    if (e.persisted) renderProgress();
+    if (e.persisted) renderBadges();
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') renderProgress();
+    if (document.visibilityState === 'visible') renderBadges();
   });
 
   window.addEventListener('beforeunload', () => {
