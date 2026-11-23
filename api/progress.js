@@ -1125,6 +1125,11 @@ async function runParallelTasks(tasks, providers, deadline) {
     if (!value && task.name === 'explanation') {
       for (let retry = 0; retry < 2 && !value; retry++) {
         if (deadline && Date.now() > deadline - 25000) break;
+        // ✅ v8.47c — pause 5 s avant chaque relance : la plupart des échecs
+        // sont des 429 TPM (8 000 tokens/min chez Groq) — relancer à l'instant
+        // ré-atterrit dans la même fenêtre saturée ; 5 s laissent la fenêtre
+        // glisser (l'explication est retriée tôt : elle est EN TÊTE de file).
+        await new Promise((r) => setTimeout(r, 5000));
         let retryName = null;
         // D'abord le dernier fournisseur en échec transitoire (demande/abort)
         for (let i = errs.length - 1; i >= 0; i--) {
@@ -2519,9 +2524,14 @@ function getPromptsForProfile(profile, context) {
     case 'general':    tasks = buildGeneralPrompts(context); break;
     default:           tasks = buildScientificPrompts(context);
   }
-  // Files séquentielles : les tâches LÉGÈRES d'abord (questions ~20 s chacune)
-  // pour que chaque tâche ait du budget devant elle. (QCM retiré v4.14)
-  const order = { questions_a: 1, questions_b: 2, structure: 3, explanation: 4 };
+  // ✅ v8.47c — EXPLICATION EN PREMIER dans la file. L'ancien ordre (tâches
+  // légères d'abord) faisait que l'explication — la tâche la PLUS LOURDE en
+  // tokens — tournait toujours en DERNIER et héritait d'une fenêtre TPM Groq
+  // (8 000 tokens/min) déjà consumée par les 3 autres tâches → 429 → relais
+  // morts (OpenRouter cap 50/jour, Gemini instable, Mistral non configuré)
+  // → « L'explication pédagogique n'a pas pu être générée » en fallback.
+  // Le prof d'abord : il reçoit la fenêtre fraîche ; les questions suivent.
+  const order = { explanation: 1, questions_a: 2, questions_b: 3, structure: 4 };
   return tasks.slice().sort((a, b) => (order[a.name] ?? 9) - (order[b.name] ?? 9));
 }
 
@@ -3201,7 +3211,21 @@ async function finalizeSection(uid, { subject, chapterId, chapterRef, trimmed, q
   // autre élève ? Si oui : 0 appel IA + quota mensuel remboursé.
   const cacheKey = aiCacheKey(profile, tasks.map((t) => t.userPrompt || ''));
   const cachedAnalysis = await readAiCache(cacheKey);
-  if (cachedAnalysis) {
+  // ✅ v8.47c — GARDE À LA LECTURE DU CACHE : une entrée mise en cache SANS
+  // vraie explication (fenêtres TPM saturées du passé) est ignorée — on la
+  // traite comme un cache-miss pour RÉGÉNÉRER, puis l'écriture réussie
+  // écrase l'entrée empoisonnée sous la même clé. Sans cette garde, chaque
+  // élève qui soumet le même cours recevait l'analyse amputée à jamais.
+  const cachedExplOk = cachedAnalysis
+    && cachedAnalysis.explanation
+    && typeof cachedAnalysis.explanation.understanding === 'string'
+    && cachedAnalysis.explanation.understanding.trim().length > 20
+    && !cachedAnalysis.explanation.understanding.includes("n'a pas pu être générée");
+  if (cachedAnalysis && !cachedExplOk) {
+    console.log(`[FAN-OUT] CACHE HIT ${cacheKey.slice(0, 18)}… SANS explication → régénération (entrée empoisonnée purgée à la réussite)`);
+  }
+  const useCache = cachedAnalysis && cachedExplOk;
+  if (useCache) {
     if (quota.reserved) await releaseSectionQuota(uid);
     console.log(`[FAN-OUT] CACHE HIT ${cacheKey.slice(0, 18)}… — 0 appel IA`);
 
@@ -3283,9 +3307,17 @@ async function finalizeSection(uid, { subject, chapterId, chapterRef, trimmed, q
 
   // ✅ v8.25 — succès IA : publie le résultat dans le cache partagé (si le
   // contenu est exploitable) — les prochains élèves de cette section : 0 IA.
-  const hasCacheableContent = (Array.isArray(analysis.explanation?.parts) && analysis.explanation.parts.length > 0) ||
-                              (Array.isArray(analysis.questions) && analysis.questions.length > 0);
-  if (hasCacheableContent && !analysis.fallback) {
+  // ✅ v8.47c — GARDE À L'ÉCRITURE : on ne cache QUE si l'explication est
+  // RÉELLE (compréhension rédigée + parties OU points clés). L'ancienne garde
+  // (parts > 0 || questions > 0) laissait entrer des analyses SANS explication
+  // (fenêtre TPM saturée) → cache empoisonné servi à tous les élèves suivants.
+  const explReal = analysis.explanation
+    && typeof analysis.explanation.understanding === 'string'
+    && analysis.explanation.understanding.trim().length > 20
+    && !analysis.explanation.understanding.includes("n'a pas pu être générée");
+  const explRich = (Array.isArray(analysis.explanation?.parts) && analysis.explanation.parts.length > 0) ||
+                   (Array.isArray(analysis.explanation?.keyFacts) && analysis.explanation.keyFacts.length > 0);
+  if (explReal && explRich && !analysis.fallback) {
     await writeAiCache(cacheKey, profile, analysis);
   }
 
