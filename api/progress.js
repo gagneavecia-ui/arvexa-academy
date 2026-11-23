@@ -893,7 +893,7 @@ function parseProviderJson(provider, rawContent) {
   }
 }
 
-async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 4000, deadline }) {
+async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 4000, deadline, validate }) {
   // ✅ v8.46b — POLYTAPE 2 PASSES SANS SOMMEIL : les modèles :free d'OpenRouter
   // sont PARTAGÉS entre tous les utilisateurs — la saturation (HTTP 429
   // « temporarily rate-limited upstream ») varie MINUTE PAR MINUTE et revient
@@ -923,7 +923,19 @@ async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 40
     if (remaining < 4000) return 'exhausted';
     const res = await attemptProviderOnce(provider, model, Math.min(baseTimeout, remaining), { systemPrompt, userPrompt, maxTokens });
     if (res.ok) {
-      try { return { value: parseProviderJson(provider, res.rawContent), done: true }; }
+      try {
+        const parsed = parseProviderJson(provider, res.rawContent);
+        // ✅ v8.46c — validation AU NIVEAU MODÈLE : un JSON lisible mais de
+        // mauvaise FORME (carte sans étapes, QCM vide) fait tourner la roue
+        // vers le modèle SUIVANT du même fournisseur (ex. gpt-oss-120b →
+        // llama-3.1-8b-instant) au lieu de sauter tout le fournisseur — le
+        // fallback de modèle redevient utile.
+        if (typeof validate === 'function' && !validate(parsed)) {
+          lastMsg = `${model} : format inutilisable`;
+          return 'parse';
+        }
+        return { value: parsed, done: true };
+      }
       catch (e) { if (!parseErr) parseErr = e; lastMsg = e.message || lastMsg; return 'parse'; } // JSON irréparable → modèle SUIVANT (la roue tourne)
     }
     lastMsg = res.errMsg || `HTTP ${res.status}`;
@@ -932,6 +944,15 @@ async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 40
       throw new Error(`${provider.name}: ${lastMsg}`);
     }
     if (res.status === 429 || /rate-limited|temporarily rate/i.test(String(lastMsg))) sawRateLimit = true;
+    // ✅ v8.46c — CAP QUOTIDIEN du tier gratuit OpenRouter (50 requêtes/jour
+    // sans crédits, niveau COMPTE, découvert par la sonde health.js ?providers=1 :
+    // « Rate limit exceeded: free-models-per-day ») : quand il est atteint,
+    // TOUS les modèles :free renvoient le même 429 instantané — tourner la
+    // roue ne sert à rien et brûle le budget de 52 s. On lève immédiatement
+    // (comme une erreur de clé) pour passer au fournisseur suivant.
+    if (/free-models-per-day/i.test(String(lastMsg))) {
+      throw new Error(`${provider.name}: quota quotidien gratuit épuisé — relais fournisseur suivant`);
+    }
     return res.kind;
   };
 
@@ -960,16 +981,17 @@ async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 40
 // - OpenRouter (lent mais sans TPM serré) : questions + qcm en file
 // - Mistral : structure
 const TASK_PROVIDER_PREF = {
-  // ✅ v8.46a — OpenRouter EN PREMIER partout : seul fournisseur SAIN (clé
-  // vivante + modèles :free vérifiés) ; Groq = clé morte (Forbidden immédiat),
-  // Gemini = clé non standard instable, Mistral = non configuré. L'ancien
-  // ordre brûlait 20-30 s chez Groq/Gemini AVANT d'atteindre OpenRouter,
-  // puis échouait sur ses modèles payants (402) → HTTP 500 à chaque fois.
-  explanation: ['OpenRouter', 'Gemini', 'Mistral', 'Groq'],
-  structure:   ['OpenRouter', 'Mistral', 'Gemini', 'Groq'],
-  questions_a: ['OpenRouter', 'Gemini', 'Mistral', 'Groq'],
-  questions_b: ['OpenRouter', 'Gemini', 'Mistral', 'Groq'],
-  qcm:         ['OpenRouter', 'Gemini', 'Mistral', 'Groq']
+  // ✅ v8.46c — Groq premier (vivante depuis Vercel, 522 ms prouvée par la
+  // sonde health.js) ; OpenRouter en secours — son tier gratuit est plafonné
+  // à 50 requêtes/JOUR (free-models-per-day, découvert par sonde) : il ne
+  // doit absorber que le débordement TPM de Groq (8000 tokens/min) et pas
+  // toute la charge. Gemini (clé non standard, FAILED_PRECONDITION) et
+  // Mistral (non configuré) restent des relais finaux.
+  explanation: ['Groq', 'OpenRouter', 'Gemini', 'Mistral'],
+  structure:   ['Groq', 'OpenRouter', 'Mistral', 'Gemini'],
+  questions_a: ['Groq', 'OpenRouter', 'Gemini', 'Mistral'],
+  questions_b: ['Groq', 'OpenRouter', 'Gemini', 'Mistral'],
+  qcm:         ['Groq', 'OpenRouter', 'Gemini', 'Mistral']
 };
 
 function distributeTasks(tasks, providers) {
@@ -3302,17 +3324,21 @@ function sanitizeMindmap(raw) {
 // le 1er fournisseur répondait un JSON de mauvaise forme, sanitize renvoyait
 // null, et AUCUN relais n'avait lieu — échec déterministe à chaque clic).
 async function callExtrasTask(taskName, providers, { systemPrompt, userPrompt, maxTokens, deadline, validate }) {
-  // ✅ v8.46a — OpenRouter EN PREMIER (seul fournisseur sain, modèles :free
-  // vérifiés en direct) ; les autres restent des relais si OpenRouter sature.
-  const pref = { qcm: ['OpenRouter', 'Gemini', 'Mistral', 'Groq'], mindmap: ['OpenRouter', 'Gemini', 'Mistral', 'Groq'] }[taskName]
-    || ['OpenRouter', 'Gemini', 'Mistral', 'Groq'];
+  // ✅ v8.46c — Groq EN PREMIER : la sonde health.js ?providers=1 DANS le
+  // runtime Vercel a prouvé que la clé Groq y est VIVANTE et RAPIDE
+  // (openai/gpt-oss-120b → 200 OK en 522 ms) — le « Forbidden » observé hors
+  // Vercel était une restriction de RÉGION du poste de diagnostic. OpenRouter
+  // devient SECOURS (son tier gratuit est plafonné à 50 requêtes/JOUR — sonde
+  // : « free-models-per-day ») : Groq d'abord préserve le quota du jour.
+  const pref = { qcm: ['Groq', 'OpenRouter', 'Gemini', 'Mistral'], mindmap: ['Groq', 'OpenRouter', 'Gemini', 'Mistral'] }[taskName]
+    || ['Groq', 'OpenRouter', 'Gemini', 'Mistral'];
   const byName = new Map(providers.map((p) => [p.name, p]));
   let lastErr = null;
   for (const name of pref) {
     const provider = byName.get(name);
     if (!provider) continue;
     try {
-      const data = await callProvider(provider, { systemPrompt, userPrompt, maxTokens, deadline });
+      const data = await callProvider(provider, { systemPrompt, userPrompt, maxTokens, deadline, validate });
       if (typeof validate === 'function') {
         const ok = validate(data);
         if (!ok) { lastErr = new Error(`${provider.name}: format inutilisable`); console.warn(`[EXTRAS v8.44a] ${taskName} → ${name} JSON de mauvaise forme — relais suivant`); continue; }
