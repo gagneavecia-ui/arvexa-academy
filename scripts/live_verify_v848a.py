@@ -46,7 +46,7 @@ def get(url, timeout=30):
 
 # ── 0. Site & client ──
 code, body = get(BASE + "/service-worker.js")
-check("0.1 site en ligne + SW v8.48a", code == 200 and b"arvexa-offline-v8.48b" in body, f"status={code}")
+check("0.1 site en ligne + SW v8.48b", code == 200 and b"arvexa-offline-v8.48b" in body, f"status={code}")
 
 code, body = get(BASE + "/arv-progress.html")
 html = body.decode("utf-8", "replace")
