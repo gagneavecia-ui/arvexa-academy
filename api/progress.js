@@ -3223,11 +3223,17 @@ async function finalizeSection(uid, { subject, chapterId, chapterRef, trimmed, q
   // traite comme un cache-miss pour RÉGÉNÉRER, puis l'écriture réussie
   // écrase l'entrée empoisonnée sous la même clé. Sans cette garde, chaque
   // élève qui soumet le même cours recevait l'analyse amputée à jamais.
+  // ✅ v8.47e — la garde exige aussi une STRUCTURE non vide : une entrée avec
+  // une bonne explication mais SANS structure (tâche structure tombée au moment
+  // de sa création) est régénérée au lieu d'être servie amputée pour toujours.
   const cachedExplOk = cachedAnalysis
     && cachedAnalysis.explanation
     && typeof cachedAnalysis.explanation.understanding === 'string'
     && cachedAnalysis.explanation.understanding.trim().length > 20
-    && !cachedAnalysis.explanation.understanding.includes("n'a pas pu être générée");
+    && !cachedAnalysis.explanation.understanding.includes("n'a pas pu être générée")
+    && cachedAnalysis.structure
+    && typeof cachedAnalysis.structure === 'object'
+    && Object.keys(cachedAnalysis.structure).length > 0;
   if (cachedAnalysis && !cachedExplOk) {
     console.log(`[FAN-OUT] CACHE HIT ${cacheKey.slice(0, 18)}… SANS explication → régénération (entrée empoisonnée purgée à la réussite)`);
   }
@@ -3324,7 +3330,9 @@ async function finalizeSection(uid, { subject, chapterId, chapterRef, trimmed, q
     && !analysis.explanation.understanding.includes("n'a pas pu être générée");
   const explRich = (Array.isArray(analysis.explanation?.parts) && analysis.explanation.parts.length > 0) ||
                    (Array.isArray(analysis.explanation?.keyFacts) && analysis.explanation.keyFacts.length > 0);
-  if (explReal && explRich && !analysis.fallback) {
+  // ✅ v8.47e — on ne cache qu'une analyse COMPLÈTE (explication + structure)
+  const structFull = analysis.structure && typeof analysis.structure === 'object' && Object.keys(analysis.structure).length > 0;
+  if (explReal && explRich && structFull && !analysis.fallback) {
     await writeAiCache(cacheKey, profile, analysis);
   }
 
