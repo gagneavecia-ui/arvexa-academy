@@ -32,12 +32,12 @@ importScripts('https://www.gstatic.com/firebasejs/12.12.1/firebase-messaging-com
 // INITIALISATION FIREBASE
 // ================================================================
 firebase.initializeApp({
-  apiKey: "AIzaSyBEbYuuUlNCLMBUHClv4UnyownNHw2q3_g",
-  authDomain: "nexgen-39043.firebaseapp.com",
-  projectId: "nexgen-39043",
-  storageBucket: "nexgen-39043.firebasestorage.app",
-  messagingSenderId: "619390144325",
-  appId: "1:619390144325:web:35d96b125501e4e8b1782c"
+  apiKey: "AIzaSyDHscOXw3rLuhV6z1Cny-bdYCumqpnG7QE",
+  authDomain: "arvexa-fbf10.firebaseapp.com",
+  projectId: "arvexa-fbf10",
+  storageBucket: "arvexa-fbf10.firebasestorage.app",
+  messagingSenderId: "920108330053",
+  appId: "1:920108330053:web:f532d71cbc2c824bc7472c"
 });
 
 const messaging = firebase.messaging();

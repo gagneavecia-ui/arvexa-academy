@@ -6,7 +6,7 @@ l'explication narrative (keyFacts, sans parts) doit compter COMPLÈTE."""
 import json, urllib.request, urllib.error
 
 BASE = "https://arvexa-academy.vercel.app"
-WEB_KEY = "AIzaSyBEbYuuUlNCLMBUHClv4UnyownNHw2q3_g"
+WEB_KEY = "AIzaSyDHscOXw3rLuhV6z1Cny-bdYCumqpnG7QE"
 EMAIL = "eleve.zu9a09a5@arvexa-probe.test"
 PASSWORD = "Probe!2026xzu9a09a5"
 

@@ -22,7 +22,7 @@ Redeployer après chaque changement de variable.
 3. Déployer les règles :
 
 ```powershell
-firebase deploy --only firestore:rules --project nexgen-39043
+firebase deploy --only firestore:rules --project arvexa-fbf10
 ```
 
 4. Vérifier que `firestore.rules` et `storage.rules` sont bien ceux du dossier final.
