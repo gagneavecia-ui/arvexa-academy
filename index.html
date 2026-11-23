@@ -943,6 +943,22 @@
     }
     .cd-hero-greeting .shimmer { color: var(--accent-bright); font-style: italic; }
     .cd-hero-note { color: var(--text-muted); font-weight: 400; }
+    /* ✅ v8.50b — trois points de chargement du héros : visibles uniquement
+       le temps que le VRAI niveau choisi soit résolu depuis la copie locale
+       (arvexa_session, zéro réseau), puis remplacés par la peinture
+       immédiate du seed / majHeroClasse(). Plus jamais de « BAC 2027 »
+       affiché en dur avant le vrai niveau. */
+    .hero-dots { display: inline-flex; align-items: center; gap: .22em; vertical-align: middle; }
+    .hero-dots i {
+      width: .34em; height: .34em; border-radius: 50%;
+      background: currentColor; display: inline-block;
+      animation: heroDotPulse 1.1s ease-in-out infinite;
+    }
+    .hero-dots i:nth-child(2) { animation-delay: .18s; }
+    .hero-dots i:nth-child(3) { animation-delay: .36s; }
+    .cd-hero-title .hero-dots i { background: var(--accent-bright); width: .3em; height: .3em; }
+    @keyframes heroDotPulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .hero-dots i { animation: none; opacity: .55; } }
     .countdown-status {
       font-size: 11px; font-weight: 600;
       padding: 4px 12px; border-radius: 999px;
@@ -1491,18 +1507,18 @@
         <section class="countdown-card" aria-labelledby="countdownTitle">
           <div class="hero-date"><i class="fas fa-calendar-day"></i><span id="heroDateText">—</span></div>
           <div class="cd-hero-head">
-            <h1 class="cd-hero-title" id="countdownTitle">BAC 2027</h1>
+            <h1 class="cd-hero-title" id="countdownTitle" aria-label="Chargement de ton niveau"><span class="hero-dots" role="status"><i></i><i></i><i></i></span></h1>
             <span class="countdown-status early" id="countdownStatus">🌱 Tu as le temps</span>
           </div>
           <div class="countdown-date" id="countdownDate">Date indicative</div>
           <p class="cd-hero-greeting">
-            <span id="heroGreeting">Bonsoir</span>, <span class="shimmer" id="heroName">Élève</span><span class="cd-hero-note"> — chaque jour compte vers ton BAC.</span>
+            <span id="heroGreeting">Bonsoir</span>, <span class="shimmer" id="heroName">Élève</span><span class="cd-hero-note" id="heroNote"><span class="hero-dots" role="status" aria-label="Chargement"><i></i><i></i><i></i></span></span>
           </p>
           <div class="progress-track">
             <div class="progress-fill early" id="progressFill" style="width: 0%"></div>
           </div>
           <div class="hero-quote">
-            <span id="heroQuoteText">« Chaque jour compte vers ton BAC. »</span>
+            <span id="heroQuoteText"><span class="hero-dots" role="status" aria-label="Chargement"><i></i><i></i><i></i></span></span>
             <span class="quote-author" id="heroQuoteAuthor">— ARVEXA School</span>
           </div>
         </section>
@@ -1752,6 +1768,22 @@
       }
       if (sess && sess.firstName) window.__ARVEXA_SEED_NAME__ = sess.firstName;
     } catch (e3) {}
+
+    /* ✅ v8.50b — PEINTURE IMMÉDIATE DU HÉROS depuis la graine locale :
+       remplace les trois points de chargement par le VRAI niveau choisi
+       (titre + note « chaque jour compte… ») avant même le module — plus
+       aucun flash « BAC 2027 » pour un élève de 3ᵉ / L1 / classe libre. */
+    try {
+      var CLs = window.ARVEXA_CLASSES;
+      var profS = window.ARVEXA_USER_PROFILE || {};
+      var cidS = profS.classId || 'terminale_d';
+      var edS = (typeof window.ARVEXA_getExamDate === 'function') ? window.ARVEXA_getExamDate() : null;
+      var ctS = document.getElementById('countdownTitle');
+      if (ctS && CLs && CLs.goal) ctS.textContent = CLs.goal(cidS, edS ? edS.getFullYear() : null);
+      var estBacS = (CLs ? CLs.exam(cidS) : 'BAC') === 'BAC';
+      var nnS = document.getElementById('heroNote');
+      if (nnS) nnS.textContent = estBacS ? ' — chaque jour compte vers ton BAC.' : ' — chaque jour compte vers ton objectif.';
+    } catch (eH) {}
   })();
 
   window.__arvexaApplyInstant = function () {
@@ -2619,14 +2651,15 @@
         if (cs) { cs.textContent = msg.e + ' ' + msg.m; cs.className = 'countdown-status ' + msg.c; }
         if (track) track.style.display = '';
       }
-      // Textes « ton BAC » réservés aux classes qui passent le BAC
+      // ✅ v8.50b — note « chaque jour compte… » peinte SANS condition :
+      // avec les trois points de chargement initiaux, l'ancienne garde
+      // /ton BAC/i ne matchait plus rien (textContent vide) et la note
+      // serait restée sur les points pour les classes BAC.
       const estBac = classId === 'terminale' || classId === 'terminale_d';
-      if (!estBac) {
-        const note = document.querySelector('.cd-hero-note');
-        if (note && /ton BAC/i.test(note.textContent)) note.textContent = ' — chaque jour compte vers ton objectif.';
-        const q = document.getElementById('heroQuoteText');
-        if (q && /ton BAC/i.test(q.textContent)) q.textContent = '« Chaque jour compte vers ton objectif. »';
-      }
+      const note = document.querySelector('.cd-hero-note');
+      if (note) note.textContent = estBac ? ' — chaque jour compte vers ton BAC.' : ' — chaque jour compte vers ton objectif.';
+      const q = document.getElementById('heroQuoteText');
+      if (q && /ton BAC/i.test(q.textContent)) q.textContent = '« Chaque jour compte vers ton objectif. »';
     } catch (e) { /* silencieux : le héros doit toujours s'afficher */ }
   }
 

@@ -476,6 +476,8 @@
     "La démarche s’articule autour de trois idées :": "The approach is built around three ideas:",
     "« Chaque jour compte vers ton BAC. »": "“Every day counts toward your BAC.”",
     "— chaque jour compte vers ton BAC.": "— every day counts toward your BAC.",
+    "« Chaque jour compte vers ton objectif. »": "“Every day counts toward your goal.”",
+    "— chaque jour compte vers ton objectif.": "— every day counts toward your goal.",
     "Pour réviser mieux": "To revise smarter",
     "Pourquoi": "Why",
     "pourquoi": "why",
