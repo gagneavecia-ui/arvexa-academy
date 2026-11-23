@@ -3314,6 +3314,15 @@ function sanitizeMindmap(raw) {
     }
     steps.push({ title, detail, signif, children });
   }
+  // ✅ v8.46d — FIX FATAL : le tableau `steps` REMPLI n'était JAMAIS assigné à
+  // `out` — toute carte VALIDE était renvoyée avec steps: [] (vide) puis
+  // persistée vide en Firestore. Le client pré-cache rejetait ces cartes sans
+  // étapes (steps.length > 0 requis) → « carte générée mais je ne vois pas la
+  // map » ET le bouton « Générer la carte mentale » réapparaissait à chaque
+  // retour. La racine la plus profonde du problème était ICI, depuis l'écriture
+  // de cette fonction : la génération IA réussissait (Groq/OpenRouter), le
+  // serveur répondait 200 avec une carte... vidée par le sanitize.
+  out.steps = steps;
   return steps.length >= 2 ? out : null;
 }
 
