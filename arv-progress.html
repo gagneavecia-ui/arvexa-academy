@@ -4398,9 +4398,16 @@ async function renderSectionView(params) {
 
     // ✅ v8.40 — extras pré-cachés si la section en possède déjà (anciennes
     // sections ou retour de génération) : les onglets s'ouvrent instantanément.
+    // ✅ v8.44a — on n'accepte en cache QUE des données de FORME VALIDE : une
+    // vieille/corrompue (idée sans étapes, QCM vide) ne doit JAMAIS pré-cacher
+    // un bouton mort — elle sera régénérée à la demande.
     const ex = getExtras(subject, chapterId, sectionId);
-    if (!ex.qcm && Array.isArray(a.qcm) && a.qcm.length > 0) ex.qcm = a.qcm;
-    if (!ex.mindmap && a.mindmap && a.mindmap.idea) ex.mindmap = a.mindmap;
+    if (!ex.qcm && Array.isArray(a.qcm) && a.qcm.length >= 3) ex.qcm = a.qcm;
+    if (!ex.mindmap && a.mindmap && a.mindmap.idea && Array.isArray(a.mindmap.steps) && a.mindmap.steps.length > 0) ex.mindmap = a.mindmap;
+    // compteur d'ESSAIS AUTO par section (par chargement de page) — l'IA se
+    // lance seule à l'ouverture de l'onglet, mais SANS vider le quota si tout
+    // échoue : après 2 essais auto, seul le bouton « Générer » relance.
+    if (!ex.autoTries) ex.autoTries = { qcm: 0, mindmap: 0 };
 
     // onglet actif mémorisé par section (retour = on se retrouve où on était)
     const tabKey = `arvexa_sm_tab_${extrasKey(subject, chapterId, sectionId)}`;
@@ -4490,8 +4497,9 @@ async function renderSectionView(params) {
       const panel = $('qcmPanel');
       if (!panel) return;
       const questions = safeArray(a.questions);
-      if (ex.qcm) {
-        panel.innerHTML = renderQcmShort(ex.qcm) + (questions.length > 0 ? `
+      const rendered = ex.qcm ? renderQcmShort(ex.qcm) : '';
+      if (ex.qcm && rendered) {
+        panel.innerHTML = rendered + (questions.length > 0 ? `
           <div class="content-section">
             <div class="content-section-title"><i class="fas fa-circle-question"></i>Questionnaires possibles — réponses rédigées <span class="count">${questions.length}</span></div>
             <div class="qa-list">${questions.map((q, i) => renderQuestion(q, i)).join('')}</div>
@@ -4500,39 +4508,56 @@ async function renderSectionView(params) {
         panel.querySelectorAll('.qa-item').forEach((item) => {
           item.querySelector('.qa-question')?.addEventListener('click', () => item.classList.toggle('open'));
         });
-      } else if (ex.loading.qcm) {
-        panel.innerHTML = extrasGeneratingHtml('qcm');
       } else {
-        panel.innerHTML = extrasErrorHtml('qcm');
-        panel.querySelector('[data-extras-gen="qcm"]')?.addEventListener('click', () => launchExtras('qcm'));
+        // ✅ v8.44a — QCM en cache mais de forme inexploitable → on le lâche et
+        // le bouton « Générer » reste VIVANT (plus jamais de blocage silencieux)
+        if (ex.qcm && !rendered) ex.qcm = null;
+        if (ex.loading.qcm) {
+          panel.innerHTML = extrasGeneratingHtml('qcm');
+        } else {
+          panel.innerHTML = extrasErrorHtml('qcm');
+          panel.querySelector('[data-extras-gen="qcm"]')?.addEventListener('click', () => launchExtras('qcm'));
+        }
       }
     }
 
     function mountMmPanel() {
       const panel = $('mmPanel');
       if (!panel) return;
+      let mmBuilt = null;
       if (ex.mindmap) {
-        const mmBuilt = renderMindmap(ex.mindmap, extrasKey(subject, chapterId, sectionId));
-        if (mmBuilt) {
-          panel.innerHTML = mmBuilt.html;
-          // ✅ v8.42 — données des cartes + clé de positions pour la modale/sauvegarde
-          const wrapEl = panel.querySelector('[data-mmap]');
-          if (wrapEl) { wrapEl.__mmNodes = mmBuilt.byId; wrapEl.__mmMeta = { idea: mmBuilt.idea, posKey: mmBuilt.posKey }; }
-          bindMindmap(panel);
+        try { mmBuilt = renderMindmap(ex.mindmap, extrasKey(subject, chapterId, sectionId)); }
+        catch (e) { console.warn('[MM v8.44a] rendu impossible — régénération', e); mmBuilt = null; }
+      }
+      if (ex.mindmap && mmBuilt) {
+        panel.innerHTML = mmBuilt.html;
+        // ✅ v8.42 — données des cartes + clé de positions pour la modale/sauvegarde
+        const wrapEl = panel.querySelector('[data-mmap]');
+        if (wrapEl) { wrapEl.__mmNodes = mmBuilt.byId; wrapEl.__mmMeta = { idea: mmBuilt.idea, posKey: mmBuilt.posKey }; }
+        bindMindmap(panel);
+      } else {
+        // ✅ v8.44a — carte en cache mais non affichable (forme invalide ou
+        // exception) → ON LA LÂCHE : le bouton « Générer la carte mentale »
+        // régénère VRAIMENT au lieu de ne rien faire (cause exacte du
+        // « le bouton ne marche pas » signalé par le propriétaire).
+        if (ex.mindmap && !mmBuilt) ex.mindmap = null;
+        if (ex.loading.mindmap) {
+          panel.innerHTML = extrasGeneratingHtml('mindmap');
         } else {
           panel.innerHTML = extrasErrorHtml('mindmap');
           panel.querySelector('[data-extras-gen="mindmap"]')?.addEventListener('click', () => launchExtras('mindmap'));
         }
-      } else if (ex.loading.mindmap) {
-        panel.innerHTML = extrasGeneratingHtml('mindmap');
-      } else {
-        panel.innerHTML = extrasErrorHtml('mindmap');
-        panel.querySelector('[data-extras-gen="mindmap"]')?.addEventListener('click', () => launchExtras('mindmap'));
       }
     }
 
-    async function launchExtras(kind) {
-      if (ex.loading[kind] || ex[kind]) return;
+    async function launchExtras(kind, isAuto) {
+      // ✅ v8.44a — isAuto : les essais AUTOMATIQUES (ouverture d'onglet) sont
+      // bornés à 2 par section et par page ; le BOUTON « Générer » reste
+      // toujours actif (un clic explicite ne compte pas dans la borne).
+      if (ex.loading[kind]) return;
+      if (ex[kind]) return; // contenu valide déjà prêt → rien à faire
+      if (isAuto && (ex.autoTries[kind] || 0) >= 2) return;
+      if (isAuto) ex.autoTries[kind] = (ex.autoTries[kind] || 0) + 1;
       ex.loading[kind] = true;
       const panel = kind === 'qcm' ? $('qcmPanel') : $('mmPanel');
       if (panel) panel.innerHTML = extrasGeneratingHtml(kind);
@@ -4559,10 +4584,10 @@ async function renderSectionView(params) {
       if (name === 'qcm') {
         mountQcmPanel();
         // ✅ génération à la demande : premier ouvert → l'IA la lance toute seule
-        if (!ex.qcm && !ex.loading.qcm) launchExtras('qcm');
+        if (!ex.qcm && !ex.loading.qcm) launchExtras('qcm', true);
       } else if (name === 'mindmap') {
         mountMmPanel();
-        if (!ex.mindmap && !ex.loading.mindmap) launchExtras('mindmap');
+        if (!ex.mindmap && !ex.loading.mindmap) launchExtras('mindmap', true);
       }
     }
 

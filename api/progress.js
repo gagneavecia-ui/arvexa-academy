@@ -55,7 +55,7 @@ const RATE_LIMITS = {
   deleteSection: 10,
   deleteChapter: 10,
   getFullLesson: 15,
-  generateSectionExtras: 6, // ✅ v8.40 — IA à la demande (QCM court + carte mentale)
+  generateSectionExtras: 12, // ✅ v8.44a — IA à la demande (QCM court + carte mentale) — l'élève qui vérifie en basculant d'onglets ne doit pas se bloquer
   getSmartCard: 30,       // ✅ v8.43 — lecture légère (carte intelligente de l'accueil)
   trackStudyTime: 60      // léger, fréquent
 };
@@ -3255,7 +3255,13 @@ function sanitizeMindmap(raw) {
   return steps.length >= 2 ? out : null;
 }
 
-async function callExtrasTask(taskName, providers, { systemPrompt, userPrompt, maxTokens, deadline }) {
+// ✅ v8.44a — validate : le JSON peut être PARSED mais inutilisable (mauvaise
+// forme, étapes vides, troncature) — dans ce cas on RELAISSE AU FOURNISSEUR
+// SUIVANT au lieu d'un « illisible » définitif (cause réelle du bouton
+// « Générer la carte mentale » qui échouait toujours sur certaines leçons :
+// le 1er fournisseur répondait un JSON de mauvaise forme, sanitize renvoyait
+// null, et AUCUN relais n'avait lieu — échec déterministe à chaque clic).
+async function callExtrasTask(taskName, providers, { systemPrompt, userPrompt, maxTokens, deadline, validate }) {
   const pref = { qcm: ['Gemini', 'Mistral', 'OpenRouter', 'Groq'], mindmap: ['Groq', 'Gemini', 'Mistral', 'OpenRouter'] }[taskName]
     || ['Gemini', 'Mistral', 'OpenRouter', 'Groq'];
   const byName = new Map(providers.map((p) => [p.name, p]));
@@ -3264,7 +3270,12 @@ async function callExtrasTask(taskName, providers, { systemPrompt, userPrompt, m
     const provider = byName.get(name);
     if (!provider) continue;
     try {
-      return await callProvider(provider, { systemPrompt, userPrompt, maxTokens, deadline });
+      const data = await callProvider(provider, { systemPrompt, userPrompt, maxTokens, deadline });
+      if (typeof validate === 'function') {
+        const ok = validate(data);
+        if (!ok) { lastErr = new Error(`${provider.name}: format inutilisable`); console.warn(`[EXTRAS v8.44a] ${taskName} → ${name} JSON de mauvaise forme — relais suivant`); continue; }
+      }
+      return data;
     } catch (e) {
       lastErr = e;
       console.warn(`[EXTRAS v8.40] ${taskName} → ${name} a échoué (${e.message.slice(0, 90)}) — relais suivant`);
@@ -3306,7 +3317,7 @@ async function generateSectionExtras(uid, body) {
   const update = {};
 
   if (need.includes('qcm')) {
-    const data = await callExtrasTask('qcm', providers, {
+    const qcmData = await callExtrasTask('qcm', providers, {
       systemPrompt: EXTRAS_SYSTEM,
       userPrompt: `Section de cours intitulée « ${title} ».
 
@@ -3320,16 +3331,17 @@ Génère un QCM COURT d'auto-évaluation : 4 à 6 questions MAXIMUM, chacune ave
 Réponds EXACTEMENT dans ce format :
 {"qcm":[{"q":"…","choices":["…","…","…"],"answer":0,"why":"…"}]}`,
       maxTokens: 1600,
-      deadline
+      deadline,
+      validate: (d) => Boolean(d && Array.isArray(d.qcm) && d.qcm.length >= 2)
     });
-    const qcm = sanitizeQcm(data?.qcm);
+    const qcm = sanitizeQcm(qcmData?.qcm);
     if (!qcm) throw new Error('QCM illisible — réessaie.');
     update['analysis.qcm'] = qcm;
     result.qcm = qcm;
   }
 
   if (need.includes('mindmap')) {
-    const data = await callExtrasTask('mindmap', providers, {
+    const mmData = await callExtrasTask('mindmap', providers, {
       systemPrompt: EXTRAS_SYSTEM,
       userPrompt: `Section de cours intitulée « ${title} ».
 
@@ -3349,10 +3361,20 @@ Chaque carte porte un titre ULTRA COURT (2 à 5 mots, étiquette lisible) et deu
 
 Réponds EXACTEMENT dans ce format :
 {"idea":"…","detail":"…","signif":"…","steps":[{"title":"…","detail":"…","signif":"…","children":[{"title":"…","detail":"…","signif":"…"}]}]}`,
-      maxTokens: 2600,
-      deadline
+      maxTokens: 3200,
+      deadline,
+      // ✅ v8.44a — si le JSON est de mauvaise forme → FOURNISSEUR SUIVANT
+      // (fini le « Carte mentale illisible » définitif du bouton)
+      validate: (d) => {
+        if (!d || typeof d !== 'object') return false;
+        const ideaOk = Boolean(String(d.idea || d.title || '').trim());
+        const rawSteps = Array.isArray(d.steps) ? d.steps : (Array.isArray(d.branches) ? d.branches : null);
+        if (!ideaOk || !rawSteps) return false;
+        const titled = rawSteps.filter((st) => st && String(st.title || '').trim()).length;
+        return titled >= 2;
+      }
     });
-    const mindmap = sanitizeMindmap(data);
+    const mindmap = sanitizeMindmap(mmData);
     if (!mindmap) throw new Error('Carte mentale illisible — réessaie.');
     update['analysis.mindmap'] = mindmap;
     result.mindmap = mindmap;
