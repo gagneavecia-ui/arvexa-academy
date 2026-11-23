@@ -2557,57 +2557,83 @@ select:focus-visible,
     }
     .mmap-wrap:active { cursor: grabbing; }
     .mmap-world { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
-    .mmap-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-    .mmap-bubble {
+    .mmap-lines { position: absolute; top: 0; left: 0; pointer-events: none; }
+    /* ✅ v8.42 — CARTES de la chaîne : rectangulaires arrondies, bien alignées
+       (grille serpentine 3 par rangée), chacune DÉPLAÇABLE, numéro de chaîne. */
+    .mmap-card {
       position: absolute;
-      max-width: 170px;
-      padding: 9px 14px;
-      border-radius: 999px;
-      font-size: 12px;
+      width: 170px;
+      min-height: 96px;
+      padding: 10px 12px 8px 32px;
+      border-radius: 15px;
+      font-size: 12.5px;
       font-weight: 700;
-      line-height: 1.3;
-      text-align: center;
-      cursor: pointer;
+      line-height: 1.28;
+      text-align: left;
+      cursor: grab;
       user-select: none;
       -webkit-user-select: none;
-      transition: transform 0.15s ease;
-      word-break: keep-all;
+      touch-action: none;
       overflow-wrap: break-word;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.30);
+      transition: box-shadow 0.15s ease;
     }
-    .mmap-bubble:active { transform: scale(0.94); }
-    .mmap-bubble.root {
-      max-width: 210px;
-      padding: 13px 18px;
-      font-size: 13px;
+    .mmap-card:active { cursor: grabbing; box-shadow: 0 8px 26px rgba(0, 0, 0, 0.42); }
+    .mmap-card .mm-num {
+      position: absolute;
+      left: 9px; top: 9px;
+      width: 19px; height: 19px;
+      border-radius: 999px;
+      background: rgba(var(--rgb-veil), 0.92);
+      color: var(--text-light);
+      font-size: 10px;
       font-weight: 800;
-      color: var(--on-gold);
-      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-      border: none;
-      box-shadow: 0 6px 22px rgba(184, 134, 11, 0.40);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
     }
-    .mmap-bubble.br {
-      background: var(--mm-bg, rgba(59, 130, 246, 0.16));
-      border: 1.5px solid var(--mm-bd, rgba(59, 130, 246, 0.55));
-      color: var(--mm-fg, var(--text-light));
-      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.28);
-    }
-    .mmap-bubble.kid {
-      max-width: 150px;
-      font-size: 11px;
-      font-weight: 600;
-      background: var(--mm-bg2, rgba(59, 130, 246, 0.08));
-      border: 1px solid var(--mm-bd2, rgba(59, 130, 246, 0.35));
-      color: var(--mm-fg, var(--text-body));
-    }
-    .mmap-bubble .mm-tap {
+    .mmap-card .mm-title { display: block; }
+    .mmap-card .mm-tap {
       display: block;
       font-size: 8px;
       font-weight: 700;
-      letter-spacing: 0.6px;
+      letter-spacing: 0.5px;
       text-transform: uppercase;
       opacity: 0.6;
-      margin-top: 2px;
+      margin-top: 4px;
     }
+    .mmap-card.root {
+      color: var(--on-gold);
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      border: none;
+      box-shadow: 0 7px 24px rgba(184, 134, 11, 0.42);
+    }
+    .mmap-card.root .mm-num { background: rgba(255, 255, 255, 0.30); color: #fff; }
+    .mmap-card.br {
+      background: var(--mm-bg, rgba(91, 141, 239, 0.16));
+      border: 1.5px solid var(--mm-bd, rgba(91, 141, 239, 0.62));
+      color: var(--mm-fg, var(--text-light));
+    }
+    .mmap-card.kid {
+      min-height: 84px;
+      font-size: 11.5px;
+      font-weight: 600;
+      background: var(--mm-bg2, rgba(91, 141, 239, 0.08));
+      border: 1.5px dashed var(--mm-bd2, rgba(91, 141, 239, 0.36));
+      color: var(--mm-fg, var(--text-body));
+    }
+    /* ✅ v8.42 — PLEIN ÉCRAN : tout le reste de la page est couvert, uniquement
+       la carte (demande propriétaire : « toutes les autres pages vont se
+       couvrir et tu vas avoir uniquement la carte »). */
+    .mmap-wrap.mm-fs {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      height: auto;
+      border-radius: 0;
+      border: none;
+      background-color: var(--bg, #12141a);
+    }
+    body.mm-locked { overflow: hidden; }
     .mmap-hint {
       position: absolute;
       top: 8px; left: 10px;
@@ -3351,8 +3377,9 @@ function renderStatsCard(data) {
     return [Math.round(x * 100) / 100, Math.round(y * 100) / 100];
   });
 
-  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ');
-  const areaPath = `${linePath} L${pts[pts.length - 1][0]},${PAD_T + innerH} L${pts[0][0]},${PAD_T + innerH} Z`;
+  const linePath = n > 0 ? pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ') : '';
+  // ✅ v8.42 — tolère un historique vide (nouvel élève / cache {} jamais crash)
+  const areaPath = n > 0 ? `${linePath} L${pts[n - 1][0]},${PAD_T + innerH} L${pts[0][0]},${PAD_T + innerH} Z` : '';
 
   const dots = pts.map((p, i) =>
     `<circle cx="${p[0]}" cy="${p[1]}" r="${values[i] > 0 ? 3.4 : 1.6}" fill="${values[i] > 0 ? 'var(--accent-bright)' : 'rgba(160,160,144,0.5)'}"></circle>`
@@ -3482,15 +3509,27 @@ function renderTodaySessions() {
 // ══════════════════════════════════════════════════════════════
 // VUE 1 — DASHBOARD
 // ══════════════════════════════════════════════════════════════
-async function renderNotebooksView() {
-  const el = $('view-notebooks');
-  showLoadingState(el, 'Chargement...');
-
+// ✅ v8.42 — AFFICHAGE INSTANTANÉ du cahier (demande propriétaire : « quand
+// tu rentres dans la page, l'authentification / chargement avant d'afficher
+// les éléments est très lent, des fois il faut appuyer sur actualisation ») :
+// le dernier dashboard connu est gardé en localStorage → le cahier est PEINT
+// IMMÉDIATEMENT dès l'arrivée (sans attendre l'auth, Firestore ni le réseau),
+// puis revalidé silencieusement en arrière-plan.
+const DASH_CACHE_KEY = 'arvexa_dash_cache_v1';
+function dashCacheRead() {
   try {
-    const data = await callApi('getDashboard');
-    state.cache.dashboard = data;
+    const v = JSON.parse(localStorage.getItem(DASH_CACHE_KEY) || 'null');
+    return (v && typeof v === 'object') ? v : null;
+  } catch (e) { return null; }
+}
+function dashCacheWrite(data) {
+  try { localStorage.setItem(DASH_CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+}
 
-    const safeSubjectsList = safeArray(data.subjects);
+function paintDashboard(data) {
+  const el = $('view-notebooks');
+
+  const safeSubjectsList = safeArray(data.subjects);
     const safeActivityList = safeArray(data.recentActivity);
     const totalSections = data.summary?.totalSections || 0;
 
@@ -3574,10 +3613,28 @@ async function renderNotebooksView() {
     $('addCourseBtn')?.addEventListener('click', () => openAddCourseModal());
     // ✅ v8.41 — badge des ajouts récents (extraits mais pas encore générés)
     try { acQueueBadge(); } catch (e) {}
+}
 
-  } catch (err) {
-    showEmptyState(el, 'fa-exclamation-triangle', 'Impossible de charger', err.message || 'Erreur réseau.');
+async function renderNotebooksView() {
+  const el = $('view-notebooks');
+  const cached = state.cache.dashboard || dashCacheRead();
+  if (cached) {
+    // ✅ peinture INSTANTANÉE : zéro spinner quand on a déjà le contenu
+    try { paintDashboard(cached); } catch (e) { showLoadingState(el, 'Chargement...'); }
+  } else {
+    showLoadingState(el, 'Chargement...');
   }
+  let data;
+  try {
+    data = await callApi('getDashboard');
+  } catch (err) {
+    if (cached) return; // contenu déjà à l'écran — jamais d'écran d'erreur écrasant
+    showEmptyState(el, 'fa-exclamation-triangle', 'Impossible de charger', err.message || 'Erreur réseau.');
+    return;
+  }
+  state.cache.dashboard = data;
+  dashCacheWrite(data);
+  try { paintDashboard(data); } catch (e) {}
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -3919,16 +3976,13 @@ function bindQcmShort(rootEl) {
   });
 }
 
-// ── CARTE MENTALE EN CHAÎNE DE BULLES RELIÉES (v8.41) ──
-// Demande propriétaire : « je la veux comme une chaîne de liaison, la première
-// carte c'est comme si on crée une map mais uniquement pour les cartes — sur
-// cette image regarde comment elles sont, c'est de cette même manière que je
-// veux que pour nous soit. Sur chaque carte, lorsque tu appuies dessus, il y
-// aura son explication détaillée qui va apparaître en modale — chaque carte
-// aura son explication, sa signification pour faciliter la révision ».
-// Idée de base au CENTRE → branches colorées reliées → sous-points reliés
-// (ça se multiplie à chaque niveau), fond à pointillés, glisser pour déplacer,
-// zoom, et chaque bulle s'ouvre en modale d'explication.
+// ── CARTE MENTALE EN CHAÎNE DE CARTES RELIÉES (v8.42) ──
+// Demande propriétaire : « je la veux comme une chaîne de liaison — des
+// cartes qui se suivent comme une chaîne, une ligne droite : la carte de
+// base puis la liaison entre les différentes cartes, bien propre, bien
+// aligné, déplaçable, et le plein écran qui couvre tout le reste. Sur chaque
+// carte, son explication détaillée en modale, sa signification pour
+// faciliter la révision ». Palette par branche conservée pour les couleurs.
 const MM_COLORS = [
   { main: '#5B8DEF', bg: 'rgba(91,141,239,0.17)', bd: 'rgba(91,141,239,0.62)', bg2: 'rgba(91,141,239,0.08)', bd2: 'rgba(91,141,239,0.36)', fg: '#BFD7FA' },
   { main: '#3ABA75', bg: 'rgba(58,186,117,0.16)', bd: 'rgba(58,186,117,0.60)', bg2: 'rgba(58,186,117,0.08)', bd2: 'rgba(58,186,117,0.34)', fg: '#B8E8CF' },
@@ -3938,93 +3992,135 @@ const MM_COLORS = [
   { main: '#4BC0C8', bg: 'rgba(75,192,200,0.15)', bd: 'rgba(75,192,200,0.58)', bg2: 'rgba(75,192,200,0.08)', bd2: 'rgba(75,192,200,0.34)', fg: '#BCE8EC' }
 ];
 
-function mmLayout(mm) {
-  const steps = safeArray(mm.steps);
-  const n = Math.max(steps.length, 1);
-  const R1 = 230, R2 = 440; // ✅ v8.41b — compact : bulles lisibles dès l'ouverture
+// ── CHAÎNE DE CARTES EN LIGNE DROITE (v8.42) ──
+// Demande propriétaire : « on dirait un quart d'historique alors que je veux
+// juste des cartes qui se suivent comme une chaîne, une ligne droite — la
+// carte de base puis la liaison entre les différentes cartes comme sur
+// l'image que je t'avais fournie, bien propre, bien aligné, et déplaçable —
+// tu peux ajuster, les déplacer — tu peux mettre plein écran : toutes les
+// autres pages vont se couvrir et tu vas avoir uniquement la carte. »
+// La hiérarchie reste (idée de base → étapes → sous-points) mais la LECTURE
+// est une CHAÎNE : chaque carte est reliée à la précédente (serpentin 3 par
+// rangée, bien aligné), chaque carte est DÉPLAÇABLE (positions sauvegardées)
+// et ouvre sa modale d'explication ; bouton plein écran qui couvre tout.
+const MM_CW = 170, MM_CH = 96, MM_GX = 58, MM_GY = 46, MM_PER = 3;
+
+function mmChainNodes(mm) {
   const nodes = [{
-    id: 'n0', level: 0, x: 0, y: 0, parent: null, color: null,
+    id: 'n0', level: 0, idx: 0, color: null,
     title: String(mm.idea || ''), detail: String(mm.detail || ''), signif: String(mm.signif || '')
   }];
-  steps.forEach((st, i) => {
+  let chain = 1;
+  safeArray(mm.steps).forEach((st, i) => {
     const col = MM_COLORS[i % MM_COLORS.length];
-    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-    const sid = `s${i}`;
-    nodes.push({
-      id: sid, level: 1, x: Math.cos(a) * R1, y: Math.sin(a) * R1,
-      parent: 'n0', color: col,
-      title: String(st.title || ''), detail: String(st.detail || ''), signif: String(st.signif || '')
-    });
-    const kids = safeArray(st.children);
-    const c = kids.length;
-    const spread = c > 1 ? Math.min(64, 30 * (c - 1)) : 0; // degrés
-    kids.forEach((k, ki) => {
-      const ka = a + ((c === 1) ? 0 : ((ki / (c - 1)) - 0.5) * (spread * Math.PI / 180));
-      nodes.push({
-        id: `${sid}k${ki}`, level: 2, x: Math.cos(ka) * R2, y: Math.sin(ka) * R2,
-        parent: sid, color: col,
-        title: String(k.title || ''), detail: String(k.detail || ''), signif: String(k.signif || '')
-      });
+    nodes.push({ id: `s${i}`, level: 1, idx: chain++, color: col,
+      title: String(st.title || ''), detail: String(st.detail || ''), signif: String(st.signif || '') });
+    safeArray(st.children).forEach((k, ki) => {
+      nodes.push({ id: `s${i}k${ki}`, level: 2, idx: chain++, color: col,
+        title: String(k.title || ''), detail: String(k.detail || ''), signif: String(k.signif || '') });
     });
   });
-  // Boîte englobante (demi-largeur des bulles) → monde positif
-  const pad = 135;
+  return nodes;
+}
+
+function mmLayout(mm, saved) {
+  const nodes = mmChainNodes(mm);
+  // Position serpentine PAR DÉFAUT, origine FIXE (première carte en haut-gauche)
+  nodes.forEach((nd, i) => {
+    const row = Math.floor(i / MM_PER);
+    const pos = i % MM_PER;
+    const ltr = (row % 2 === 0);
+    const colIdx = ltr ? pos : (MM_PER - 1 - pos);
+    nd.x = MM_GX + colIdx * (MM_CW + MM_GX);
+    nd.y = MM_GY + row * (MM_CH + MM_GY);
+  });
+  // ✅ v8.42 — positions DÉPLACÉES = coordonnées FINALES ABSOLUES, appliquées
+  // après coup et JAMAIS re-décalées : l'élève retrouve exactement sa carte
+  // (le rendu gère les coordonnées négatives via le viewBox du SVG).
+  if (saved) {
+    for (const nd of nodes) {
+      const sv = saved[nd.id];
+      if (sv && Number.isFinite(sv.x) && Number.isFinite(sv.y)) { nd.x = sv.x; nd.y = sv.y; }
+    }
+  }
+  // Boîte englobante RÉELLE (défaut ou déplacé) → monde + origine du SVG
+  const padX = 105, padY = 80;
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const nd of nodes) {
     minX = Math.min(minX, nd.x); minY = Math.min(minY, nd.y);
-    maxX = Math.max(maxX, nd.x); maxY = Math.max(maxY, nd.y);
+    maxX = Math.max(maxX, nd.x + MM_CW); maxY = Math.max(maxY, nd.y + MM_CH);
   }
-  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
-  const W = Math.max(600, maxX - minX), H = Math.max(460, maxY - minY);
-  for (const nd of nodes) { nd.x -= minX; nd.y -= minY; }
-  return { nodes, W, H };
+  const ox = minX - padX, oy = minY - padY;
+  const W = Math.max(620, (maxX + padX) - ox);
+  const H = Math.max(430, (maxY + padY) - oy);
+  return { nodes, W, H, ox, oy };
 }
 
-function renderMindmap(mm) {
-  if (!mm || !mm.idea || !Array.isArray(mm.steps) || mm.steps.length === 0) return '';
-  const { nodes, W, H } = mmLayout(mm);
-  const total = nodes.length;
+function mmDefs() {
+  const colors = ['#E0B84A'].concat(MM_COLORS.map((c) => c.main));
+  return `<defs>${colors.map((c, i) => `<marker id="mmAr${i}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="${c}"/></marker>`).join('')}</defs>`;
+}
+function mmMarkerRef(color) {
+  const colors = ['#E0B84A'].concat(MM_COLORS.map((c) => c.main));
+  const i = colors.indexOf(String(color || '#E0B84A'));
+  return `mmAr${i >= 0 ? i : 0}`;
+}
+function mmLinkPath(a, b) {
+  const ax = a.x + MM_CW / 2, ay = a.y + MM_CH / 2;
+  const bx = b.x + MM_CW / 2, by = b.y + MM_CH / 2;
+  const dx = bx - ax, dy = by - ay;
+  const d = Math.hypot(dx, dy) || 1;
+  const ux = dx / d, uy = dy / d;
+  const r = 38;
+  const x1 = ax + ux * r, y1 = ay + uy * r;
+  const x2 = bx - ux * (r + 9), y2 = by - uy * (r + 9);
+  const mx = (x1 + x2) / 2 - uy * 15, my = (y1 + y2) / 2 + ux * 15;
+  return { d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`,
+    color: a.idx === 0 ? '#E0B84A' : (a.color ? a.color.main : '#E0B84A') };
+}
+
+function renderMindmap(mm, posKey) {
+  if (!mm || !mm.idea || !Array.isArray(mm.steps) || mm.steps.length === 0) return null;
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem('arvexa_mm_pos_' + String(posKey || '')) || 'null'); } catch (e) { saved = null; }
+  const { nodes, W, H, ox, oy } = mmLayout(mm, saved);
   const byId = {};
   nodes.forEach((nd) => { byId[nd.id] = nd; });
 
-  const line = (nd) => {
-    const p = byId[nd.parent];
-    const col = (nd.color ? nd.color.main : '#E0B84A');
-    const mx = (p.x + nd.x) / 2 + (nd.y - p.y) * 0.16;
-    const my = (p.y + nd.y) / 2 - (nd.x - p.x) * 0.16;
-    return `<path d="M ${p.x.toFixed(1)} ${p.y.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${nd.x.toFixed(1)} ${nd.y.toFixed(1)}" fill="none" stroke="${col}" stroke-width="${nd.level === 1 ? 3.5 : 2}" stroke-linecap="round" opacity="${nd.level === 1 ? 0.75 : 0.5}"/>`;
-  };
-  const bubble = (nd) => {
+  const card = (nd) => {
     const cls = nd.level === 0 ? 'root' : (nd.level === 1 ? 'br' : 'kid');
-    const style = nd.color
-      ? `left:${nd.x.toFixed(1)}px;top:${nd.y.toFixed(1)}px;--mm-bg:${nd.color.bg};--mm-bd:${nd.color.bd};--mm-bg2:${nd.color.bg2};--mm-bd2:${nd.color.bd2};--mm-fg:${nd.color.fg}`
-      : `left:${nd.x.toFixed(1)}px;top:${nd.y.toFixed(1)}px`;
+    const style = `left:${nd.x.toFixed(1)}px;top:${nd.y.toFixed(1)}px;` + (nd.color
+      ? `--mm-bg:${nd.color.bg};--mm-bd:${nd.color.bd};--mm-bg2:${nd.color.bg2};--mm-bd2:${nd.color.bd2};--mm-fg:${nd.color.fg}`
+      : '');
     const tap = nd.level === 0 ? 'Idée de base' : 'Explication';
-    return `<button type="button" class="mmap-bubble ${cls}" style="${style}" data-node="${nd.id}">
-      ${escapeHtml(nd.title)}<span class="mm-tap">${nd.level === 0 ? '' : ''}<i class="fas fa-hand-pointer" style="font-size:8px;"></i> ${tap}</span>
+    return `<button type="button" class="mmap-card ${cls}" style="${style}" data-node="${nd.id}" draggable="false">
+      <span class="mm-num">${nd.idx + 1}</span>
+      <span class="mm-title">${escapeHtml(nd.title)}</span>
+      <span class="mm-tap"><i class="fas fa-hand-pointer"></i> ${tap}</span>
     </button>`;
   };
 
   return {
     html: `
     <div class="content-section" style="margin-top:2px;">
-      <div class="content-section-title"><i class="fas fa-diagram-project"></i>Carte mentale — chaîne d'idées reliées <span class="count">${total} cartes</span></div>
+      <div class="content-section-title"><i class="fas fa-link"></i>Carte mentale — chaîne d'idées <span class="count">${nodes.length} cartes</span></div>
       <div class="mmap-wrap" data-mmap>
-        <div class="mmap-hint"><i class="fas fa-hand-pointer"></i> Glisser pour déplacer · touche une bulle</div>
+        <div class="mmap-hint"><i class="fas fa-hand-pointer"></i> Cartes déplaçables · touche une carte pour son explication</div>
         <div class="mmap-world" style="width:${Math.round(W)}px;height:${Math.round(H)}px;">
-          <svg class="mmap-lines" width="${Math.round(W)}" height="${Math.round(H)}" viewBox="0 0 ${Math.round(W)} ${Math.round(H)}">${nodes.filter((nd) => nd.parent).map(line).join('')}</svg>
-          ${nodes.map(bubble).join('')}
+          <svg class="mmap-lines" style="left:${ox.toFixed(1)}px;top:${oy.toFixed(1)}px;" width="${Math.round(W)}" height="${Math.round(H)}" viewBox="${ox.toFixed(1)} ${oy.toFixed(1)} ${Math.round(W)} ${Math.round(H)}">${mmDefs()}</svg>
+          ${nodes.map(card).join('')}
         </div>
         <div class="mmap-ctrl">
           <button type="button" data-mm-zoom="in" aria-label="Zoomer"><i class="fas fa-plus"></i></button>
           <button type="button" data-mm-zoom="out" aria-label="Dézoomer"><i class="fas fa-minus"></i></button>
-          <button type="button" data-mm-zoom="fit" aria-label="Recadrer"><i class="fas fa-expand"></i></button>
+          <button type="button" data-mm-zoom="fit" aria-label="Recadrer"><i class="fas fa-crosshairs"></i></button>
+          <button type="button" data-mm-zoom="fs" aria-label="Plein écran"><i class="fas fa-expand"></i></button>
         </div>
       </div>
-      <div class="mmap-summit" style="margin-top:12px;"><i class="fas fa-flag-checkered"></i> Touche n'importe quelle bulle pour son explication détaillée — idéal pour la révision.</div>
+      <div class="mmap-summit" style="margin-top:12px;"><i class="fas fa-link"></i> La chaîne suit ta leçon : carte 1 = idée de base, chaque carte est reliée à la précédente. Déplace-les comme tu veux — plein écran pour te concentrer.</div>
     </div>
   `,
-    byId, idea: String(mm.idea || '')
+    byId, idea: String(mm.idea || ''), posKey: String(posKey || '')
   };
 }
 
@@ -4038,21 +4134,29 @@ function mmFit(wrap, world, W, H) {
   const s = Math.max(0.35, Math.min(1.15, (vw - 26) / W, (vh - 26) / H));
   mmApplyTransform(wrap, world, { s, x: (vw - W * s) / 2, y: (vh - H * s) / 2 });
 }
+// ✅ v8.42 — cadrage INITIAL de la chaîne : ajusté à la LARGEUR (chaque carte
+// lisible), la chaîne se suit de haut en bas en glissant — « une ligne droite ».
+function mmFitInitial(wrap, world, W, H) {
+  const vw = wrap.clientWidth || 340, vh = wrap.clientHeight || 470;
+  const s = Math.max(0.5, Math.min(1.15, (vw - 26) / W));
+  mmApplyTransform(wrap, world, { s, x: (vw - W * s) / 2, y: Math.min(18, Math.max(8, (vh - H * s) / 2)) });
+}
 function mmZoomAt(wrap, world, px, py, factor) {
   const st = wrap.__mmSt || { s: 1, x: 0, y: 0 };
   const ns = Math.max(0.35, Math.min(2.6, st.s * factor));
   const k = ns / st.s;
   mmApplyTransform(wrap, world, { s: ns, x: px - (px - st.x) * k, y: py - (py - st.y) * k });
 }
-function openMindmapModal(nd, mm) {
-  const path = mm && mm.idea ? `${mm.idea}` : '';
+function openMindmapModal(nd, meta) {
+  const idea = meta && meta.idea ? String(meta.idea) : '';
   const det = String(nd.detail || '').trim();
   const sig = String(nd.signif || '').trim();
+  const pos = (Number.isFinite(nd.idx) && nd.idx > 0) ? `Carte ${nd.idx + 1} de la chaîne` : 'Idée de base — départ de la chaîne';
   openModal(`
     <div class="modal dicta-modal">
       <button class="modal-close"><i class="fas fa-times"></i></button>
       <div class="mx-card">
-        ${path && nd.id !== 'n0' ? `<div class="mx-path"><span class="mx-dot"></span>${escapeHtml(path)}</div>` : ''}
+        ${idea && nd.idx > 0 ? `<div class="mx-path"><span class="mx-dot"></span>${escapeHtml(pos)} · ${escapeHtml(idea)}</div>` : `<div class="mx-path"><span class="mx-dot"></span>${escapeHtml(pos)}</div>`}
         <div class="mx-title">${escapeHtml(nd.title)}</div>
         ${det ? `<div class="mx-sec"><span class="mx-sec-label"><i class="fas fa-book-open"></i> Explication</span><div class="mx-sec-text">${escapeHtml(det)}</div></div>` : ''}
         ${sig ? `<div class="mx-sec"><span class="mx-sec-label"><i class="fas fa-key"></i> Signification</span><div class="mx-sec-text">${escapeHtml(sig)}</div></div>` : ''}
@@ -4062,33 +4166,98 @@ function openMindmapModal(nd, mm) {
     </div>
   `);
 }
+function mmToggleFs(wrap, world, W, H, btn) {
+  const on = !wrap.classList.contains('mm-fs');
+  wrap.classList.toggle('mm-fs', on);
+  document.body.classList.toggle('mm-locked', on);
+  if (btn) btn.innerHTML = `<i class="fas fa-${on ? 'compress' : 'expand'}"></i>`;
+  setTimeout(() => mmFit(wrap, world, W, H), 80);
+}
+// Échap quitte le plein écran (bureau) — posé une seule fois pour la page
+if (!window.__mmFsKeyBound) {
+  window.__mmFsKeyBound = true;
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const fs = document.querySelector('.mmap-wrap.mm-fs');
+    if (!fs) return;
+    fs.classList.remove('mm-fs');
+    document.body.classList.remove('mm-locked');
+    const btn = fs.querySelector('[data-mm-zoom="fs"]');
+    if (btn) btn.innerHTML = '<i class="fas fa-expand"></i>';
+    const world = fs.querySelector('.mmap-world');
+    if (world) mmFit(fs, world, parseFloat(world.style.width) || 640, parseFloat(world.style.height) || 460);
+  });
+}
 function bindMindmap(rootEl) {
   if (!rootEl) return;
   rootEl.querySelectorAll('[data-mmap]').forEach((wrap) => {
     const world = wrap.querySelector('.mmap-world');
     if (!world || wrap.__mmBound) return;
     wrap.__mmBound = true;
-    const W = parseFloat(world.style.width) || 600;
-    const H = parseFloat(world.style.height) || 460;
-    // ✅ v8.41b — cadrage initial : centré sur l'IDÉE DE BASE à une échelle
-    // lisible (les bulles se lisent sans zoom) ; « recadrer » montre toute la
-    // carte, glisser/pincer explore le reste — comme l'app de référence.
-    const sAll = Math.max(0.35, Math.min(1.15, ((wrap.clientWidth || 340) - 26) / W, ((wrap.clientHeight || 470) - 26) / H));
-    const s0 = Math.max(0.42, Math.min(0.64, sAll * 1.5));
-    const rootEl = world.querySelector('.mmap-bubble.root');
-    const rx = parseFloat(rootEl && rootEl.style.left || '0') || W / 2;
-    const ry = parseFloat(rootEl && rootEl.style.top || '0') || H / 2;
-    const vw = wrap.clientWidth || 340, vh = wrap.clientHeight || 470;
-    mmApplyTransform(wrap, world, { s: s0, x: vw / 2 - rx * s0, y: vh / 2 - ry * s0 });
+    const svg = world.querySelector('.mmap-lines');
+    const worldDims = () => ({ W: parseFloat(world.style.width) || 640, H: parseFloat(world.style.height) || 460 });
+    const byId = wrap.__mmNodes || {};
+    const order = Object.values(byId).sort((a, b) => (a.idx || 0) - (b.idx || 0));
+
+    // ✅ v8.42 — cadrage initial : ajusté à la largeur, toute la chaîne lisible
+    (() => { const { W, H } = worldDims(); mmFitInitial(wrap, world, W, H); })();
+
+    // Liaisons entre cartes consécutives — recalculées après chaque déplacement
+    const redraw = () => {
+      if (!svg) return;
+      let paths = '';
+      for (let i = 1; i < order.length; i++) {
+        const a = byId[order[i - 1].id], b = byId[order[i].id];
+        if (!a || !b) continue;
+        const lk = mmLinkPath(a, b);
+        paths += `<path d="${lk.d}" fill="none" stroke="${lk.color}" stroke-width="${a.idx === 0 ? 3.2 : 2.2}" stroke-linecap="round" opacity="0.8" marker-end="url(#${mmMarkerRef(lk.color)})"/>`;
+      }
+      // ✅ élargit le cadre en direct si une carte déplacée sort du monde —
+      // les liaisons ne sont JAMAIS coupées
+      let bMinX = Infinity, bMinY = Infinity, bMaxX = -Infinity, bMaxY = -Infinity;
+      for (const nd of order) {
+        bMinX = Math.min(bMinX, nd.x); bMinY = Math.min(bMinY, nd.y);
+        bMaxX = Math.max(bMaxX, nd.x + MM_CW); bMaxY = Math.max(bMaxY, nd.y + MM_CH);
+      }
+      const nOx = bMinX - 105, nOy = bMinY - 80;
+      const nW = Math.max(620, (bMaxX + 105) - nOx), nH = Math.max(430, (bMaxY + 80) - nOy);
+      const curOx = parseFloat(svg.style.left || '0') || 0, curOy = parseFloat(svg.style.top || '0') || 0;
+      const curW = parseFloat(svg.getAttribute('width')) || 0, curH = parseFloat(svg.getAttribute('height')) || 0;
+      if (nOx < curOx || nOy < curOy || nW > curW || nH > curH) {
+        svg.style.left = `${nOx}px`; svg.style.top = `${nOy}px`;
+        svg.setAttribute('width', String(Math.round(nW)));
+        svg.setAttribute('height', String(Math.round(nH)));
+        svg.setAttribute('viewBox', `${nOx} ${nOy} ${Math.round(nW)} ${Math.round(nH)}`);
+        world.style.width = `${Math.round(nW)}px`;
+        world.style.height = `${Math.round(nH)}px`;
+      }
+      svg.innerHTML = mmDefs() + paths;
+    };
+    redraw();
+
+    const savePositions = () => {
+      if (!wrap.__mmMeta || !wrap.__mmMeta.posKey) return;
+      const saved = {};
+      for (const nd of order) saved[nd.id] = { x: Math.round(nd.x), y: Math.round(nd.y) };
+      try { localStorage.setItem('arvexa_mm_pos_' + wrap.__mmMeta.posKey, JSON.stringify(saved)); } catch (e) {}
+    };
 
     let pts = new Map();
     let pinch = null;
+    let dragCard = null;
     let dragDist = 0;
+
     const start = (e) => {
-      if (e.target.closest('.mmap-ctrl')) return;
+      if (e.target.closest && e.target.closest('.mmap-ctrl')) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       dragDist = 0;
+      if (pts.size === 1) {
+        const ce = e.target.closest ? e.target.closest('.mmap-card') : null;
+        const nd = ce ? byId[ce.dataset.node] : null;
+        dragCard = nd ? { el: ce, nd } : null;
+      }
       if (pts.size === 2) {
+        dragCard = null; // pincement = zoom, jamais un déplacement de carte
         const [p1, p2] = [...pts.values()];
         pinch = { d: Math.hypot(p1.x - p2.x, p1.y - p2.y) };
       }
@@ -4098,10 +4267,21 @@ function bindMindmap(rootEl) {
       const prev = pts.get(e.pointerId);
       if (!prev) return;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pts.size === 1) {
+      const st = wrap.__mmSt || { s: 1, x: 0, y: 0 };
+      if (pts.size === 1 && dragCard) {
+        // ✅ v8.42 — on DÉPLACE LA CARTE (delta écran ÷ zoom = delta monde)
+        const dx = (e.clientX - prev.x) / st.s;
+        const dy = (e.clientY - prev.y) / st.s;
+        dragDist += Math.abs(e.clientX - prev.x) + Math.abs(e.clientY - prev.y);
+        dragCard.nd.x += dx;
+        dragCard.nd.y += dy;
+        dragCard.el.style.left = `${dragCard.nd.x.toFixed(1)}px`;
+        dragCard.el.style.top = `${dragCard.nd.y.toFixed(1)}px`;
+        redraw();
+        wrap.__mmDirty = true;
+      } else if (pts.size === 1) {
         const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
         dragDist += Math.abs(dx) + Math.abs(dy);
-        const st = wrap.__mmSt || { s: 1, x: 0, y: 0 };
         mmApplyTransform(wrap, world, { s: st.s, x: st.x + dx, y: st.y + dy });
       } else if (pts.size === 2 && pinch) {
         const [p1, p2] = [...pts.values()];
@@ -4112,13 +4292,22 @@ function bindMindmap(rootEl) {
           mmZoomAt(wrap, world, mid.x - rect.left, mid.y - rect.top, d / pinch.d);
         }
         pinch = { d };
-        dragDist += 8;
       }
     };
     const end = (e) => {
       pts.delete(e.pointerId);
       if (pts.size < 2) pinch = null;
-      setTimeout(() => { dragDist = 0; }, 250);
+      if (dragCard) {
+        if (dragDist <= 8) {
+          // tap sans déplacement → modale d'explication (révision)
+          openMindmapModal(dragCard.nd, wrap.__mmMeta || null);
+        } else if (wrap.__mmDirty) {
+          savePositions(); // ✅ positions trouvées à la prochaine visite
+        }
+        dragCard = null;
+        wrap.__mmDirty = false;
+      }
+      dragDist = 0;
     };
     wrap.addEventListener('pointerdown', start);
     wrap.addEventListener('pointermove', move);
@@ -4131,17 +4320,11 @@ function bindMindmap(rootEl) {
         e.stopPropagation();
         const rect = wrap.getBoundingClientRect();
         const kind = b.dataset.mmZoom;
+        const { W, H } = worldDims();
         if (kind === 'fit') mmFit(wrap, world, W, H);
+        else if (kind === 'fs') mmToggleFs(wrap, world, W, H, b);
         else mmZoomAt(wrap, world, rect.width / 2, rect.height / 2, kind === 'in' ? 1.28 : 0.78);
       });
-    });
-    wrap.addEventListener('click', (e) => {
-      if (dragDist > 8) return; // c'était un glissement, pas un tap
-      const bub = e.target.closest('.mmap-bubble');
-      if (!bub) return;
-      const id = bub.dataset.node;
-      const nd = (wrap.__mmNodes || {})[id];
-      if (nd) openMindmapModal(nd, wrap.__mmMeta || null);
     });
   });
 }
@@ -4304,12 +4487,17 @@ async function renderSectionView(params) {
       const panel = $('mmPanel');
       if (!panel) return;
       if (ex.mindmap) {
-        const mmBuilt = renderMindmap(ex.mindmap);
-        panel.innerHTML = mmBuilt.html;
-        // ✅ v8.41 — données des bulles + idée de base pour la modale d'explication
-        const wrapEl = panel.querySelector('[data-mmap]');
-        if (wrapEl) { wrapEl.__mmNodes = mmBuilt.byId; wrapEl.__mmMeta = { idea: mmBuilt.idea }; }
-        bindMindmap(panel);
+        const mmBuilt = renderMindmap(ex.mindmap, extrasKey(subject, chapterId, sectionId));
+        if (mmBuilt) {
+          panel.innerHTML = mmBuilt.html;
+          // ✅ v8.42 — données des cartes + clé de positions pour la modale/sauvegarde
+          const wrapEl = panel.querySelector('[data-mmap]');
+          if (wrapEl) { wrapEl.__mmNodes = mmBuilt.byId; wrapEl.__mmMeta = { idea: mmBuilt.idea, posKey: mmBuilt.posKey }; }
+          bindMindmap(panel);
+        } else {
+          panel.innerHTML = extrasErrorHtml('mindmap');
+          panel.querySelector('[data-extras-gen="mindmap"]')?.addEventListener('click', () => launchExtras('mindmap'));
+        }
       } else if (ex.loading.mindmap) {
         panel.innerHTML = extrasGeneratingHtml('mindmap');
       } else {
@@ -5179,22 +5367,24 @@ async function acExtractPdfText(file, onProgress) {
   };
 }
 
-// OCR par lots de ≤ 4 images (limite du kit IA) via /api/arv?kit=1
-// ✅ v8.39 — ANTI-ERREUR : chaque lot est retenté (3 essais), et si un lot
-// résiste, on le redécoupe image par image — l'important est d'EXTRAIRE.
-// ✅ v8.41 — POURCENTAGE FIABLE (demande propriétaire : « dès que j'ai mis une
-// image directement c'est parti à 90 % alors que ça a tardé beaucoup avant de
-// finaliser ») : le % n'avance QUAND un lot est TERMINÉ — jamais au lancement.
+// OCR par lots de ≤ 2 images via /api/arv?kit=1
+// ✅ v8.42 — PHOTOS DE CAHIER (demande propriétaire : « Lisa n'arrive pas à
+// extraire les éléments sur une image, des photos de mon cahier ») : lots de
+// 2 (au lieu de 4) — chaque page reçoit toute l'attention du modèle, ce qui
+// change tout pour le manuscrit ; si un lot résiste, redécoupage image par
+// image. Chaque lot est retenté (3 essais) : l'important est d'EXTRAIRE.
+// ✅ v8.41 — POURCENTAGE FIABLE : le % n'avance QU'À chaque lot TERMINÉ.
 // onProgress(done, total, partialText) → après chaque lot fini (+ texte
 // partiel accumulé pour la file) ; onBatchStart(b, total) → label seulement.
 async function acOcrImages(images, onProgress, onBatchStart) {
   const batches = [];
-  for (let i = 0; i < images.length; i += 4) batches.push(images.slice(i, i + 4));
+  for (let i = 0; i < images.length; i += 2) batches.push(images.slice(i, i + 2));
   const askOnce = async (imgs) => {
     const r = await window.ARVX_AI.ask('image', { mode: 'ocr', images: imgs });
     return String(r?.data?.text || '').trim();
   };
   const parts = [];
+  const failedImages = [];
   for (let b = 0; b < batches.length; b++) {
     if (window.__acJobApi && window.__acJobApi.cancelled()) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' }); // ✅ v8.40
     if (onBatchStart) onBatchStart(b, batches.length);
@@ -5214,12 +5404,39 @@ async function acOcrImages(images, onProgress, onBatchStart) {
           catch (e) { if (tries < 1) await new Promise((r) => setTimeout(r, 1200)); }
         }
         if (one) chunk.push(one);
+        // ✅ v8.42 — ZÉRO PERTE : une image qui résiste même seule est retenue
+        // pour l'ULtime ressaie de fin (sinon elle serait perdue silencieusement)
+        else failedImages.push(im);
       }
       t = chunk.join('\n\n');
     }
+    // ✅ v8.42 — ZÉRO PERTE : chaque image qui n'a rien donné est retenue pour
+    // une ULTIME tentative individuelle après la boucle (3e sécurité).
+    if (!t) failedImages.push(...imgs);
     if (t) parts.push(t);
     // ✅ v8.41 — le pourcentage avance ICI (lot réellement terminé), jamais avant
     if (onProgress) onProgress(b + 1, batches.length, parts.join('\n\n'));
+  }
+  if (failedImages.length > 0) {
+    if (onBatchStart) onBatchStart(batches.length, batches.length + 1);
+    const chunk = [];
+    for (const im of failedImages) {
+      if (window.__acJobApi && window.__acJobApi.cancelled()) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
+      let one = '';
+      for (let tries = 0; tries < 2 && !one; tries++) {
+        try { one = await askOnce([im]); }
+        catch (e) { if (tries < 1) await new Promise((r) => setTimeout(r, 1500)); }
+      }
+      if (one) chunk.push(one);
+    }
+    if (chunk.length) {
+      parts.push(chunk.join('\n\n'));
+      if (onProgress) onProgress(batches.length + 1, batches.length + 1, parts.join('\n\n'));
+    }
+  }
+  // Rien du tout après tous les secours → erreur CLAIRE (jamais un faux succès)
+  if (!parts.join('\n\n').trim()) {
+    throw new Error('Extraction impossible — l\'IA n\'a pas réussi à lire ces images. Réessaie avec des photos plus nettes ou moins à contre-jour.');
   }
   return parts.join('\n\n');
 }
@@ -5806,7 +6023,9 @@ function openAddCourseModal(context) {
         for (let i = 0; i < files.length; i++) {
           if (acJob.cancelled) throw Object.assign(new Error('Annulé'), { code: 'AC_CANCELLED' });
           acJobStep(1 + Math.round(((i + 1) / files.length) * 19), `Image ${i + 1}/${files.length} — préparation…`);
-          images.push(await window.ARVX_AI.compressImageFile(files[i], { maxSide: 1400, quality: 0.8 }));
+          // ✅ v8.42 — photos de cahier : 1600 px (plus de détail pour le
+          // manuscrit) + enhancement automatique du contraste
+          images.push(await window.ARVX_AI.compressImageFile(files[i], { maxSide: 1600, quality: 0.82, enhance: true }));
         }
         // ✅ v8.41 — OCR par lots : 20 % → 90 %, le % n'avance QUAND un lot est
         // réellement terminé ; pendant un lot, le libellé montre le travail en
@@ -6432,21 +6651,37 @@ requireAuth({
   onUser: async (user) => {
     state.user = user;
     try { __authReadyResolve(); } catch (e) {} // ✅ v8.40 — débloque les appels en attente
+
+    // ✅ v8.42 — AFFICHAGE INSTANTANÉ (demande propriétaire : « quand tu
+    // rentres dans la page, l'authentification de chargement avant d'afficher
+    // les éléments est très lente, des fois il faut appuyer sur actualisation ») :
+    // on PEINT TOUT DE SUITE le hash courant (le cahier vient du cache
+    // localStorage — zéro attente), Firestore et Premium travaillent en
+    // ARRIÈRE-PLAN et ne recouvrent que si nécessaire.
+    if (!window.location.hash) window.history.replaceState(null, '', '#/notebooks');
+    try { applyRoute(routeFromHash()); } catch (e) {}
+
+    // ⚡ Cache-first Firestore : userData + badge Premium ; rafraîchit
+    // l'accueil si c'est la vue courante (nom affiché, éléments Premium).
     try {
-      // ⚡ Cache-first : cahier peint depuis le cache Firestore local,
-      // revalidé silencieusement en arrière-plan (réapplication seulement
-      // si le statut Premium a changé entre-temps).
-      await docSWR(doc(db, 'users', user.uid), (snap) => {
+      docSWR(doc(db, 'users', user.uid), (snap) => {
         state.userData = snap.data();
         state.isPremium = isPremiumUser(state.userData);
         updatePremiumBadge();
-        applyRoute(routeFromHash());
+        if (state.view === 'notebooks') {
+          try { paintDashboard(state.cache.dashboard || dashCacheRead() || {}); } catch (e) {}
+        }
       }, (a, b) => isPremiumUser(a) !== isPremiumUser(b));
     } catch (_) {}
 
-    if (!window.location.hash) window.history.replaceState(null, '', '#/notebooks');
-
     cacheToken();
+  },
+  // ✅ v8.42 — auth lente mais session en cache : on débloque la page (elle
+  // affiche son contenu en cache) au lieu d'un spinner figé, et l'auth
+  // continue d'essayer en tâche de fond dans auth-guard.
+  onStale: () => {
+    try { __authReadyResolve(); } catch (e) {}
+    try { applyRoute(routeFromHash()); } catch (e) {}
   },
   onNoUser: () => {
     try { __authReadyResolve(); } catch (e) {} // ✅ v8.40
@@ -6471,7 +6706,7 @@ function isPremiumUser(data) {
 // d'une session précédente deviennent « Reprendre » (texte partiel conservé).
 try { acQueueSweepOnLoad(); } catch (e) {}
 
-console.log("🚀 ARVEXA — Mon cahier — serveur progress v8.11 (sections = mêmes 4 modes que le cours · carte mentale en bulles reliées avec explication en modale · % d'extraction réel attaché aux lots · file des ajouts récents zéro perte · 0 échec d'authentification)");
+console.log("🚀 ARVEXA — Mon cahier — serveur progress v8.12 (carte mentale = chaîne de cartes en ligne droite, déplaçables, plein écran, modale explication+signification · OCR photos de cahier renforcé : transcription manuscrite + relais + enhancement · auth instantanée : cahier peint du cache dès l'arrivée · % d'extraction réel · file des ajouts récents zéro perte)");
 
 // ✅ v8.0 — SYNC FIREBASE : la carte « Ma progression — révisions officielles »
 // se recalcule quand la progression fusionne/arrive du cloud (autre appareil).

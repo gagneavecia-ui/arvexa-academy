@@ -105,6 +105,38 @@
 
   function canvasToJpeg(cv, quality) { return cv.toDataURL('image/jpeg', quality); }
 
+  /* ✅ v8.42 — ENHANCEMENT PHOTO DE CAHIER (demande propriétaire : « Lisa
+     n'arrive pas à extraire les éléments sur une image, des photos de mon
+     cahier ») : les photos prises en classe sont sombres / délavées / à
+     contre-jour → les modèles gratuits lisent mal le manuscrit. Étirement
+     automatique du contraste (percentiles 2 %–98 % de la luminance) :
+     le papier redevient blanc, l'écriture sombre — sans dénaturer. */
+  function enhancePhotoCanvas(cv) {
+    try {
+      const ctx = cv.getContext('2d');
+      const d = ctx.getImageData(0, 0, cv.width, cv.height);
+      const px = d.data;
+      const hist = new Uint32Array(256);
+      for (let i = 0; i < px.length; i += 4) {
+        hist[(px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) | 0]++;
+      }
+      const total = cv.width * cv.height;
+      let lo = 0, hi = 255, acc = 0;
+      for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc > total * 0.02) { lo = i; break; } }
+      acc = 0;
+      for (let i = 255; i >= 0; i--) { acc += hist[i]; if (acc > total * 0.02) { hi = i; break; } }
+      if (hi - lo < 30 || hi - lo > 235) return; // déjà bien contrastée : ne rien toucher
+      const k = 255 / (hi - lo);
+      for (let i = 0; i < px.length; i += 4) {
+        let r = (px[i] - lo) * k, g = (px[i + 1] - lo) * k, b = (px[i + 2] - lo) * k;
+        px[i] = r < 0 ? 0 : (r > 255 ? 255 : r);
+        px[i + 1] = g < 0 ? 0 : (g > 255 ? 255 : g);
+        px[i + 2] = b < 0 ? 0 : (b > 255 ? 255 : b);
+      }
+      ctx.putImageData(d, 0, 0);
+    } catch (e) { /* enhancement = bonus, jamais bloquant */ }
+  }
+
   function drawScaled(img, w, h) {
     const cv = document.createElement('canvas');
     cv.width = Math.max(1, Math.round(w));
@@ -137,8 +169,12 @@
       { s: 0.55, q: 0.5 },
     ];
     let out = null;
-    for (const step of ladder) {
-      out = canvasToJpeg(drawScaled(img, w * step.s, h * step.s), step.q);
+    for (let li = 0; li < ladder.length; li++) {
+      const step = ladder[li];
+      const cv = drawScaled(img, w * step.s, h * step.s);
+      // ✅ v8.42 — enhancement appliqué une fois, à pleine résolution
+      if (opts && opts.enhance && step.s === 1) enhancePhotoCanvas(cv);
+      out = canvasToJpeg(cv, step.q);
       if (b64Len(out) <= MAX_B64_CHARS) return out;
     }
     return out;
@@ -187,6 +223,8 @@
       cv.width = Math.round(vp.width);
       cv.height = Math.round(vp.height);
       await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+      // ✅ v8.42 — scan de PDF = photo de page : même enhancement (no-op si déjà contrasté)
+      enhancePhotoCanvas(cv);
       let dataUrl = cv.toDataURL('image/jpeg', 0.8);
       let step = 0;
       const ladder = [

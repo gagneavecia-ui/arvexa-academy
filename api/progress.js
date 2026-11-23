@@ -3044,10 +3044,10 @@ function sanitizeQcm(raw) {
   return out.length >= 3 ? out : null;
 }
 
-// CARTE MENTALE EN CHAÎNE DE BULLES (v8.41) : 1 idée de base → 3-6 branches
-// (volume de la leçon) → chaque branche 2-4 sous-points (ça se multiplie à
-// chaque niveau). Chaque nœud porte son EXPLICATION (detail) et sa
-// SIGNIFICATION (signif) — affichés en modale quand l'élève touche la bulle
+// CARTE MENTALE EN CHAÎNE LINÉAIRE (v8.42) : 1 idée de base → 3-6 étapes qui
+// SE SUIVENT dans l'ordre de la leçon → chaque étape 1-3 sous-points qui
+// CONTINUENT la chaîne. Chaque carte porte son EXPLICATION (detail) et sa
+// SIGNIFICATION (signif) — affichés en modale quand l'élève touche la carte
 // (demande propriétaire : « chaque carte aura son explication, sa
 // signification pour faciliter la révision »).
 function sanitizeMindmap(raw) {
@@ -3064,7 +3064,7 @@ function sanitizeMindmap(raw) {
     const signif = clampStr(st?.signif || st?.signification || '', 240);
     const children = [];
     const rawKids = Array.isArray(st?.children) ? st.children : (Array.isArray(st?.sub) ? st.sub : []);
-    for (const c of rawKids.slice(0, 4)) {
+    for (const c of rawKids.slice(0, 3)) {
       const ct = clampStr(c?.title || c?.q || '', 110);
       if (!ct) continue;
       children.push({
@@ -3161,11 +3161,11 @@ CONTENU DE LA LEÇON :
 ${raw}
 """
 
-Construis une CARTE MENTALE en CHAÎNE DE BULLES RELIÉES : une idée centrale (l'idée de base), puis 3 à 6 branches reliées à cette idée (le nombre dépend du volume de la leçon), et chaque branche se subdivise en 2 à 4 sous-points reliés à elle — chaque niveau se multiplie. Chaque bulle porte un titre ULTRA COURT (2 à 5 mots, comme une étiquette de carte mentale) et deux textes courts : "detail" = l'explication d'une phrase (ce que ce point veut dire), "signif" = sa signification pour la révision (une phrase : pourquoi ce point compte, ce qu'il faut retenir). L'idée centrale porte aussi son "detail" et sa "signif". L'ensemble doit couvrir toute la leçon, de l'idée de base jusqu'à la fin.
+Construis une CARTE MENTALE en CHAÎNE LINÉAIRE de cartes qui SE SUIVENT (v8.42 — demande propriétaire : « des cartes qui se suivent comme une chaîne, une ligne droite : la carte de base puis la liaison entre les différentes cartes, bien propre, bien aligné »). La carte 1 est l'IDÉE DE BASE (l'essentiel de la leçon en une phrase). Puis les cartes suivent dans l'ORDRE DE LA LEÇON, comme un chemin : 3 à 6 étapes ("steps") reliées l'une après l'autre, et chaque étape peut être précisée par 1 à 3 sous-points ("children") qui CONTINUENT la chaîne juste après elle. Chaque carte porte un titre ULTRA COURT (2 à 5 mots, étiquette lisible) et deux textes courts : "detail" = l'explication d'une phrase (ce que ce point veut dire), "signif" = sa signification pour la révision (une phrase : pourquoi ce point compte, ce qu'il faut retenir). L'idée de base porte aussi son "detail" et sa "signif". L'ensemble doit couvrir toute la leçon, de l'idée de base jusqu'à la fin.
 
 Réponds EXACTEMENT dans ce format :
 {"idea":"…","detail":"…","signif":"…","steps":[{"title":"…","detail":"…","signif":"…","children":[{"title":"…","detail":"…","signif":"…"}]}]}`,
-      maxTokens: 2200,
+      maxTokens: 2600,
       deadline
     });
     const mindmap = sanitizeMindmap(data);

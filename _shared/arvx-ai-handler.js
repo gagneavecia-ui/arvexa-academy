@@ -48,18 +48,34 @@ const RETRY_BACKOFF_MS = 1500;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/* ✅ v8.39 — cascade élargie de modèles vision GRATUITS OpenRouter
-   (les 2 premiers sont testés en production ; les suivants prennent le
-   relais quand les gratuits sont saturés — « un autre prend le relais ») */
+/* ✅ v8.42 — cascade réordonnée : les modèles qui lisent le mieux
+   l'ÉCRITURE MANUSCRITE (photos de cahier — demande propriétaire : « Lisa
+   n'arrive pas à extraire les éléments sur une image, photos de mon cahier,
+   il faut qu'il arrive à extraire ces images ») passent EN PREMIER ;
+   qwen2.5-vl-72b et gemma-3 sont les meilleurs lecteurs gratuits de
+   manuscrit, nemotron reste en secours (testé, rapide). */
 const OR_VISION = [
+  'qwen/qwen2.5-vl-72b-instruct:free',
+  'google/gemma-3-27b-it:free',
+  'meta-llama/llama-4-maverick:free',
   'nvidia/nemotron-3.5-super-vl:free',
   'dots-studio/dots-3-note-preview:free',
-  'google/gemma-3-27b-it:free',
-  'qwen/qwen2.5-vl-72b-instruct:free',
   'mistralai/mistral-small-3.1-24b-instruct:free',
-  'meta-llama/llama-4-maverick:free',
   'moonshotai/kimi-vl-a3b-thinking:free',
 ];
+
+/* ✅ v8.42 — détection de réponses INUTILES : un modèle qui répond « je ne
+   peux pas lire ce manuscrit » ou renvoie une description au lieu de la
+   transcription est traité comme UN ÉCHEC → le modèle suivant prend le
+   relais. C'était la cause cachée des « extractions ratées » : le texte
+   renvoyé n'était PAS la leçon. */
+function looksUseless(text) {
+  const t = String(text || '').trim();
+  if (t.length < 12) return true;
+  if (/^(je ne peux|je ne suis pas|impossible de|désolé|désolée|sorry|i can'?t|i cannot|i am unable|as an ai|en tant qu'ia)/i.test(t)) return true;
+  if (/(ne peux pas lire|ne peut pas lire|impossible de lire|ne peux pas transcrire|cannot read|can'?t read|unable to read|can'?t transcribe)/i.test(t) && t.length < 260) return true;
+  return false;
+}
 
 /* ✅ v8.39 — Gemini : plusieurs modèles + deux styles d'authentification
    (les nouvelles clés « AQ.… » n'acceptent pas toujours x-goog-api-key) */
@@ -138,7 +154,7 @@ function partsFor(mode, v) {
   const L = v.lang === 'an' ? 'an' : 'fr';
   const T = L === 'an' ? {
     describe: 'Describe this image in detail: content, visible text, context. Answer in English.',
-    ocr: 'Read ALL the text visible in this image (or these pages), word for word, without inventing anything, keeping the structure. Answer in English.',
+    ocr: 'Transcribe FAITHFULLY all the text in this photo (handwritten notebook page, textbook or document), word for word, without inventing anything, without adding anything. Keep the structure: titles, headings, lists, numbering, formulas, captions. Write NO comment, NO description, NO prefix — return ONLY the transcribed text. Unreadable word → write [illegible].',
     ask: v.question || 'What does this image show?',
     json: (v.question || 'Extract the key information from this image.') +
       ' Answer ONLY with a valid JSON object, no surrounding text, no code fences.' +
@@ -148,7 +164,7 @@ function partsFor(mode, v) {
     docNote: ' (The images are the pages of one single document.)',
   } : {
     describe: 'Décris cette image en détail et de façon utile : contenu, textes visibles, contexte. Réponds en français.',
-    ocr: 'Lis TOUT le texte visible de cette image (ou de ces pages), mot à mot, sans rien inventer, en conservant la structure. Réponds en français.',
+    ocr: 'Transcris FIDÈLEMENT tout le texte de cette photo (page de cahier manuscrite, manuel ou document), mot à mot, sans rien inventer, sans rien ajouter. Garde la structure : titres, sous-titres, listes, numérotations, formules, légendes. N\'écris AUCUN commentaire, AUCUNE description, AUCUN préfixe (pas « Voici », pas « Voilà le texte ») — renvoie UNIQUEMENT le texte transcrit. Mot illisible → écris [illisible]. Ne traduis pas.',
     ask: v.question || 'Que montre cette image ?',
     json: (v.question || 'Extrais les informations importantes de cette image.') +
       ' Réponds UNIQUEMENT par un objet JSON valide, sans texte autour, sans balises de code.' +
@@ -163,53 +179,31 @@ function partsFor(mode, v) {
   return parts;
 }
 
-/* ── chaîne de fournisseurs (image / doc) — CASCADE ROBUSTE v8.39 ──
+/* ── chaîne de fournisseurs (image / doc) — CASCADE ROBUSTE v8.42 ──
    Principe demandé par le propriétaire : si un modèle commence et tombe
-   en panne, le suivant prend le relais immédiatement — 0 erreur vue. */
+   en panne, le suivant prend le relais immédiatement — 0 erreur vue.
+   ✅ v8.42 : GEMINI EN PREMIER pour les images (meilleur lecteur mondial
+   de l'écriture manuscrite — photos de cahier), puis OpenRouter (modèles
+   gratuits manuscrit-first), puis Groq. Réponses « je ne peux pas lire »
+   ou vides = ÉCHEC → modèle suivant (looksUseless). OCR = max_tokens 3000
+   (une page de cahier est longue — tronquer c'est perdre la leçon). */
 async function generate(mode, v) {
   const started = Date.now();
   const parts = partsFor(mode, v);
+  const maxTok = mode === 'ocr' ? 3000 : 1600;
   const attempt = async (fn) => {
     try { return await fn(); } catch (e) { return { status: 0, data: null }; }
   };
   const left = () => TOTAL_BUDGET_MS - (Date.now() - started);
 
-  /* 1) OpenRouter — 7 modèles vision gratuits en cascade */
-  if (!dead.openrouter && process.env.OPENROUTER_API_KEY) {
-    for (const model of OR_VISION) {
-      if (left() < 4000) break;
-      for (let tries = 0; tries < 2; tries++) {
-        const r = await attempt(() => httpJson(
-          'https://openrouter.ai/api/v1/chat/completions',
-          { model, max_tokens: 1600, temperature: 0.3, messages: [{ role: 'user', content: parts }] },
-          { Authorization: 'Bearer ' + process.env.OPENROUTER_API_KEY },
-          Math.min(PROVIDER_TIMEOUT_MS, left())));
-        if (r.status === 200 && r.data && r.data.choices && r.data.choices[0]) {
-          const msg = r.data.choices[0].message || {};
-          const text = (msg.content || '').trim();
-          if (text) return { provider: 'openrouter/' + model.split('/')[1], text };
-          break; /* réponse vide → modèle suivant */
-        }
-        if (r.status === 401 || r.status === 403) { dead.openrouter = true; break; }
-        if (r.status === 429 || r.status >= 500 || r.status === 0) {
-          if (left() < 4000) break;
-          await sleep(RETRY_BACKOFF_MS);
-          continue; /* retente le même modèle puis passe au suivant */
-        }
-        break; /* autre erreur (modèle indisponible…) → modèle suivant */
-      }
-      if (dead.openrouter) break;
-    }
-  }
-
-  /* 2) Gemini — 2 modèles × 2 styles d'auth (inline_data images) */
+  /* 1) Gemini — 2 modèles × 2 styles d'auth (inline_data images) */
   if (!dead.gemini && process.env.GEMINI_API_KEY && left() > 6000) {
     const contents = [{
       parts: parts.map((p) => (p.type === 'text'
         ? { text: p.text }
         : { inline_data: { mime_type: 'image/jpeg', data: p.image_url.url.replace(/^data:image\/[a-z]+;base64,/, '') } })),
     }];
-    const body = { contents, generationConfig: { temperature: 0.3, maxOutputTokens: 1600 } };
+    const body = { contents, generationConfig: { temperature: 0.3, maxOutputTokens: maxTok } };
     let unauthorized = 0;
     for (const model of GEMINI_MODELS) {
       if (left() < 4000) break;
@@ -223,7 +217,8 @@ async function generate(mode, v) {
         if (r.status === 200 && r.data && r.data.candidates && r.data.candidates[0]) {
           const p0 = (r.data.candidates[0].content || {}).parts || [];
           const text = p0.map((x) => x.text || '').join('').trim();
-          if (text) return { provider: 'gemini', text };
+          if (text && !looksUseless(text)) return { provider: 'gemini', text };
+          if (text) break; /* réponse inutile → modèle suivant */
           break;
         }
         if (r.status === 401 || r.status === 403) { unauthorized++; continue; } /* autre style d'auth */
@@ -234,6 +229,34 @@ async function generate(mode, v) {
     if (unauthorized >= GEMINI_MODELS.length * 2) dead.gemini = true;
   }
 
+  /* 2) OpenRouter — 7 modèles vision gratuits en cascade (manuscrit-first) */
+  if (!dead.openrouter && process.env.OPENROUTER_API_KEY) {
+    for (const model of OR_VISION) {
+      if (left() < 4000) break;
+      for (let tries = 0; tries < 2; tries++) {
+        const r = await attempt(() => httpJson(
+          'https://openrouter.ai/api/v1/chat/completions',
+          { model, max_tokens: maxTok, temperature: 0.3, messages: [{ role: 'user', content: parts }] },
+          { Authorization: 'Bearer ' + process.env.OPENROUTER_API_KEY },
+          Math.min(PROVIDER_TIMEOUT_MS, left())));
+        if (r.status === 200 && r.data && r.data.choices && r.data.choices[0]) {
+          const msg = r.data.choices[0].message || {};
+          const text = (msg.content || '').trim();
+          if (text && !looksUseless(text)) return { provider: 'openrouter/' + model.split('/')[1], text };
+          break; /* réponse vide ou inutile → modèle suivant */
+        }
+        if (r.status === 401 || r.status === 403) { dead.openrouter = true; break; }
+        if (r.status === 429 || r.status >= 500 || r.status === 0) {
+          if (left() < 4000) break;
+          await sleep(RETRY_BACKOFF_MS);
+          continue; /* retente le même modèle puis passe au suivant */
+        }
+        break; /* autre erreur (modèle indisponible…) → modèle suivant */
+      }
+      if (dead.openrouter) break;
+    }
+  }
+
   /* 3) Groq — 2 modèles vision en cascade, 1 retente chacun */
   if (!dead.groq && process.env.GROQ_API_KEY && left() > 6000) {
     for (const model of GROQ_VISION) {
@@ -241,12 +264,12 @@ async function generate(mode, v) {
       for (let tries = 0; tries < 2; tries++) {
         const r = await attempt(() => httpJson(
           'https://api.groq.com/openai/v1/chat/completions',
-          { model, max_tokens: 1600, temperature: 0.3, messages: [{ role: 'user', content: parts }] },
+          { model, max_tokens: maxTok, temperature: 0.3, messages: [{ role: 'user', content: parts }] },
           { Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
           Math.min(PROVIDER_TIMEOUT_MS, left())));
         if (r.status === 200 && r.data && r.data.choices && r.data.choices[0]) {
           const text = ((r.data.choices[0].message || {}).content || '').trim();
-          if (text) return { provider: 'groq', text };
+          if (text && !looksUseless(text)) return { provider: 'groq', text };
           break;
         }
         if (r.status === 401 || r.status === 403) { dead.groq = true; break; }
