@@ -637,8 +637,15 @@ function getProviders() {
       key: process.env.GROQ_API_KEY,
       endpoint: 'https://api.groq.com/openai/v1/chat/completions',
       model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
-      // ✅ v8.9 — repli ultra fiable si le modèle principal est saturé
-      fallbackModels: ['llama-3.1-8b-instant'],
+      // ✅ v8.47d — repli RÉEL si le modèle principal sature : l'ancien repli
+      // `llama-3.1-8b-instant` a été RETIRÉ de Groq (« does not exist or you
+      // do not have access » constaté par sonde E2E) → quand gpt-oss-120b
+      // renvoyait 429 TPM, Groq n'offrait AUCUN second modèle et la tâche
+      // tombait sur des relais morts (OpenRouter cap 50/jour, Gemini quota).
+      // Nouvelle chaîne : llama-3.3-70b-versatile + openai/gpt-oss-20b — les
+      // TPM Groq sont des SEAUX PAR MODÈLE, donc chaque repli a sa propre
+      // fenêtre (la rotation passe au suivant si l'un est retiré).
+      fallbackModels: ['llama-3.3-70b-versatile', 'openai/gpt-oss-20b'],
       jsonMode: true
     },
     {
