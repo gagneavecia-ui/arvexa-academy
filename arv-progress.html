@@ -427,6 +427,12 @@ main {
   list-style: none; padding: 0;
   display: flex; flex-direction: column; gap: 8px;
 }
+/* ✅ v8.47a — bloc « Points clés à retenir » : liseré doré discret pour que
+   la liste indispensable se repère au premier regard (lecture soignée). */
+.block.keyfacts {
+  border-color: color-mix(in srgb, var(--accent-bright) 45%, var(--card-border));
+  background: linear-gradient(0deg, color-mix(in srgb, var(--accent-bright) 6%, transparent), color-mix(in srgb, var(--accent-bright) 6%, transparent)), var(--card-bg);
+}
 .simple-list li {
   display: flex; gap: 10px;
   font-size: 14px; color: var(--text-body); line-height: 1.6;
@@ -2996,7 +3002,17 @@ var SUBJECTS = {
   philosophie:   { label: 'Philosophie',   emoji: '🧠', profile: 'philosophy' },
   histoire:      { label: 'Histoire',      emoji: '🌍', profile: 'history' },
   geographie:    { label: 'Géographie',    emoji: '🗺️', profile: 'history' },
-  anglais:       { label: 'Anglais',       emoji: '🇬🇧', profile: 'language' }
+  anglais:       { label: 'Anglais',       emoji: '🇬🇧', profile: 'language' },
+  // ✅ v8.47a — le cahier accepte TOUTES les filières (demande du propriétaire :
+  // « tout type qu'on peut faire dans le monde »), chaque domaine séparé.
+  francais:          { label: 'Français',           emoji: '📚', profile: 'french' },
+  informatique:      { label: 'Informatique',       emoji: '💻', profile: 'info' },
+  technologie:       { label: 'Technologie',        emoji: '⚙️', profile: 'techno' },
+  economie:          { label: 'Économie & Gestion', emoji: '💰', profile: 'econ' },
+  espagnol:          { label: 'Espagnol',           emoji: '🇪🇸', profile: 'language' },
+  allemand:          { label: 'Allemand',           emoji: '🇩🇪', profile: 'language' },
+  education_civique: { label: 'Éducation civique',  emoji: '⚖️', profile: 'general' },
+  arts:              { label: 'Arts & Musique',     emoji: '🎨', profile: 'general' }
 };
 const ALL_SUBJECT_KEYS = Object.keys(SUBJECTS);
 
@@ -4781,6 +4797,30 @@ async function renderSectionView(params) {
 // ══════════════════════════════════════════════════════════════
 // RENDU ANALYSE (identique à la version précédente)
 // ══════════════════════════════════════════════════════════════
+// ✅ v8.47a — POINTS CLÉS À RETENIR (demande du propriétaire : « le résumé
+// doit donner les points qu'il est à retenir et indispensable ») : bloc mis
+// EN TÊTE du résumé, alimenté par explanation.keyFacts (tous les profils IA
+// le produisent désormais). Filet de sécurité : si une ancienne analyse
+// n'a pas keyFacts, on dérive les points des « À retenir » des parties.
+function renderKeyFacts(expl, parts) {
+  let facts = safeArray(expl.keyFacts)
+    .map((f) => String(f || '').trim())
+    .filter(Boolean);
+  if (facts.length === 0) {
+    const seen = new Set();
+    safeArray(parts).forEach((p) => {
+      const r = String(p.toRemember || p.memorize || '').trim();
+      if (r && !seen.has(r)) { seen.add(r); facts.push(r); }
+    });
+    facts = facts.slice(0, 6);
+  }
+  if (facts.length === 0) return '';
+  return `<div class="block keyfacts" style="margin-top:12px;">
+    <div class="block-head"><i class="fas fa-star"></i>Points clés à retenir</div>
+    <div class="block-body"><ul class="simple-list">${facts.map((f, i) => `<li><span class="num">${i + 1}.</span><span>${safeTextP(f)}</span></li>`).join('')}</ul></div>
+  </div>`;
+}
+
 function renderAnalysis(a, profile, opts = {}) {
   let html = '';
   const expl = a.explanation || {};
@@ -4791,14 +4831,11 @@ function renderAnalysis(a, profile, opts = {}) {
         <div class="block-head"><i class="fas fa-lightbulb"></i>Ce que tu dois comprendre</div>
         <div class="block-body">${safeTextP(expl.understanding)}</div>
       </div>
+      ${renderKeyFacts(expl, safeArray(expl.parts))}
       ${safeArray(expl.parts).map((p) => renderPart(p, profile)).join('')}
       ${expl.context ? `<div class="block" style="margin-top:12px;">
         <div class="block-head"><i class="fas fa-landmark"></i>Contexte</div>
         <div class="block-body">${safeTextP(expl.context)}</div>
-      </div>` : ''}
-      ${safeArray(expl.keyFacts).length > 0 ? `<div class="block" style="margin-top:12px;">
-        <div class="block-head"><i class="fas fa-star"></i>Faits clés</div>
-        <div class="block-body"><ul class="simple-list">${safeArray(expl.keyFacts).map((f, i) => `<li><span class="num">${i + 1}.</span><span>${safeTextP(f)}</span></li>`).join('')}</ul></div>
       </div>` : ''}
     </div>`;
   }
@@ -5206,6 +5243,7 @@ async function renderLessonView(params) {
           <div class="block-head"><i class="fas fa-lightbulb"></i>À comprendre</div>
           <div class="block-body">${safeTextP(a.explanation.understanding)}</div>
         </div>`;
+        content += renderKeyFacts(a.explanation, safeArray(a.explanation.parts));
       }
       if (a.explanation?.parts) {
         content += safeArray(a.explanation.parts).map((p) => renderPart(p, s.profile || 'scientific')).join('');

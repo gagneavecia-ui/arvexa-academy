@@ -68,7 +68,13 @@ const requestLog = new Map();
 // ────────────────────────────────────────────────────────────────
 var ALLOWED_SUBJECTS = new Set([
   'mathematiques', 'physique', 'chimie', 'svt',
-  'philosophie', 'histoire', 'geographie', 'anglais'
+  'philosophie', 'histoire', 'geographie', 'anglais',
+  // ✅ v8.47a — « tout type qu'on peut faire dans le monde » (demande du
+  // propriétaire : adapter l'IA à TOUTES les filières — mathématiques,
+  // sciences, filières technologiques, informatique… — en distinguant bien
+  // chaque domaine pour qu'aucun contenu ne soit mélangé).
+  'francais', 'informatique', 'technologie', 'economie',
+  'espagnol', 'allemand', 'education_civique', 'arts'
 ]);
 
 var ALLOWED_SUBJECTS_ARRAY = Array.from(ALLOWED_SUBJECTS);
@@ -81,7 +87,16 @@ var SUBJECT_INFO = {
   philosophie:   { label: 'Philosophie',    profile: 'philosophy' },
   histoire:      { label: 'Histoire',       profile: 'history' },
   geographie:    { label: 'Géographie',     profile: 'history' },
-  anglais:       { label: 'Anglais',        profile: 'language' }
+  anglais:       { label: 'Anglais',        profile: 'language' },
+  // ✅ v8.47a — les 8 nouvelles matières du cahier
+  francais:          { label: 'Français',           profile: 'french' },
+  informatique:      { label: 'Informatique',       profile: 'info' },
+  technologie:       { label: 'Technologie',        profile: 'techno' },
+  economie:          { label: 'Économie & Gestion', profile: 'econ' },
+  espagnol:          { label: 'Espagnol',           profile: 'language' },
+  allemand:          { label: 'Allemand',           profile: 'language' },
+  education_civique: { label: 'Éducation civique',  profile: 'general' },
+  arts:              { label: 'Arts & Musique',     profile: 'general' }
 };
 const MIN_CONTENT_LENGTH = 40;
 const MAX_CONTENT_LENGTH = 2500; // calibré IA : aligné sur le cahier (budget analyse)
@@ -1282,6 +1297,20 @@ RÈGLE JSON STRICTE :
 - Si la réponse risque d'être longue, reste concis sur CHAQUE élément plutôt que de réduire le nombre d'éléments.
 `.trim();
 
+// ✅ v8.47a — QUALITÉ DU RÉSUMÉ (demande du propriétaire : « le résumé doit
+// simplifier la lecture et la compréhension à l'élève… lui montrer les points
+// clés… pour que la lecture et la compréhension soit propre et bien soigné,
+// détaillé chaque élément, les points clés et autres »). Injecté dans la
+// tâche « explanation » de TOUS les profils, quelle que soit la matière.
+const COMPREHENSION_RULES = `
+QUALITÉ DU RÉSUMÉ — OBLIGATOIRE (compréhension maximale) :
+- Le résumé doit SIMPLIFIER la lecture et la compréhension : phrases complètes, propres et bien soignées ; chaque élément détaillé sans sauter de raisonnement.
+- Explique chaque terme technique à sa première apparition — aucun jargon inexpliqué.
+- Utilise une analogie ou un exemple concret dès que la discipline le permet.
+- RESTE STRICTEMENT DANS LA DISCIPLINE du contenu : applique uniquement SES conventions, SON vocabulaire et SES méthodes. Ne mélange JAMAIS deux disciplines (aucune formule en histoire/littérature/philosophie, aucun récit narratif-littéraire dans un cours scientifique, aucun code en dehors de l'informatique…).
+- Ajoute "keyFacts" : 4 à 8 points clés INDISPENSABLES à retenir, chacun une phrase complète courte — c'est la liste que l'élève relit juste avant l'examen.
+`.trim();
+
 // ────────────────────────────────────────────────────────────────
 // PROMPTS PAR PROFIL
 // ────────────────────────────────────────────────────────────────
@@ -1304,6 +1333,7 @@ ${baseContext}
 
 ${PERIMETER_RULES}
 ${LATEX_RULES}
+${COMPREHENSION_RULES}
 
 RÈGLES PÉDAGOGIQUES — STYLE PROF :
 - Commence par l'essentiel, puis détaille étape par étape, sans sauter de raisonnement.
@@ -1317,6 +1347,7 @@ Format JSON :
 {
   "sectionTitle": "...",
   "understanding": "Ce que tu dois comprendre en 2-3 phrases.",
+  "keyFacts": ["point clé indispensable 1"],
   "parts": [
     {
       "partTitle": "Partie 1",
@@ -1427,6 +1458,7 @@ ${rawInput}
 ${baseContext}
 
 ${PERIMETER_RULES}
+${COMPREHENSION_RULES}
 
 RÈGLES SVT :
 - Explication EN FRANÇAIS simple, phrases complètes et rédigées.
@@ -1440,6 +1472,7 @@ Format JSON :
 {
   "sectionTitle": "...",
   "understanding": "...",
+  "keyFacts": ["point clé indispensable 1"],
   "parts": [
     {
       "partTitle": "...",
@@ -1552,6 +1585,7 @@ ${rawInput}
 ${baseContext}
 
 ${PERIMETER_RULES}
+${COMPREHENSION_RULES}
 
 RÈGLES PHILO :
 - VULGARISE chaque concept philosophique.
@@ -1562,6 +1596,7 @@ Format JSON :
 {
   "sectionTitle": "...",
   "understanding": "...",
+  "keyFacts": ["point clé indispensable 1"],
   "parts": [
     {
       "partTitle": "...",
@@ -1668,6 +1703,7 @@ ${rawInput}
 ${baseContext}
 
 ${PERIMETER_RULES}
+${COMPREHENSION_RULES}
 
 RÈGLES :
 - "understanding" : récit clair et structuré de 6 à 10 phrases (dates, acteurs, enjeux expliqués simplement).
@@ -1776,11 +1812,17 @@ ${rawInput}
 ${baseContext}
 
 ${PERIMETER_RULES}
+${COMPREHENSION_RULES}
+
+RÈGLES FRANÇAIS :
+- Règles de grammaire/orthographe expliquées avec exemples ; textes littéraires analysés selon les conventions de l'analyse littéraire (aucune formule mathématique, aucun contenu d'une autre discipline).
+- Chaque règle illustrée par au moins un exemple et son contre-exemple si utile.
 
 Format JSON :
 {
   "sectionTitle": "...",
   "understanding": "...",
+  "keyFacts": ["point clé indispensable 1"],
   "parts": [
     {
       "partTitle": "...",
@@ -1880,20 +1922,23 @@ ${rawInput}
       name: 'explanation',
       maxTokens: 3200,
       systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
-      userPrompt: `Tu es professeur d'anglais pour des FRANCOPHONES DÉBUTANTS.
+      userPrompt: `Tu es professeur de LANGUE VIVANTE (${subjectLabel}) pour des FRANCOPHONES DÉBUTANTS.
 
 ${baseContext}
 
 ${PERIMETER_RULES}
+${COMPREHENSION_RULES}
 
-RÈGLES LANGUE :
+RÈGLES LANGUE (${subjectLabel}) :
 - EXPLICATIONS TOUJOURS EN FRANÇAIS.
-- EXEMPLES EN ANGLAIS avec TRADUCTION SYSTÉMATIQUE.
+- EXEMPLES EN ${subjectLabel} avec TRADUCTION SYSTÉMATIQUE.
+- Dans les champs nommés "english", écris le mot ou la phrase dans LA LANGUE ÉTUDIÉE (${subjectLabel}) ; le champ "french" contient la traduction française. Ne mélange JAMAIS une autre langue étrangère dans cette leçon.
 
 Format JSON :
 {
   "sectionTitle": "...",
   "understanding": "...",
+  "keyFacts": ["point clé indispensable 1"],
   "parts": [
     {
       "partTitle": "...",
@@ -1982,6 +2027,482 @@ Réponds UNIQUEMENT avec le JSON.`
   ];
 }
 
+// ✅ v8.47a — PROFILS NOUVELLES MATIÈRES : informatique, technologie,
+// économie & gestion, et un profil UNIVERSEL adaptatif (éducation civique,
+// arts… et toute discipline du monde non couverte explicitement).
+function buildInformatiquePrompts({ subjectLabel, rawInput }) {
+  const baseContext = `Matière : ${subjectLabel}
+═══════════════════════════════════════════════════════════════
+CONTENU DE LA SECTION FOURNIE PAR L'ÉLÈVE
+═══════════════════════════════════════════════════════════════
+${rawInput}
+═══════════════════════════════════════════════════════════════`.trim();
+
+  return [
+    {
+      name: 'explanation',
+      maxTokens: 3200,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Tu es professeur d'informatique, pédagogue. Explique cette section comme à un élève qui découvre, devant ta classe.
+
+${baseContext}
+
+${PERIMETER_RULES}
+${COMPREHENSION_RULES}
+
+RÈGLES INFORMATIQUE :
+- Concepts (variables, boucles, réseaux, algorithmes…) expliqués en français simple, avec une analogie concrète quand c'est possible.
+- Le CODE (extraits de programme, pseudo-code, requêtes, formules de tableur) appartient UNIQUEMENT à cette discipline : mets-le dans les champs "example" ou "steps" en une seule ligne lisible.
+- Explique ce que fait chaque extrait de code — jamais de code sans explication.
+- AUCUNE formule LaTeX : les calculs d'algorithmie s'écrivent en texte (ex : "complexité en O(n)").
+
+Format JSON :
+{
+  "sectionTitle": "...",
+  "understanding": "Ce que tu dois comprendre en 2-3 phrases.",
+  "keyFacts": ["point clé indispensable 1"],
+  "parts": [
+    {
+      "partTitle": "Partie 1",
+      "mainIdea": "Idée principale",
+      "simpleExplanation": "Explication en français simple (3-6 phrases).",
+      "keyTerms": [{"term": "...", "meaning": "..."}],
+      "example": "Extrait de code ou d'algorithme avec son explication",
+      "toRemember": "Ce qu'il faut retenir"
+    }
+  ]
+}
+
+${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'structure',
+      maxTokens: 2500,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Extrait la structure informatique de cette section.
+
+${baseContext}
+
+${PERIMETER_RULES}
+
+Format JSON :
+{
+  "concepts": [{"name": "...", "explanation": "..."}],
+  "method": {"title": "Méthode ou algorithme", "steps": ["Étape 1"]},
+  "examples": [{"enonce": "Problème ou objectif", "steps": ["Instruction 1"], "result": "Résultat attendu ou sortie du programme"}],
+  "traps": [{"trap": "Erreur classique de débutant", "solution": "..."}]
+}
+
+${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'questions_a',
+      maxTokens: 2400,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Génère 5 à 13 questions de NOTIONS DE BASE sur cette section (définitions, concepts, faits essentiels).
+
+$${baseContext}
+
+$${PERIMETER_RULES}
+
+RÈGLES :
+- Entre 5 et 13 questions, réponses rédigées (1 à 2 phrases), jamais un mot isolé.
+- mustHave : 2 à 3 éléments indispensables pour une réponse complète.
+
+Format JSON :
+{
+  "questions": [{"id": "q1", "question": "...", "answer": "...", "mustHave": ["..."]}]
+}
+
+$${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'questions_b',
+      maxTokens: 2400,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Génère 5 à 13 questions AVANCÉES sur cette section (application, analyse, raisonnement, comportement d'un programme ou d'un algorithme).
+
+$${baseContext}
+
+$${PERIMETER_RULES}
+
+RÈGLES :
+- Entre 5 et 13 questions, réponses rédigées (1 à 2 phrases), jamais un mot isolé.
+- Types variés : que fait ce code, trouve l'erreur, complète l'algorithme, compare deux solutions.
+
+Format JSON :
+{
+  "questions": [{"id": "q1", "question": "...", "answer": "...", "mustHave": ["..."]}]
+}
+
+$${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    }
+  ];
+}
+
+function buildTechnoPrompts({ subjectLabel, rawInput }) {
+  const baseContext = `Matière : ${subjectLabel}
+═══════════════════════════════════════════════════════════════
+CONTENU DE LA SECTION FOURNIE PAR L'ÉLÈVE
+═══════════════════════════════════════════════════════════════
+${rawInput}
+═══════════════════════════════════════════════════════════════`.trim();
+
+  return [
+    {
+      name: 'explanation',
+      maxTokens: 3200,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Tu es professeur de filière technologique (${subjectLabel}) : mécanique, électronique, énergie, génie civil, procédés… Explique cette section comme à un élève qui découvre.
+
+${baseContext}
+
+${PERIMETER_RULES}
+${COMPREHENSION_RULES}
+${LATEX_RULES}
+
+RÈGLES TECHNOLOGIQUES :
+- Décris les SYSTÈMES et COMPOSANTS par leur FONCTION (à quoi il sert, comment il agit).
+- Explique chaque PROCESSUS étape par étape (aucune étape sous-entendue).
+- Utilise les unités techniques correctes (V, A, W, N, Pa, tr/min…) et explique chaque grandeur.
+- Une formule n'apparaît que si c'est un vrai calcul technique de la filière, en LaTeX entre $...$.
+
+Format JSON :
+{
+  "sectionTitle": "...",
+  "understanding": "Ce que tu dois comprendre en 2-3 phrases.",
+  "keyFacts": ["point clé indispensable 1"],
+  "parts": [
+    {
+      "partTitle": "Partie 1",
+      "mainIdea": "Idée principale",
+      "simpleExplanation": "Explication en français simple (3-6 phrases).",
+      "keyTerms": [{"term": "...", "meaning": "..."}],
+      "relations": ["relation entre composants ou grandeurs"],
+      "example": "Application concrète dans la filière",
+      "toRemember": "Ce qu'il faut retenir"
+    }
+  ]
+}
+
+${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'structure',
+      maxTokens: 2800,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Extrait la structure technique de cette section de ${subjectLabel}.
+
+${baseContext}
+
+${PERIMETER_RULES}
+
+Format JSON :
+{
+  "systems": [{"name": "Composant ou système", "function": "Sa fonction", "relations": ["Avec quoi il interagit"]}],
+  "process": {"title": "Processus ou montage", "steps": ["Étape 1"]},
+  "formulas": [{"latex": "$P = U \\cdot I$", "description": "...", "condition": "Quand l'utiliser"}],
+  "traps": [{"trap": "Erreur classique", "solution": "..."}]
+}
+
+${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'questions_a',
+      maxTokens: 2400,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Génère 5 à 13 questions de NOTIONS DE BASE sur cette section (fonctions des composants, définitions techniques, faits essentiels).
+
+$${baseContext}
+
+$${PERIMETER_RULES}
+
+RÈGLES :
+- Entre 5 et 13 questions, réponses rédigées (1 à 2 phrases), jamais un mot isolé.
+- mustHave : 2 à 3 éléments indispensables pour une réponse complète.
+
+Format JSON :
+{
+  "questions": [{"id": "q1", "question": "...", "answer": "...", "mustHave": ["..."]}]
+}
+
+$${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'questions_b',
+      maxTokens: 2400,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Génère 5 à 13 questions AVANCÉES sur cette section (analyse d'un système, calcul technique si la leçon s'y prête, diagnostic d'une panne, choix d'un composant).
+
+$${baseContext}
+
+$${PERIMETER_RULES}
+
+RÈGLES :
+- Entre 5 et 13 questions, réponses rédigées (1 à 2 phrases), jamais un mot isolé.
+- mustHave : 2 à 3 éléments indispensables.
+
+Format JSON :
+{
+  "questions": [{"id": "q1", "question": "...", "answer": "...", "mustHave": ["..."]}]
+}
+
+$${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    }
+  ];
+}
+
+function buildEconPrompts({ subjectLabel, rawInput }) {
+  const baseContext = `Matière : ${subjectLabel}
+═══════════════════════════════════════════════════════════════
+CONTENU DE LA SECTION FOURNIE PAR L'ÉLÈVE
+═══════════════════════════════════════════════════════════════
+${rawInput}
+═══════════════════════════════════════════════════════════════`.trim();
+
+  return [
+    {
+      name: 'explanation',
+      maxTokens: 3200,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Tu es professeur d'économie et de gestion (${subjectLabel}) : économie, comptabilité, droit, commerce, marketing. Explique cette section comme à un élève qui découvre.
+
+${baseContext}
+
+${PERIMETER_RULES}
+${COMPREHENSION_RULES}
+
+RÈGLES ÉCONOMIE & GESTION :
+- Chaque définition économique, juridique ou comptable est donnée AVEC un exemple concret (entreprise, marché, budget d'un foyer).
+- Explique les MÉCANISMES en chaînes de cause à effet (ex : "si la demande augmente → le prix monte → …").
+- Les calculs (marges, pourcentages, bilans) s'écrivent en texte simple avec le détail ("marge = prix de vente − coût d'achat").
+- Pas de récits historiques ni de notions d'une autre discipline : STRICTEMENT économie/gestion/droit/commerce.
+
+Format JSON :
+{
+  "sectionTitle": "...",
+  "understanding": "Ce que tu dois comprendre en 2-3 phrases.",
+  "keyFacts": ["point clé indispensable 1"],
+  "parts": [
+    {
+      "partTitle": "Partie 1",
+      "mainIdea": "Idée principale",
+      "simpleExplanation": "Explication en français simple (3-6 phrases).",
+      "keyTerms": [{"term": "...", "meaning": "..."}],
+      "example": "Exemple chiffré ou situation d'entreprise",
+      "toRemember": "Ce qu'il faut retenir"
+    }
+  ]
+}
+
+${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'structure',
+      maxTokens: 2500,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Extrait la structure économique/gestion de cette section.
+
+${baseContext}
+
+${PERIMETER_RULES}
+
+Format JSON :
+{
+  "definitions": [{"term": "Terme économique ou juridique", "definition": "...", "example": "..."}],
+  "mechanisms": [{"name": "Mécanisme", "chain": ["Cause", "Effet", "Conséquence"]}],
+  "calculations": [{"name": "Calcul utile", "formulaText": "marge = prix de vente − coût d'achat", "example": "..."}],
+  "traps": [{"trap": "Confusion classique", "solution": "..."}]
+}
+
+${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'questions_a',
+      maxTokens: 2400,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Génère 5 à 13 questions de NOTIONS DE BASE sur cette section (définitions, acteurs, faits essentiels).
+
+$${baseContext}
+
+$${PERIMETER_RULES}
+
+RÈGLES :
+- Entre 5 et 13 questions, réponses rédigées (1 à 2 phrases), jamais un mot isolé.
+- mustHave : 2 à 3 éléments indispensables pour une réponse complète.
+
+Format JSON :
+{
+  "questions": [{"id": "q1", "question": "...", "answer": "...", "mustHave": ["..."]}]
+}
+
+$${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'questions_b',
+      maxTokens: 2400,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Génère 5 à 13 questions AVANCÉES sur cette section (application à une situation d'entreprise, interprétation d'un mécanisme, calcul commercial, analyse de cas).
+
+$${baseContext}
+
+$${PERIMETER_RULES}
+
+RÈGLES :
+- Entre 5 et 13 questions, réponses rédigées (1 à 2 phrases), jamais un mot isolé.
+- mustHave : 2 à 3 éléments indispensables.
+
+Format JSON :
+{
+  "questions": [{"id": "q1", "question": "...", "answer": "...", "mustHave": ["..."]}]
+}
+
+$${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    }
+  ];
+}
+
+function buildGeneralPrompts({ subjectLabel, rawInput }) {
+  const baseContext = `Matière : ${subjectLabel}
+═══════════════════════════════════════════════════════════════
+CONTENU DE LA SECTION FOURNIE PAR L'ÉLÈVE
+═══════════════════════════════════════════════════════════════
+${rawInput}
+═══════════════════════════════════════════════════════════════`.trim();
+
+  return [
+    {
+      name: 'explanation',
+      maxTokens: 3200,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Tu es professeur universel et pédagogue. Cette section appartient à une discipline que tu dois d'abord IDENTIFIER précisément (éducation civique, arts, musique, ou toute autre matière du monde), puis expliquer selon les conventions de CETTE discipline et uniquement d'elle.
+
+${baseContext}
+
+${PERIMETER_RULES}
+${COMPREHENSION_RULES}
+
+RÈGLES UNIVERSELLES :
+- 1re étape mentale : identifie la discipline exacte et sa branche (ex : éducation civique = droits et devoirs, institutions ; arts = techniques, œuvres, mouvements ; musique = théorie, instruments, époques).
+- 2e étape : explique avec le vocabulaire et les méthodes de CETTE discipline (jamais de formules hors des sciences exactes, jamais de code hors informatique, jamais de récit historique hors histoire).
+- Chaque notion est définie simplement, illustrée d'un exemple fidèle à la discipline.
+
+Format JSON :
+{
+  "sectionTitle": "...",
+  "understanding": "Ce que tu dois comprendre en 2-3 phrases.",
+  "keyFacts": ["point clé indispensable 1"],
+  "parts": [
+    {
+      "partTitle": "Partie 1",
+      "mainIdea": "Idée principale",
+      "simpleExplanation": "Explication en français simple (3-6 phrases).",
+      "keyTerms": [{"term": "...", "meaning": "..."}],
+      "example": "Exemple propre à la discipline",
+      "toRemember": "Ce qu'il faut retenir"
+    }
+  ]
+}
+
+${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'structure',
+      maxTokens: 2500,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Structure cette section de ${subjectLabel} selon les conventions de sa discipline.
+
+${baseContext}
+
+${PERIMETER_RULES}
+
+Format JSON :
+{
+  "outline": [{"title": "Grand axe", "detail": "Ce qu'il couvre"}],
+  "definitions": [{"term": "Terme clé de la discipline", "definition": "..."}],
+  "examples": [{"enonce": "Cas ou exemple étudié", "steps": ["Pour l'aborder : 1"], "result": "Ce qu'il illustre"}],
+  "traps": [{"trap": "Confusion ou erreur classique dans cette discipline", "solution": "..."}]
+}
+
+${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'questions_a',
+      maxTokens: 2400,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Génère 5 à 13 questions de NOTIONS DE BASE sur cette section (définitions, notions, faits essentiels de sa discipline).
+
+$${baseContext}
+
+$${PERIMETER_RULES}
+
+RÈGLES :
+- Entre 5 et 13 questions, réponses rédigées (1 à 2 phrases), jamais un mot isolé.
+- mustHave : 2 à 3 éléments indispensables pour une réponse complète.
+
+Format JSON :
+{
+  "questions": [{"id": "q1", "question": "...", "answer": "...", "mustHave": ["..."]}]
+}
+
+$${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    },
+    {
+      name: 'questions_b',
+      maxTokens: 2400,
+      systemPrompt: 'Tu produis EXCLUSIVEMENT du JSON valide.',
+      userPrompt: `Génère 5 à 13 questions AVANCÉES sur cette section (application, analyse, raisonnement dans le respect de la discipline identifiée).
+
+$${baseContext}
+
+$${PERIMETER_RULES}
+
+RÈGLES :
+- Entre 5 et 13 questions, réponses rédigées (1 à 2 phrases), jamais un mot isolé.
+- mustHave : 2 à 3 éléments indispensables.
+
+Format JSON :
+{
+  "questions": [{"id": "q1", "question": "...", "answer": "...", "mustHave": ["..."]}]
+}
+
+$${JSON_STRICT_RULES}
+
+Réponds UNIQUEMENT avec le JSON.`
+    }
+  ];
+}
+
 function getPromptsForProfile(profile, context) {
   let tasks;
   switch (profile) {
@@ -1991,6 +2512,11 @@ function getPromptsForProfile(profile, context) {
     case 'history':    tasks = buildHistoryPrompts(context); break;
     case 'french':     tasks = buildFrenchPrompts(context); break;
     case 'language':   tasks = buildLanguagePrompts(context); break;
+    // ✅ v8.47a — profils des nouvelles matières
+    case 'info':       tasks = buildInformatiquePrompts(context); break;
+    case 'techno':     tasks = buildTechnoPrompts(context); break;
+    case 'econ':       tasks = buildEconPrompts(context); break;
+    case 'general':    tasks = buildGeneralPrompts(context); break;
     default:           tasks = buildScientificPrompts(context);
   }
   // Files séquentielles : les tâches LÉGÈRES d'abord (questions ~20 s chacune)
@@ -2865,6 +3391,7 @@ async function classifyLesson(rawInput, chapterMap, providers) {
     '1. "isStudy" : true si ce contenu est bien de l\'ÉTUDE scolaire (leçon, cours, définitions, formules, exercices, résumé de cours, leçon dictée…). ' +
     'false si ce n\'est PAS un contenu d\'étude (bavardage, message personnel, recette, chanson, publicité, sport, journal intime, écritures sans aucun rapport avec une matière scolaire).\n' +
     '2. "subject" : la matière de ce contenu — EXACTEMENT une de ces clés : ' + SUBJ_LINE + '. (Si "isStudy" est false, mets "".)\n' +
+    '   ✅ v8.47a — SÉPARATION STRICTE DES DOMAINES : identifie la discipline EXACTE et ne la confonds JAMAIS avec une autre. Une leçon d\'histoire qui cite des chiffres reste histoire ; une leçon de mathématiques qui raconte un contexte reste mathématiques ; un cours d\'informatique n\'est jamais de la philosophie ; une leçon d\'économie n\'est jamais de l\'histoire. Chaque discipline garde SES conventions (formules réservées aux sciences exactes, code réservé à l\'informatique, dates et acteurs réservés à l\'histoire…).\n' +
     '3. "chapter" : le chapitre auquel cette leçon appartient. Si la leçon correspond à un chapitre EXISTANT du cahier (même thème, même sujet), reprends son titre EXACTEMENT comme il est écrit dans la liste. Sinon, propose un titre de chapitre court et standard (max 60 caractères, sans numéro de chapitre). (Si "isStudy" est false, mets "".)\n' +
     '4. "section" : un titre court et clair pour CETTE partie de leçon précise (max 80 caractères, sans numéro). (Si "isStudy" est false, mets "".)\n\n' +
     'Réponds exactement : {"subject":"...","chapter":"...","section":"...","isStudy":true}';
@@ -2910,7 +3437,7 @@ async function classifyLesson(rawInput, chapterMap, providers) {
     throw {
       status: 422,
       code: 'SUBJECT_UNKNOWN',
-      message: `Matière hors cahier détectée (${unknownSubject}). Les matières du cahier : Mathématiques, Physique, Chimie, SVT, Philosophie, Histoire, Géographie, Anglais.`
+      message: `Matière hors cahier détectée (${unknownSubject}). Les matières du cahier : Mathématiques, Physique, Chimie, SVT, Philosophie, Histoire, Géographie, Anglais, Français, Informatique, Technologie, Économie & Gestion, Espagnol, Allemand, Éducation civique, Arts & Musique.`
     };
   }
   throw { status: 502, message: 'L\'IA n\'a pas pu identifier la matière de cette leçon. Réessaie dans un instant.', detail: String(lastErr?.message || '').slice(0, 200) };
@@ -3391,6 +3918,40 @@ async function generateSectionExtras(uid, body) {
   if (providers.length === 0) throw { status: 503, message: 'Aucun fournisseur IA configuré.' };
   const deadline = Date.now() + 52000;
 
+  // ✅ v8.47a — ADAPTATION À LA DISCIPLINE (demande du propriétaire : les
+  // questionnaires et la carte mentale obéissent aux mêmes règles que le
+  // résumé — chaque domaine est traité selon SES conventions, jamais mélangé).
+  const subjInfo = SUBJECT_INFO[body.subject] || null;
+  const subjLabel = subjInfo ? subjInfo.label : (s.subjectLabel || '');
+  const profKey = subjInfo ? subjInfo.profile : (s.profile || '');
+  const QCM_HINTS = {
+    scientific: "Questions centrées sur les POINTS CLÉS de la leçon : définitions, formules à connaître, calculs courts quand la leçon s'y prête.",
+    svt: "Questions centrées sur les POINTS CLÉS : étapes des mécanismes, organes et leurs fonctions, relations biologiques.",
+    philosophy: "Questions centrées sur les POINTS CLÉS : définitions des concepts, thèses et arguments — aucune date ni formule.",
+    history: "Questions centrées sur les POINTS CLÉS : dates, acteurs, causes et conséquences — aucune formule ni code.",
+    french: "Questions centrées sur les POINTS CLÉS : règles de grammaire/orthographe, notions littéraires, exemples corrects ou fautifs.",
+    language: "Questions centrées sur les POINTS CLÉS : traductions, règles de grammaire de la langue étudiée, mots ou expressions — jamais d'une autre langue.",
+    info: "Questions centrées sur les POINTS CLÉS : concepts, comportement d'un programme ou d'un algorithme, erreurs classiques — aucune formule mathématique hors algorithmie.",
+    techno: "Questions centrées sur les POINTS CLÉS : fonction des composants et systèmes, processus, unités techniques.",
+    econ: "Questions centrées sur les POINTS CLÉS : définitions économiques/juridiques, mécanismes cause à effet, calculs commerciaux courts.",
+    general: "Questions centrées sur les POINTS CLÉS de la discipline identifiée dans la leçon — respecte STRICTEMENT ses conventions."
+  };
+  const MM_HINTS = {
+    scientific: "Choisis les branches selon la structure naturelle des matières scientifiques : notions principales / propriétés ou formules / méthodes de résolution / exemples types.",
+    svt: "Choisis les branches selon la structure naturelle de la SVT : mécanismes / organes et structures / relations / conséquences.",
+    philosophy: "Choisis les branches selon la structure naturelle de la philosophie : concepts / thèses / arguments / exemples du quotidien.",
+    history: "Choisis les branches selon la structure naturelle de l'histoire-géo : causes / faits et dates / acteurs / conséquences.",
+    french: "Choisis les branches selon la structure naturelle du français : règles / notions de grammaire ou de littérature / exemples.",
+    language: "Choisis les branches selon la structure naturelle d'une langue vivante : vocabulaire / règles de grammaire / expressions / erreurs fréquentes.",
+    info: "Choisis les branches selon la structure naturelle de l'informatique : concepts / données et structures / méthodes et algorithmes / exemples de code ou pseudo-code.",
+    techno: "Choisis les branches selon la structure naturelle des filières technologiques : systèmes et composants / fonctions / processus / unités et mesures.",
+    econ: "Choisis les branches selon la structure naturelle de l'économie-gestion : définitions / mécanismes économiques / acteurs / exemples chiffrés.",
+    general: "Choisis les branches selon la structure naturelle de la discipline identifiée dans la leçon : grands axes / notions clés / exemples représentatifs."
+  };
+  const discipline = subjLabel ? `Discipline : ${subjLabel}.` : '';
+  const qcmHint = `Adapte les questions, les choix et les explications aux conventions de CETTE discipline — ne mélange JAMAIS deux disciplines. ${(QCM_HINTS[profKey] || QCM_HINTS.general)}`;
+  const mmHint = `Le contenu appartient à UNE discipline unique — ne mélange JAMAIS deux disciplines. ${(MM_HINTS[profKey] || MM_HINTS.general)}`;
+
   const update = {};
 
   if (need.includes('qcm')) {
@@ -3404,6 +3965,9 @@ ${raw}
 """
 
 Génère un QCM COURT d'auto-évaluation : 4 à 6 questions MAXIMUM, chacune avec exactement 3 choix (A/B/C), UNE seule bonne réponse et une explication d'UNE ligne. Questions courtes et directes (définitions, applications immédiates, pièges classiques). Choix plausibles, jamais absurdes.
+
+${discipline}
+${qcmHint}
 
 Réponds EXACTEMENT dans ce format :
 {"qcm":[{"q":"…","choices":["…","…","…"],"answer":0,"why":"…"}]}`,
@@ -3430,6 +3994,9 @@ ${raw}
 """
 
 Construis une CARTE MENTALE HIÉRARCHIQUE (v8.43 — demande propriétaire : « c'est une liaison hiérarchique : regarde comment les cartes partent de la carte mère — la carte au centre et ses branches autour d'elle, reproduction conforme à une carte mentale classique »).
+
+${discipline}
+${mmHint}
 
 Structure attendue :
 - "idea" = la CARTE MÈRE : l'essentiel de la leçon en UNE phrase (elle ira AU CENTRE de la carte).
