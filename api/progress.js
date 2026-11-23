@@ -894,33 +894,54 @@ function parseProviderJson(provider, rawContent) {
 }
 
 async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 4000, deadline }) {
-  const perTry = { 'Groq': 18000, 'OpenRouter': 30000, 'Mistral': 45000, 'Gemini': 38000 };
+  // ✅ v8.46b — POLYTAPE 2 PASSES SANS SOMMEIL : les modèles :free d'OpenRouter
+  // sont PARTAGÉS entre tous les utilisateurs — la saturation (HTTP 429
+  // « temporarily rate-limited upstream ») varie MINUTE PAR MINUTE et revient
+  // INSTANTANÉMENT. L'ancien comportement (réessai du MÊME modèle après
+  // 1,4 s + timeout 30 s par essai) brûlait tout le budget de 52 s sur 2-3
+  // modèles saturés sans jamais atteindre les autres. Désormais :
+  // - timeout 20 s max par essai (OpenRouter) — un accroc ne bouffe plus le tour ;
+  // - PASSE 1 : chaque modèle UNE fois, 429 = rotation IMMÉDIATE vers le
+  //   suivant (zéro sommeil — c'est la rotation qui est l'échappatoire) ;
+  // - PASSE 2 : si au moins un 429 a été vu et qu'il reste ≥ 12 s — on
+  //   REPASSE toute la liste (les fenêtres :free se libèrent en secondes) ;
+  // - l'échec d'un modèle ne bloque plus jamais l'essai du suivant.
+  const perTry = { 'Groq': 18000, 'OpenRouter': 20000, 'Mistral': 45000, 'Gemini': 38000 };
   const baseTimeout = perTry[provider.name] || 20000;
   const models = [provider.model]
     .concat(Array.isArray(provider.fallbackModels) ? provider.fallbackModels : [])
     .filter(Boolean);
   const absDeadline = deadline || (Date.now() + baseTimeout * (models.length + 1));
   let lastMsg = 'indisponible';
-  let parseErr = null;
+  let parseErr = null;   // le PREMIER JSON irréparable est gardé : si AUCUN
+                         // modèle n'a produit de JSON lisible, c'est lui qu'on
+                         // lèvera — mais la rotation continue d'abord.
+  let sawRateLimit = false;
 
-  for (const model of models) {
-    for (let tries = 0; tries < 2; tries++) {
-      const remaining = absDeadline - Date.now();
-      if (remaining < 4000) break;
-      const res = await attemptProviderOnce(provider, model, Math.min(baseTimeout, remaining), { systemPrompt, userPrompt, maxTokens });
-      if (res.ok) {
-        try { return parseProviderJson(provider, res.rawContent); }
-        catch (e) { parseErr = e; break; } // JSON irréparable → modèle suivant
-      }
-      lastMsg = res.errMsg || `HTTP ${res.status}`;
-      if (res.kind === 'auth') {
-        // clé invalide : inutile d'essayer les autres modèles du même fournisseur
-        throw new Error(`${provider.name}: ${lastMsg}`);
-      }
-      if (res.kind === 'retryable' && tries === 0) { await sleepMs(1400); continue; }
-      break; // autre erreur → modèle suivant
+  const tryOne = async (model) => {
+    const remaining = absDeadline - Date.now();
+    if (remaining < 4000) return 'exhausted';
+    const res = await attemptProviderOnce(provider, model, Math.min(baseTimeout, remaining), { systemPrompt, userPrompt, maxTokens });
+    if (res.ok) {
+      try { return { value: parseProviderJson(provider, res.rawContent), done: true }; }
+      catch (e) { if (!parseErr) parseErr = e; lastMsg = e.message || lastMsg; return 'parse'; } // JSON irréparable → modèle SUIVANT (la roue tourne)
     }
-    if (parseErr) break;
+    lastMsg = res.errMsg || `HTTP ${res.status}`;
+    if (res.kind === 'auth') {
+      // clé invalide : inutile d'essayer les autres modèles du même fournisseur
+      throw new Error(`${provider.name}: ${lastMsg}`);
+    }
+    if (res.status === 429 || /rate-limited|temporarily rate/i.test(String(lastMsg))) sawRateLimit = true;
+    return res.kind;
+  };
+
+  for (let pass = 0; pass < 2; pass++) {
+    if (pass === 1 && (!sawRateLimit || absDeadline - Date.now() < 12000)) break;
+    for (const model of models) {
+      const r = await tryOne(model);
+      if (r === 'exhausted') break;
+      if (r && r.done) return r.value;
+    }
     if (Date.now() >= absDeadline) break;
   }
 
