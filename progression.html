@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ARVEXA — Ma progression</title>
+  <meta name="theme-color" content="#0A0A0A">
+  <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
+  <script src="theme.js"></script><script src="arvexa-classes.js" defer></script><script src="arvexa-i18n.js" defer></script><script src="bac-date.js" defer></script>
+  <meta name="description" content="ARVEXA School - Ma progression : courbes, statistiques et tendances calculées sur tes données réelles">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="stylesheet" href="perf.css">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="analytics.js"></script>
+  <script src="register-sw.js" defer></script>
+  <script src="offline.js" defer></script>
+
+  <link rel="stylesheet" href="arvexa-ui.css">
+  <style>
+    /* ============================================================
+       ROOT — Design system ARVEXA (identique aux autres pages)
+       ============================================================ */
+    :root {
+      --primary: #1A3A2A;
+      --primary-dark: #0A1A12;
+      --primary-light: #2A5A3A;
+      --accent: #B8860B;
+      --accent-bright: #E0B84A;
+      --accent-dim: rgba(184, 134, 11, 0.08);
+      --success: #2D7D5A;
+      --success-light: #3AB67E;
+      --danger: #B85C3A;
+      --danger-light: #E07A5F;
+      --warning: #D4A017;
+      --bg-dark: #0A0A0A;
+      --bg-surface: #141414;
+      --bg-card: rgba(20, 20, 20, 0.7);
+      --text-light: #F5F0E8;
+      --text-dim: #8A8A7A;
+      --text-muted: #5A5A4A;
+      --card-border: rgba(184, 134, 11, 0.06);
+      --card-border-hover: rgba(184, 134, 11, 0.2);
+      --transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      --transition-fast: all 0.15s ease;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
+      --radius: 16px;
+      --radius-lg: 20px;
+      --sidebar-width: 280px;
+      --header-height: 64px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; width: 100%; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-light);
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+      position: relative;
+      padding-top: var(--safe-top);
+      padding-bottom: var(--safe-bottom);
+    }
+
+    .gradient-bg {
+      position: fixed; inset: 0; z-index: -2; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 50% at 70% -10%, rgba(184, 134, 11, 0.09), transparent),
+        radial-gradient(ellipse 60% 40% at 10% 110%, rgba(26, 58, 42, 0.28), transparent),
+        var(--bg-dark);
+    }
+    .glow { position: fixed; border-radius: 50%; filter: blur(90px); z-index: -1; pointer-events: none; }
+    .glow-1 { width: 350px; height: 350px; background: rgba(184, 134, 11, 0.18); top: -80px; right: -80px; }
+    .glow-2 { width: 200px; height: 200px; background: rgba(184,134,11,0.05); bottom: 0; left: 0; }
+    .glow-3 { width: 250px; height: 250px; background: rgba(184, 134, 11, 0.1); top: 30%; left: 60%; transform: translate(-50%,-50%); }
+
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0; z-index: 98;
+      background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px);
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    .sidebar-overlay.active { display: block; opacity: 1; }
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-width);
+      background: rgba(15, 15, 15, 0.98); border-right: 1px solid rgba(184, 134, 11, 0.08);
+      padding: 20px 16px; z-index: 99; transform: translateX(-100%); left: -100%;
+      transition: left 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      display: flex; flex-direction: column;
+    }
+    .sidebar.open { left: 0; }
+    .sidebar .logo {
+      font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700;
+      color: var(--text-light); text-decoration: none; margin-bottom: 26px; display: block;
+    }
+    .sidebar .logo span { color: var(--accent-bright); }
+    .sidebar .nav { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .sidebar .nav a {
+      color: var(--text-dim); text-decoration: none; padding: 11px 14px; border-radius: 10px;
+      font-size: 13.5px; font-weight: 500; display: flex; align-items: center; gap: 11px;
+      transition: var(--transition-fast); border: 1px solid transparent;
+    }
+    .sidebar .nav a i { width: 20px; text-align: center; font-size: 15px; }
+    .sidebar .nav a:hover { color: var(--text-light); background: rgba(var(--rgb-soft), 0.03); }
+    .sidebar .nav a.active { color: var(--text-light); background: rgba(184, 134, 11, 0.08); border: 1px solid rgba(184, 134, 11, 0.08); }
+    .sidebar .nav a.active i { color: var(--accent); }
+    .sidebar .nav-divider { height: 1px; background: rgba(var(--rgb-soft), 0.04); margin: 6px 0; }
+    .sidebar .nav-bottom { margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(var(--rgb-soft), 0.04); }
+    .sidebar .nav-bottom a { color: var(--text-muted); font-size: 12px; }
+    .sidebar .nav-bottom a:hover { color: var(--text-dim); }
+
+    @media (min-width: 1024px) {
+      .sidebar { transform: none; left: 0; }
+      .sidebar-overlay { display: none !important; }
+      .main-content { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); }
+      .menu-toggle { display: none !important; }
+    }
+
+    .main-content { flex: 1; width: 100%; min-height: 100vh; padding-bottom: 32px; }
+    .header {
+      height: var(--header-height); display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; position: sticky; top: 0; z-index: 50;
+      background: rgba(var(--rgb-veil, 10, 10, 10), 0.85); backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(184, 134, 11, 0.06);
+    }
+    .header .header-left { display: flex; align-items: center; gap: 12px; }
+    .header .menu-toggle {
+      width: 38px; height: 38px; border-radius: 10px; border: 1px solid rgba(184, 134, 11, 0.08);
+      background: transparent; color: var(--text-dim); font-size: 15px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: var(--transition-fast);
+    }
+    .header .menu-toggle:hover { border-color: rgba(184, 134, 11, 0.14); color: var(--text-light); }
+    .header .page-title {
+      font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 600; color: var(--text-light);
+    }
+    .header .page-title i { color: var(--accent-bright); margin-right: 6px; font-size: 14px; }
+    .header .header-actions { display: flex; align-items: center; gap: 6px; }
+    .header .header-actions button {
+      width: 38px; height: 38px; border-radius: 10px; border: none; background: transparent;
+      color: var(--text-dim); font-size: 15px; cursor: pointer; transition: var(--transition-fast);
+    }
+    .header .header-actions button:hover { background: rgba(var(--rgb-soft), 0.07); color: var(--text-light); }
+    .container { max-width: 700px; margin: 0 auto; padding: 16px 16px 20px; }
+
+    /* ============================================================
+       PAGE — Ma progression (v8.51a)
+       ============================================================ */
+    .pg-hero {
+      position: relative; overflow: hidden; border-radius: var(--radius-lg);
+      background: linear-gradient(150deg, rgba(184,134,11,0.12), rgba(20,20,20,0.85) 55%);
+      border: 1px solid rgba(184,134,11,0.14);
+      padding: 20px 20px 18px; margin-bottom: 14px;
+    }
+    .pg-hero::after {
+      content: ''; position: absolute; width: 220px; height: 220px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(224,184,74,0.14), transparent 65%);
+      top: -90px; right: -60px; pointer-events: none;
+    }
+    .pg-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 800;
+      letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent-bright);
+      background: rgba(224,184,74,0.10); border: 1px solid rgba(224,184,74,0.22);
+      padding: 4px 11px; border-radius: 999px; margin-bottom: 10px;
+    }
+    .pg-title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; line-height: 1.2; }
+    .pg-title em { font-style: italic; color: var(--accent-bright); }
+    .pg-level {
+      margin-top: 8px; font-size: 13px; color: var(--text-dim); display: flex;
+      align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .pg-level strong { color: var(--text-light); font-weight: 700; }
+    .pg-level .pg-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-dim); }
+    .pg-hero-dots { display: inline-flex; gap: 4px; align-items: center; }
+    .pg-hero-dots i {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--accent-bright);
+      display: inline-block; animation: pgDotPulse 1.1s ease-in-out infinite;
+    }
+    .pg-hero-dots i:nth-child(2) { animation-delay: .18s; }
+    .pg-hero-dots i:nth-child(3) { animation-delay: .36s; }
+    @keyframes pgDotPulse { 0%, 100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+    @media (prefers-reduced-motion: reduce) {
+      .pg-hero-dots i { animation: none; opacity: .6; }
+    }
+
+    .pg-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+    .pg-kpi {
+      background: var(--bg-card); border: 1px solid var(--card-border); border-radius: var(--radius);
+      padding: 14px 15px 12px; transition: var(--transition);
+    }
+    .pg-kpi:hover { border-color: var(--card-border-hover); }
+    .pg-kpi-num {
+      font-size: 24px; font-weight: 800; color: var(--text-light);
+      font-variant-numeric: tabular-nums; line-height: 1.1;
+    }
+    .pg-kpi-num small { font-size: 12px; font-weight: 600; color: var(--text-dim); margin-left: 2px; }
+    .pg-kpi-lbl { font-size: 11px; color: var(--text-dim); margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+    .pg-kpi-lbl i { color: var(--accent-bright); font-size: 10px; }
+    .pg-kpi:nth-child(5) { grid-column: 1 / -1; }
+
+    .pg-card {
+      background: var(--bg-card); border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg); padding: 18px 18px 16px; margin-bottom: 14px;
+    }
+    .pg-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+    .pg-card-title { font-size: 13.5px; font-weight: 700; color: var(--text-light); display: flex; align-items: center; gap: 8px; }
+    .pg-card-title i { color: var(--accent-bright); font-size: 12px; }
+    .pg-card-badge {
+      font-size: 11px; font-weight: 700; color: var(--accent-bright);
+      background: rgba(224,184,74,0.10); border: 1px solid rgba(224,184,74,0.18);
+      padding: 3px 10px; border-radius: 999px; font-variant-numeric: tabular-nums;
+    }
+    .pg-chart { display: block; width: 100%; height: auto; }
+    .pg-chart-days { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-muted); margin-top: 6px; }
+    .pg-empty {
+      font-size: 12.5px; color: var(--text-dim); background: rgba(var(--rgb-soft, 224, 184, 74), 0.04);
+      border: 1px dashed rgba(224, 184, 74, 0.18); border-radius: 12px; padding: 14px;
+      text-align: center; line-height: 1.6;
+    }
+    .pg-empty a { color: var(--accent-bright); text-decoration: none; font-weight: 700; }
+
+    /* Animation de tracé (spline) — la courbe se dessine du début à la fin */
+    .pg-line { filter: drop-shadow(0 3px 8px rgba(224, 184, 74, 0.25)); }
+    .pg-area { opacity: 0; transition: opacity 1.1s ease .55s; }
+    .pg-dot { opacity: 0; transition: opacity .5s ease; }
+    .pg-chart.is-drawn .pg-area { opacity: 1; }
+    .pg-chart.is-drawn .pg-dot { opacity: 1; }
+    @media (prefers-reduced-motion: reduce) {
+      .pg-area, .pg-dot { transition: none; opacity: 1; }
+    }
+
+    /* Répartition matières */
+    .pg-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
+    .pg-bar-row:last-child { margin-bottom: 0; }
+    .pg-bar-emoji { font-size: 15px; width: 24px; text-align: center; flex-shrink: 0; }
+    .pg-bar-main { flex: 1; min-width: 0; }
+    .pg-bar-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .pg-bar-name { font-size: 12px; font-weight: 600; color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pg-bar-val { font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .pg-bar-track { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.05); overflow: hidden; }
+    .pg-bar-fill {
+      height: 100%; border-radius: 999px; width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-bright));
+      transition: width .9s cubic-bezier(.25,1,.5,1);
+      box-shadow: 0 0 8px rgba(224,184,74,.3);
+    }
+
+    /* Tendances & probabilités */
+    .pg-trend { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-bottom: 1px solid rgba(184,134,11,0.06); }
+    .pg-trend:last-child { border-bottom: none; padding-bottom: 0; }
+    .pg-trend:first-child { padding-top: 0; }
+    .pg-trend-ico {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+      background: rgba(224,184,74,0.08); border: 1px solid rgba(224,184,74,0.16);
+    }
+    .pg-trend-body { flex: 1; min-width: 0; }
+    .pg-trend-lbl { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+    .pg-trend-val { font-size: 13.5px; font-weight: 700; color: var(--text-light); line-height: 1.45; }
+    .pg-trend-val em { font-style: normal; color: var(--accent-bright); }
+    .pg-trend-val .pg-up { color: var(--success-light); }
+    .pg-trend-val .pg-down { color: var(--danger-light); }
+    .pg-foot { font-size: 10.5px; color: var(--text-muted); margin-top: 12px; line-height: 1.5; }
+
+    .toast {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: rgba(20,20,20,0.95); border: 1px solid rgba(184,134,11,0.2); color: var(--text-light);
+      padding: 11px 18px; border-radius: 999px; font-size: 12.5px; z-index: 200;
+      opacity: 0; pointer-events: none; transition: var(--transition); max-width: 86vw; text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    html[data-theme="light"] .sidebar { background: rgba(250, 247, 240, 0.98); }
+    html[data-theme="light"] .header { background: rgba(var(--rgb-veil, 250, 247, 240), 0.85); }
+    html[data-theme="light"] .pg-kpi, html[data-theme="light"] .pg-card {
+      background: rgba(255, 255, 255, 0.75); border-color: rgba(184, 134, 11, 0.12);
+    }
+    html[data-theme="light"] .toast { background: rgba(250,247,240,0.95); }
+  </style>
+</head>
+<body>
+
+  <div class="gradient-bg"></div>
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+  <div class="glow glow-3"></div>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="logo">ARVEX<span>A School</span></a>
+    <nav class="nav">
+      <a href="index.html"><i class="fas fa-home"></i> Accueil</a>
+      <a href="progression.html" class="active"><i class="fas fa-chart-line"></i> Progression</a>
+      <a href="profil.html"><i class="fas fa-user"></i> Mon profil</a>
+      <a href="abonnement.html"><i class="fas fa-crown"></i> Mon abonnement</a>
+      <a href="notifications.html"><i class="fas fa-bell"></i> Notifications</a>
+      <a href="arv-progress.html"><i class="fas fa-graduation-cap"></i> Résumé</a>
+      <a href="outils.html"><i class="fas fa-toolbox"></i> Outils</a>
+      <a href="classement.html"><i class="fas fa-trophy"></i> Classement</a>
+      <a href="localisation.html"><i class="fas fa-location-dot"></i> À proximité</a>
+      <div class="nav-divider"></div>
+      <a href="index.html?avis=1" class="avis-link"><i class="fas fa-star"></i> Donner mon avis</a>
+      <div class="nav-divider"></div>
+      <div class="nav-bottom">
+        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+
+    <header class="header">
+      <div class="header-left">
+        <button class="menu-toggle" id="menuToggle" aria-label="Ouvrir le menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="page-title"><i class="fas fa-chart-line"></i> Ma progression</h1>
+      </div>
+      <div class="header-actions">
+        <button id="notifBtn" aria-label="Notifications" onclick="window.location.href='notifications.html'">
+          <i class="fas fa-bell"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="container">
+
+      <!-- HÉROS : niveau + objectif (peints depuis Firebase / cache) -->
+      <section class="pg-hero">
+        <span class="pg-eyebrow"><i class="fas fa-chart-line"></i> Ma progression</span>
+        <div class="pg-title">Ton évolution, <em>en chiffres réels</em></div>
+        <div class="pg-level">
+          <i class="fas fa-graduation-cap" style="color:var(--accent-bright)"></i>
+          <span id="pgLevelLine"><span class="pg-hero-dots"><i></i><i></i><i></i></span></span>
+        </div>
+      </section>
+
+      <!-- KPI — squelette EN DUR, valeurs peintes par les données réelles -->
+      <section class="pg-kpis" aria-label="Chiffres clés">
+        <div class="pg-kpi">
+          <div class="pg-kpi-num" id="kpiSections">…</div>
+          <div class="pg-kpi-lbl"><i class="fas fa-file-lines"></i> Sections résumées</div>
+        </div>
+        <div class="pg-kpi">
+          <div class="pg-kpi-num" id="kpiChapters">…</div>
+          <div class="pg-kpi-lbl"><i class="fas fa-book"></i> Chapitres</div>
+        </div>
+        <div class="pg-kpi">
+          <div class="pg-kpi-num" id="kpiTime">…</div>
+          <div class="pg-kpi-lbl"><i class="fas fa-stopwatch"></i> Temps d'étude</div>
+        </div>
+        <div class="pg-kpi">
+          <div class="pg-kpi-num" id="kpiStreak">…<small>j</small></div>
+          <div class="pg-kpi-lbl"><i class="fas fa-fire"></i> Série en cours</div>
+        </div>
+        <div class="pg-kpi">
+          <div class="pg-kpi-num" id="kpiRegularite">…<small>%</small></div>
+          <div class="pg-kpi-lbl"><i class="fas fa-calendar-check"></i> Régularité — jours actifs sur 14</div>
+        </div>
+      </section>
+
+      <!-- COURBE 1 — sections ajoutées (spline animée) -->
+      <section class="pg-card">
+        <div class="pg-card-head">
+          <div class="pg-card-title"><i class="fas fa-arrow-trend-up"></i> Sections ajoutées</div>
+          <span class="pg-card-badge" id="badgeSections14">…</span>
+        </div>
+        <svg class="pg-chart" id="chartSections" viewBox="0 0 640 150" preserveAspectRatio="none" role="img" aria-label="Courbe des sections ajoutées sur 14 jours">
+          <defs>
+            <linearGradient id="pgAreaGold" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(224, 184, 74, 0.36)"></stop>
+              <stop offset="100%" stop-color="rgba(224, 184, 74, 0.02)"></stop>
+            </linearGradient>
+          </defs>
+          <line x1="10" y1="136" x2="630" y2="136" stroke="rgba(160,160,144,0.25)" stroke-width="1"></line>
+          <path class="pg-area" fill="url(#pgAreaGold)" stroke="none" d=""></path>
+          <path class="pg-line" fill="none" stroke="var(--accent-bright)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d=""></path>
+          <g class="pg-dots"></g>
+        </svg>
+        <div class="pg-chart-days" id="daysSections"></div>
+        <div class="pg-empty" id="emptySections" style="display:none">
+          Aucune section pour l'instant — ouvre la page <a href="arv-progress.html">Résumé</a> et ajoute ta première section pour voir ta courbe monter.
+        </div>
+      </section>
+
+      <!-- COURBE 2 — temps d'étude (spline animée) -->
+      <section class="pg-card">
+        <div class="pg-card-head">
+          <div class="pg-card-title"><i class="fas fa-stopwatch"></i> Temps d'étude par jour</div>
+          <span class="pg-card-badge" id="badgeTime14">…</span>
+        </div>
+        <svg class="pg-chart" id="chartTime" viewBox="0 0 640 150" preserveAspectRatio="none" role="img" aria-label="Courbe du temps d'étude sur 14 jours">
+          <defs>
+            <linearGradient id="pgAreaGreen" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(58, 182, 126, 0.30)"></stop>
+              <stop offset="100%" stop-color="rgba(58, 182, 126, 0.02)"></stop>
+            </linearGradient>
+          </defs>
+          <line x1="10" y1="136" x2="630" y2="136" stroke="rgba(160,160,144,0.25)" stroke-width="1"></line>
+          <path class="pg-area" fill="url(#pgAreaGreen)" stroke="none" d=""></path>
+          <path class="pg-line" fill="none" stroke="var(--success-light)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d=""></path>
+          <g class="pg-dots"></g>
+        </svg>
+        <div class="pg-chart-days" id="daysTime"></div>
+      </section>
+
+      <!-- COURBE 3 — répartition par matière (barres animées) -->
+      <section class="pg-card">
+        <div class="pg-card-head">
+          <div class="pg-card-title"><i class="fas fa-layer-group"></i> Où passe ton temps</div>
+          <span class="pg-card-badge" id="badgeSubjects">…</span>
+        </div>
+        <div id="subjectBars">
+          <div class="pg-empty">Ta répartition par matière apparaîtra dès que tu auras résumé des sections.</div>
+        </div>
+      </section>
+
+      <!-- TENDANCES & PROBABILITÉS — tout est calculé sur tes données -->
+      <section class="pg-card">
+        <div class="pg-card-head">
+          <div class="pg-card-title"><i class="fas fa-wand-magic-sparkles"></i> Tendances &amp; probabilités</div>
+        </div>
+        <div id="trendList">
+          <div class="pg-trend">
+            <div class="pg-trend-ico"><i class="fas fa-gauge-high" style="color:var(--accent-bright)"></i></div>
+            <div class="pg-trend-body">
+              <div class="pg-trend-lbl">Analyse en cours</div>
+              <div class="pg-trend-val"><span class="pg-hero-dots"><i></i><i></i><i></i></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="pg-foot">Chaque chiffre est calculé sur tes données réelles (cahier Résumé + activité quotidienne). Les projections sont des estimations linéaires, pas des promesses : la seule variable qui compte, c'est ta régularité.</div>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="toast" id="pgToast"></div>
+
+  <script>
+  /* ================================================================
+     UI — menu, déconnexion, toast (classique, identique aux pages)
+     ================================================================ */
+  (function () {
+    var toggle = document.getElementById('menuToggle');
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+    function close() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
+    if (toggle && sidebar && overlay) {
+      toggle.addEventListener('click', function () {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active', sidebar.classList.contains('open'));
+      });
+      overlay.addEventListener('click', close);
+    }
+    var logout = document.getElementById('logoutBtn');
+    if (logout) {
+      logout.addEventListener('click', function (e) {
+        e.preventDefault();
+        try {
+          localStorage.removeItem('arvexa_session');
+          localStorage.removeItem('arvexa_user_data');
+          sessionStorage.removeItem('arvexa_session');
+        } catch (err) {}
+        window.location.replace('auth-choice.html');
+      });
+    }
+  })();
+  function pgToast(msg) {
+    var t = document.getElementById('pgToast');
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+  </script>
+
+  <script type="module">
+  // ================================================================
+  // PROGRESSION — v8.51a (demande du propriétaire : « supprime les pages
+  // Mon parcours et Ma journée, ajoute à la place UNE page de progression
+  // qui affiche avec des données réelles jusqu'à 3 courbes… toutes les
+  // informations sur ce que tu as effectué, avec des probabilités, tout
+  // est calculé »). Données : cache local du cahier (arvexa_dash_cache_v1,
+  // écrit par la page Résumé) rafraîchi via /api/progress getDashboard ;
+  // niveau + objectif : profil Firebase users/{uid}.
+  // ================================================================
+  import { requireAuth, auth, app } from './auth-guard.js';
+  import {
+    doc, getDoc, getFirestore
+  } from 'https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js';
+  import { getIdToken } from 'https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js';
+
+  const db = getFirestore(app);
+
+  const SUBJECTS = {
+    mathematiques: { label: 'Mathématiques', emoji: '📐' },
+    physique:      { label: 'Physique',      emoji: '⚡' },
+    chimie:        { label: 'Chimie',        emoji: '🧪' },
+    svt:           { label: 'SVT',           emoji: '🧬' },
+    philosophie:   { label: 'Philosophie',   emoji: '🧠' },
+    histoire:      { label: 'Histoire',      emoji: '🌍' },
+    geographie:    { label: 'Géographie',    emoji: '🗺️' },
+    anglais:       { label: 'Anglais',       emoji: '🇬🇧' },
+    francais:      { label: 'Français',      emoji: '📚' },
+    informatique:  { label: 'Informatique',  emoji: '💻' },
+    technologie:   { label: 'Technologie',   emoji: '⚙️' },
+    economie:      { label: 'Économie & Gestion', emoji: '💰' },
+    espagnol:      { label: 'Espagnol',      emoji: '🇪🇸' },
+    allemand:      { label: 'Allemand',      emoji: '🇩🇪' },
+    education_civique: { label: 'Éducation civique', emoji: '⚖️' },
+    arts:          { label: 'Arts & Musique', emoji: '🎨' }
+  };
+
+  const DASH_KEY = 'arvexa_dash_cache_v1';
+  const $ = (id) => document.getElementById(id);
+
+  function dashCacheRead() {
+    try { const v = JSON.parse(localStorage.getItem(DASH_KEY) || 'null'); return (v && typeof v === 'object') ? v : null; }
+    catch (e) { return null; }
+  }
+  function dashCacheWrite(data) {
+    try { localStorage.setItem(DASH_KEY, JSON.stringify(data)); } catch (e) {}
+  }
+
+  function fmtMin(m) {
+    m = Math.max(0, Math.round(Number(m) || 0));
+    if (m < 1) return '0 min';
+    if (m < 60) return m + ' min';
+    const h = Math.floor(m / 60), r = m % 60;
+    return r === 0 ? h + ' h' : h + ' h ' + (r < 10 ? '0' : '') + r;
+  }
+  function dayLabel(dateKey) {
+    if (!dateKey) return '';
+    try {
+      const d = new Date(dateKey + 'T12:00:00');
+      return ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][d.getDay()] + ' ' + d.getDate();
+    } catch (e) { return ''; }
+  }
+  function frNum(x, dec) {
+    return Number(x || 0).toFixed(dec === undefined ? 1 : dec).replace('.', ',');
+  }
+
+  /* ── SPLINE (Catmull-Rom → Bézier cubique) : la « courbe vague »
+     professionnelle demandée — douce, sans angles. ── */
+  function smoothPath(pts) {
+    if (!pts.length) return '';
+    if (pts.length === 1) return 'M' + pts[0][0] + ',' + pts[0][1];
+    let d = 'M' + pts[0][0] + ',' + pts[0][1];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const c1x = (p1[0] + (p2[0] - p0[0]) / 6).toFixed(2);
+      const c1y = (p1[1] + (p2[1] - p0[1]) / 6).toFixed(2);
+      const c2x = (p2[0] - (p3[0] - p1[0]) / 6).toFixed(2);
+      const c2y = (p2[1] - (p3[1] - p1[1]) / 6).toFixed(2);
+      d += ' C' + c1x + ',' + c1y + ' ' + c2x + ',' + c2y + ' ' + p2[0] + ',' + p2[1];
+    }
+    return d;
+  }
+
+  /* ── Dessin d'une courbe dans son SVG statique (squelette en dur dans
+     le HTML) + ANIMATION DE TRACÉ : la ligne se dessine du début à la
+     fin (stroke-dasharray), l'aire et les points apparaissent ensuite.
+     prefers-reduced-motion respecté. ── */
+  const W = 640, H = 150, PAD_L = 10, PAD_R = 10, PAD_T = 16, PAD_B = 10;
+  function drawSpline(svgId, values, days) {
+    const svg = $(svgId);
+    if (!svg) return;
+    const innerW = W - PAD_L - PAD_R;
+    const innerH = H - PAD_T - PAD_B;
+    const maxVal = Math.max(1, ...values);
+    const n = values.length;
+    const stepX = n > 1 ? innerW / (n - 1) : innerW;
+    const pts = values.map((v, i) => {
+      const x = PAD_L + i * stepX;
+      const y = PAD_T + innerH - (v / maxVal) * (innerH - 6) - 3;
+      return [Math.round(x * 100) / 100, Math.round(y * 100) / 100];
+    });
+    const line = svg.querySelector('.pg-line');
+    const area = svg.querySelector('.pg-area');
+    const dotsG = svg.querySelector('.pg-dots');
+    const linePath = smoothPath(pts);
+    const areaPath = n > 0
+      ? linePath + ' L' + pts[n - 1][0] + ',' + (PAD_T + innerH) + ' L' + pts[0][0] + ',' + (PAD_T + innerH) + ' Z'
+      : '';
+    line.setAttribute('d', linePath);
+    area.setAttribute('d', areaPath);
+    dotsG.innerHTML = pts.map((p, i) =>
+      `<circle class="pg-dot" cx="${p[0]}" cy="${p[1]}" r="${values[i] > 0 ? 3.4 : 1.6}" fill="${values[i] > 0 ? 'var(--accent-bright)' : 'rgba(160,160,144,0.5)'}"></circle>`
+    ).join('');
+    if (days && days.length) {
+      const lbl = svg.parentElement.querySelector('.pg-chart-days');
+      if (lbl) lbl.innerHTML = '<span>' + dayLabel(days[0]) + '</span><span>' + dayLabel(days[Math.floor(n / 2)]) + '</span><span>Aujourd\'hui</span>';
+    }
+    /* Animation de tracé */
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    svg.classList.remove('is-drawn');
+    if (linePath && !reduce && line.getTotalLength) {
+      try {
+        const L = line.getTotalLength();
+        line.style.transition = 'none';
+        line.style.strokeDasharray = L + ' ' + L;
+        line.style.strokeDashoffset = L;
+        /* force le repaint avant d'animer */
+        line.getBoundingClientRect();
+        line.style.transition = 'stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1)';
+        line.style.strokeDashoffset = '0';
+        setTimeout(function () { svg.classList.add('is-drawn'); }, 1150);
+        setTimeout(function () {
+          line.style.strokeDasharray = 'none';
+          line.style.strokeDashoffset = '0';
+        }, 2400);
+      } catch (e) { svg.classList.add('is-drawn'); }
+    } else {
+      svg.classList.add('is-drawn');
+    }
+  }
+
+  /* ── Série locale (activité de l'appareil) — même logique que l'index ── */
+  function localStreak() {
+    let activity = {};
+    try { activity = JSON.parse(localStorage.getItem('arvexa_daily_activity') || '{}') || {}; } catch (e) { activity = {}; }
+    const dayStr = (dt) => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+    let streak = 0;
+    const cursor = new Date();
+    const isActive = (dt) => (Number(activity[dayStr(dt)]) || 0) > 0;
+    if (!isActive(cursor)) cursor.setDate(cursor.getDate() - 1);
+    while (isActive(cursor) && streak < 365) { streak++; cursor.setDate(cursor.getDate() - 1); }
+    return streak;
+  }
+
+  /* ── Peinture complète depuis le dashboard (cache ou frais) ── */
+  let painted = false;
+  function paintAll(dash) {
+    if (!dash) return;
+    const summary = dash.summary || {};
+    const studyTime = dash.studyTime || {};
+    const activity = Array.isArray(dash.activity) ? dash.activity : [];
+    const subjects = Array.isArray(dash.subjects) ? dash.subjects : [];
+    const dashStreak = (dash.streak && Number(dash.streak.current || 0)) || 0;
+
+    const sections = Number(summary.totalSections || 0) || 0;
+    const chapters = Number(summary.totalChapters || 0) || 0;
+    const minutes = Number(studyTime.totalMinutes || 0) || 0;
+    const streak = Math.max(dashStreak, localStreak());
+
+    /* KPI */
+    $('kpiSections').textContent = String(sections);
+    $('kpiChapters').textContent = String(chapters);
+    $('kpiTime').textContent = fmtMin(minutes);
+    $('kpiStreak').innerHTML = String(streak) + '<small>j</small>';
+    const activeDays = activity.filter((a) => (Number(a.sections) || 0) > 0 || (Number(a.minutes) || 0) > 0).length;
+    const regularite = activity.length ? Math.round((activeDays / activity.length) * 100) : 0;
+    $('kpiRegularite').innerHTML = String(regularite) + '<small>%</small>';
+
+    /* Courbe 1 — sections / jour */
+    const secVals = activity.map((a) => Math.max(0, Number(a.sections) || 0));
+    const secTotal = secVals.reduce((a, b) => a + b, 0);
+    $('badgeSections14').textContent = secTotal + ' en 14 jours';
+    drawSpline('chartSections', secVals, activity.map((a) => a.date));
+    $('emptySections').style.display = secTotal === 0 ? '' : 'none';
+
+    /* Courbe 2 — minutes / jour */
+    const minVals = activity.map((a) => Math.max(0, Number(a.minutes) || 0));
+    const minTotal = minVals.reduce((a, b) => a + b, 0);
+    $('badgeTime14').textContent = fmtMin(minTotal) + ' en 14 jours';
+    drawSpline('chartTime', minVals, activity.map((a) => a.date));
+
+    /* Courbe 3 — répartition par matière (barres) */
+    const active = subjects.filter((s) => (s.sectionsCount || 0) > 0)
+      .slice().sort((a, b) => (b.minutes || 0) - (a.minutes || 0));
+    $('badgeSubjects').textContent = active.length + ' matière' + (active.length > 1 ? 's' : '');
+    const bars = $('subjectBars');
+    if (active.length === 0) {
+      bars.innerHTML = '<div class="pg-empty">Ta répartition par matière apparaîtra dès que tu auras résumé des sections.</div>';
+    } else {
+      const maxMin = Math.max(1, ...active.map((s) => s.minutes || 0));
+      bars.innerHTML = active.slice(0, 8).map((s) => {
+        const info = SUBJECTS[s.key] || { label: s.label || s.key, emoji: '📘' };
+        const pctw = Math.round(((s.minutes || 0) / maxMin) * 100);
+        return '<div class="pg-bar-row">'
+          + '<span class="pg-bar-emoji">' + info.emoji + '</span>'
+          + '<div class="pg-bar-main">'
+          +   '<div class="pg-bar-top"><span class="pg-bar-name">' + info.label + '</span>'
+          +   '<span class="pg-bar-val">' + fmtMin(s.minutes || 0) + ' · ' + (s.sectionsCount || 0) + ' section' + ((s.sectionsCount || 0) > 1 ? 's' : '') + '</span></div>'
+          +   '<div class="pg-bar-track"><div class="pg-bar-fill" data-w="' + pctw + '"></div></div>'
+          + '</div></div>';
+      }).join('');
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          bars.querySelectorAll('.pg-bar-fill').forEach(function (f) { f.style.width = f.getAttribute('data-w') + '%'; });
+        });
+      });
+    }
+
+    /* Tendances & probabilités — TOUT calculé sur les données réelles */
+    const last7 = activity.slice(-7);
+    const sec7 = last7.reduce((a, b) => a + (Number(b.sections) || 0), 0);
+    const sec14 = secVals.reduce((a, b) => a + b, 0);
+    const rythme7 = sec7 / 7;
+    const rythme14 = sec14 / Math.max(1, activity.length);
+    const trends = [];
+
+    /* 1 — Rythme */
+    let trendTxt;
+    if (rythme7 === 0 && rythme14 === 0) {
+      trendTxt = 'Pas encore de rythme : ajoute ta première section pour lancer tes statistiques.';
+    } else if (rythme7 >= rythme14) {
+      trendTxt = 'Rythme actuel : <em>' + frNum(rythme7) + ' section' + (rythme7 >= 2 ? 's' : '') + ' / jour</em> sur 7 jours <span class="pg-up">▲ en hausse</span> (moyenne 14 jours : ' + frNum(rythme14) + ').';
+    } else {
+      trendTxt = 'Rythme actuel : <em>' + frNum(rythme7) + ' section' + (rythme7 >= 2 ? 's' : '') + ' / jour</em> sur 7 jours <span class="pg-down">▼ en baisse</span> (moyenne 14 jours : ' + frNum(rythme14) + ').';
+    }
+    trends.push({ ico: 'fa-gauge-high', lbl: 'Ton rythme', txt: trendTxt });
+
+    /* 2 — Projection jusqu'à l'examen (estimation linéaire) */
+    let examLine = null;
+    try {
+      if (window.ARVEXA_getExamDate) {
+        const exam = window.ARVEXA_getExamDate();
+        const days = Math.max(0, Math.ceil((exam.getTime() - Date.now()) / 86400000));
+        const base = rythme7 > 0 ? rythme7 : rythme14;
+        const proj = Math.round(base * days);
+        const examTxt = exam.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+        examLine = base > 0
+          ? 'Si tu tiens ce rythme, tu auras ajouté <em>≈ ' + proj + ' section' + (proj > 1 ? 's' : '') + '</em> d\'ici le ' + examTxt + ' (estimation linéaire sur ' + days + ' jours).'
+          : 'Il reste ' + days + ' jours avant l\'examen du ' + examTxt + ' — chaque section résumée à partir d\'aujourd\'hui pèse dans ta préparation.';
+      }
+    } catch (e) { examLine = null; }
+    if (examLine) trends.push({ ico: 'fa-flag-checkered', lbl: 'Projection jusqu\'à l\'examen', txt: examLine });
+
+    /* 3 — Probabilité de jour actif (régularité) */
+    const p = activity.length ? activeDays / activity.length : 0;
+    trends.push({
+      ico: 'fa-calendar-check',
+      lbl: 'Probabilité de jour actif',
+      txt: 'Sur les 14 derniers jours tu as été actif ' + activeDays + ' jour' + (activeDays > 1 ? 's' : '') + ' sur ' + activity.length + ' — soit <em>' + Math.round(p * 100) + ' %</em> de chance, sur tes habitudes récentes, qu\'un jour donné soit un jour de travail.'
+    });
+
+    /* 4 — Meilleure matière / matière à surveiller */
+    if (active.length > 0) {
+      const top = active[0];
+      const topInfo = SUBJECTS[top.key] || { label: top.label || top.key, emoji: '📘' };
+      trends.push({
+        ico: 'fa-crown',
+        lbl: 'Ta matière reine',
+        txt: '<em>' + topInfo.label + '</em> concentre ta plus grande part de travail : ' + fmtMin(top.minutes || 0) + ' pour ' + (top.sectionsCount || 0) + ' section' + ((top.sectionsCount || 0) > 1 ? 's' : '') + '.'
+      });
+      /* Lacune : matière avec des sections mais le moins de temps par section */
+      const ratio = active.filter((s) => (s.sectionsCount || 0) > 0)
+        .map((s) => ({ s, r: (s.minutes || 0) / (s.sectionsCount || 1) }))
+        .sort((a, b) => a.r - b.r)[0];
+      if (ratio && active.length > 1 && ratio.r < (top.minutes || 0) / Math.max(1, top.sectionsCount || 1)) {
+        const rInfo = SUBJECTS[ratio.s.key] || { label: ratio.s.label || ratio.s.key, emoji: '📘' };
+        trends.push({
+          ico: 'fa-crosshairs',
+          lbl: 'À surveiller',
+          txt: '<em>' + rInfo.label + '</em> reçoit le moins de temps par section (' + frNum(ratio.r, 0) + ' min / section) — c\'est probablement là que se cachent tes lacunes.'
+        });
+      }
+    }
+
+    /* 5 — Série */
+    trends.push({
+      ico: 'fa-fire',
+      lbl: 'Ta série',
+      txt: streak > 0
+        ? 'Série en cours : <em>' + streak + ' jour' + (streak > 1 ? 's' : '') + '</em> d\'affilée. La régularité est le meilleur prédicteur de réussite — ne la casse pas demain.'
+        : 'Pas de série en cours : une seule section aujourd\'hui la relance.'
+    });
+
+    $('trendList').innerHTML = trends.map(function (t) {
+      return '<div class="pg-trend">'
+        + '<div class="pg-trend-ico"><i class="fas ' + t.ico + '" style="color:var(--accent-bright)"></i></div>'
+        + '<div class="pg-trend-body"><div class="pg-trend-lbl">' + t.lbl + '</div>'
+        + '<div class="pg-trend-val">' + t.txt + '</div></div></div>';
+    }).join('');
+
+    painted = true;
+  }
+
+  /* ── Niveau + objectif (Firebase users/{uid} — cache local en repli) ── */
+  function paintLevel(profile) {
+    const el = $('pgLevelLine');
+    if (!el) return;
+    try {
+      const CL = window.ARVEXA_CLASSES;
+      if (!CL) return;
+      const full = CL.full(profile.classId, profile.customClass, profile.series) || 'Ton niveau';
+      /* Année d'examen : bac-date.js (defer) si dispo, sinon même logique locale */
+      let year = null;
+      if (window.ARVEXA_getBacYear) year = window.ARVEXA_getBacYear();
+      else {
+        const now = new Date();
+        year = now.getMonth() >= 5 ? now.getFullYear() + 1 : now.getFullYear();
+      }
+      const goal = CL.goal(profile.classId, year) || '';
+      el.innerHTML = 'Niveau : <strong>' + full + '</strong>'
+        + (goal ? ' <span class="pg-dot"></span> Objectif : <strong>' + goal + '</strong>' : '');
+    } catch (e) {}
+  }
+  function paintLevelFromCache() {
+    try {
+      const cached = JSON.parse(localStorage.getItem('arvexa_user_data') || 'null');
+      if (cached && (cached.classId || cached.customClass)) paintLevel(cached);
+    } catch (e) {}
+  }
+  paintLevelFromCache();
+
+  /* ── Peinture immédiate depuis le cache local (zéro attente réseau) ── */
+  const cachedDash = dashCacheRead();
+  if (cachedDash) { try { paintAll(cachedDash); } catch (e) {} }
+
+  /* ── Auth + données fraîches + profil Firebase ── */
+  async function callApi(user, action) {
+    const token = await getIdToken(user);
+    const r = await fetch('/api/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }
+
+  requireAuth({
+    onUser: async (user) => {
+      /* Profil Firebase : niveau + objectif officiels du compte */
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (snap.exists()) {
+          const data = snap.data() || {};
+          paintLevel(data);
+          try {
+            localStorage.setItem('arvexa_user_data', JSON.stringify(Object.assign({}, data, { _uid: user.uid })));
+          } catch (e) {}
+        }
+      } catch (e) { /* cache déjà peint */ }
+
+      /* Données fraîches du cahier */
+      try {
+        const data = await callApi(user, 'getDashboard');
+        if (data && !data.error) {
+          dashCacheWrite(data);
+          paintAll(data);
+        }
+      } catch (e) {
+        if (!painted) {
+          pgToast('Hors ligne — tes dernières données connues sont affichées.');
+          paintAll(dashCacheRead());
+        }
+      }
+    },
+    onNoUser: () => {
+      window.location.replace('auth-choice.html');
+    }
+  });
+
+  /* Repeindre au retour sur l'onglet (données cachées les plus fraîches) */
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) { const d = dashCacheRead(); if (d) { try { paintAll(d); } catch (e) {} } }
+  });
+  window.addEventListener('pageshow', function () { const d = dashCacheRead(); if (d) { try { paintAll(d); } catch (e) {} } });
+  </script>
+</body>
+</html>

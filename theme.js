@@ -13,6 +13,24 @@
 (function () {
   'use strict';
 
+  /* ═══════════════════════════════════════════════════════════════════
+     ✅ v8.51a — SCROLL : toujours RENTRER EN HAUT après un refresh
+     (demande du propriétaire : « quand je rafraîchis la page en bas, ça
+     me ramène tout en bas — il faut que ça me ramène en haut »).
+     history.scrollRestoration = 'manual' annule la restauration native
+     du navigateur (Chrome/Safari restituent l'ancienne position après un
+     reload) ; pageshow renforce (hors navigation bfcache, persisted=true,
+     où revenir à sa place reste le bon comportement).
+     theme.js est chargé par toutes les pages → correction globale.
+     ═══════════════════════════════════════════════════════════════════ */
+  try {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  } catch (e) {}
+  window.addEventListener('pageshow', function (ev) {
+    if (ev && ev.persisted) return; // retour bfcache : on garde la position
+    try { window.scrollTo(0, 0); } catch (e) {}
+  });
+
   var KEY = 'arvexa-theme';
   var META_COLORS = { dark: '#0A0A0A', light: '#F5F1E8' };
 

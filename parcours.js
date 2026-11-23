@@ -1,12 +1,13 @@
 /* ================================================================
-   parcours.js v1.0 — ARVEXA School — MODÈLE A « Ton parcours vers le BAC »
-   Brouillon (arvexa-brouillon.vercel.app) — le site ne s'ouvre plus sur
-   une liste de matières mais sur UNE route guidée qui mélange les 57
-   chapitres semaine par semaine jusqu'au BAC.
+   parcours.js v2.0 — ARVEXA School — MODÈLE A « Ton parcours vers le BAC »
    - Données : parcours.json (généré au build, plan indicatif)
    - Progression : localStorage « arv-parcours-v1 » (étapes validées)
      + auto-détection des chapitres lus via « arvexa_read_parts »
-   - S'affiche sur index.html (#parcoursCard) et sur parcours.html
+   - ✅ v8.51a — S'affiche UNIQUEMENT sur index.html (#parcoursCard) :
+     la carte est EN DUR dans le HTML et cette librairie ne fait que
+     METTRE À JOUR ses valeurs (aucune reconstruction du DOM). L'ancienne
+     page parcours.html est supprimée (fusionnée dans progression.html) ;
+     renderPage() ne tourne que si un #pcApp existe (aucun aujourd'hui).
    ================================================================ */
 (function () {
   'use strict';
@@ -206,8 +207,8 @@
       +   (finish ? '<span>Fin prévue : <strong>' + finish + '</strong></span>' : '')
       + '</div>'
       + '<div class="pc-actions">' + action + '</div>'
-      + '<div class="pc-links"><a href="parcours.html"><i class="fas fa-map"></i> Voir tout mon parcours</a>'
-      +   ' &nbsp;·&nbsp; <a href="parcours.html#matieres"><i class="fas fa-book"></i> Toutes les matières</a></div>';
+      + '<div class="pc-links"><a href="progression.html"><i class="fas fa-chart-line"></i> Voir ma progression</a>'
+      +   ' &nbsp;·&nbsp; <a href="arv-progress.html"><i class="fas fa-book"></i> Toutes les matières</a></div>';
   }
 
   function doneBannerHtml() {
@@ -216,7 +217,7 @@
       + classLineHtml()
       + '<div class="pc-meta"><span><i class="fas fa-stopwatch"></i> Il reste ' + (daysToBac() || '—') + ' jours avant le BAC : passe dans Test moi.</span></div>'
       + '<div class="pc-actions"><a class="pc-btn pc-btn-main" href="exam.html"><i class="fas fa-stopwatch"></i> Test moi</a>'
-      + '<a class="pc-btn pc-btn-ghost" href="parcours.html"><i class="fas fa-map"></i> Revoir mon parcours</a></div>';
+      + '<a class="pc-btn pc-btn-ghost" href="progression.html"><i class="fas fa-chart-line"></i> Voir ma progression</a></div>';
   }
 
   /* ---------- rendu index ---------- */
@@ -313,43 +314,63 @@
     return { html: 'Temps bien réparti sur ' + subjects.length + ' matière' + (subjects.length > 1 ? 's' : '') + ' — chaque chapitre compte.', cta: 'Ouvrir le Résumé', href: 'arv-progress.html' };
   }
 
-  function renderSmartCard(el, d) {
+  /* ✅ v8.51a — CARTE EN DUR : la carte « Ton parcours » de l'index est
+     ÉCRITE STATIQUEMENT dans index.html (squelette + styles ps-*). Cette
+     fonction ne RECONSTRUIT plus jamais le DOM : elle MET À JOUR les
+     valeurs du squelette (puce examen, phrase, temps, trait, %, cta) —
+     plus aucun re-rendu visible, la carte ne « charge » plus. Les données
+     restent vivantes : cache local puis getSmartCard (Firebase) en fond. */
+  var __psHref = 'arv-progress.html';
+
+  function updateSmartCard(el, d) {
+    if (!el) return;
     var ph = smartPhrase(d || {});
     var study = (d && d.study) || {};
-    var summary = (d && d.summary) || {};
     var bac = daysToBac();
     var pct = M ? Math.round(doneCount() / Math.max(1, M.steps.length) * 100) : null;
-
-    // ✅ v8.46a — 4 éléments AU LIEU DE 6 : en-tête (titre + BAC), phrase,
-    // métrique fine (temps + trait + %), action. Compact et luxueux.
-    var html = '<div class="ps-wrap" id="psWrap">';
-    html += '<div class="ps-head">'
-      + '<span class="ps-title"><i class="fas fa-route"></i> Ton parcours</span>'
-      + (bac != null ? '<span class="ps-bac"><i class="fas fa-flag-checkered"></i> BAC · ' + bac + ' j</span>' : '')
-      + '</div>';
-    html += '<div class="ps-phrase">' + ph.html + '</div>';
-    html += '<div class="ps-meta">'
-      + '<span class="ps-time"><i class="fas fa-clock"></i> ' + esc(study.totalLabel || fmtMinLocal(study.totalMinutes || 0)) + '</span>'
-      + (pct != null ? '<span class="ps-bar"><span class="ps-bar-fill" style="width:' + pct + '%"></span></span><span class="ps-pct">' + pct + ' %</span>' : '<span class="ps-bar"><span class="ps-bar-fill" style="width:0%"></span></span>')
-      + '</div>';
-    html += '<div class="ps-cta"><span><i class="fas fa-location-dot"></i> ' + esc(ph.cta) + '</span><i class="fas fa-arrow-right"></i></div>';
-    html += '</div>';
-    el.innerHTML = html;
-    var wrap = el.querySelector('#psWrap');
-    if (wrap) {
-      wrap.addEventListener('click', function () { window.location.href = ph.href; });
+    var byId = function (id) { return document.getElementById(id); };
+    /* Puce examen — label adapté à la classe figée (BEPC pour la 3ᵉ, etc.) */
+    var examLabel = 'BAC';
+    try {
+      var uP = window.ARVEXA_USER_PROFILE || {};
+      var CL = window.ARVEXA_CLASSES;
+      if (CL && CL.exam && uP.classId) examLabel = CL.exam(uP.classId) || 'BAC';
+    } catch (eC) {}
+    var bacEl = byId('psBac'), bacTxt = byId('psBacTxt');
+    if (bacEl) bacEl.style.display = (bac != null) ? '' : 'none';
+    if (bacTxt && bac != null) bacTxt.textContent = examLabel + ' · ' + bac + ' j';
+    var phrase = byId('psPhrase');
+    if (phrase) phrase.innerHTML = ph.html;
+    var timeTxt = byId('psTimeTxt');
+    if (timeTxt) timeTxt.textContent = study.totalLabel || fmtMinLocal(study.totalMinutes || 0);
+    var fill = byId('psBarFill');
+    if (fill) fill.style.width = (pct != null ? pct : 0) + '%';
+    var pctEl = byId('psPct');
+    if (pctEl) {
+      pctEl.textContent = pct != null ? pct + ' %' : '—';
+      pctEl.style.display = pct != null ? '' : 'none';
+    }
+    var ctaTxt = byId('psCta');
+    if (ctaTxt) ctaTxt.textContent = ph.cta;
+    __psHref = ph.href || 'arv-progress.html';
+    var wrap = byId('psWrap');
+    if (wrap && !wrap.__psBound) {
+      wrap.__psBound = true;
+      wrap.addEventListener('click', function () { window.location.href = __psHref; });
     }
   }
 
   function renderIndexCard() {
     var el = document.getElementById('parcoursCard');
-    if (!el) return;
-    injectCss();
-    el.classList.add('parcours-card', 'pc-wrap');
-    renderSmartCard(el, readSmartCache());
+    injectCss(); /* classes pc-* partagées (inertes sur l'index : le style ps-* y est déjà statique) */
+    if (el) el.classList.add('parcours-card', 'pc-wrap');
+    updateSmartCard(el, readSmartCache());
+    /* ✅ v8.51a — PORTE PARCOURS : la carte est peinte (valeurs à jour) →
+       la porte « parcours » du splash peut se fermer. Idempotent. */
+    try { if (window.__arvexaReady) window.__arvexaReady('parcours'); } catch (e) {}
   }
 
-  /* ---------- rendu parcours.html ---------- */
+  /* ---------- rendu page plan (aucune page ne porte #pcApp depuis v8.51a — conservé par sécurité) ---------- */
   function renderPage() {
     var root = document.getElementById('pcApp');
     if (!root) return;

@@ -1076,6 +1076,32 @@
     .badge-item.unlocked .badge-name { color: var(--text-light); }
 
     /* ============================================================
+       ✅ v8.51a — CARTE « TON PARCOURS » EN DUR : les styles ps-* sont
+       maintenant écrits STATIQUEMENT dans la feuille de l'index (le
+       squelette HTML l'est aussi) — la carte est complète et stylée dès
+       la première image, sans attendre parcours.js (qui garde sa propre
+       injection pour la page plan, sans conflit : mêmes règles).
+       ============================================================ */
+    .parcours-card { --pc-b: var(--accent-bright, #E0B84A); position: relative; overflow: hidden; }
+    .ps-wrap { display: flex; flex-direction: column; gap: 9px; cursor: pointer; font-family: Inter, sans-serif; }
+    .ps-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .ps-title { display: inline-flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; color: var(--text-dim, #8A8A7A); }
+    .ps-title i { color: var(--accent-bright, #E0B84A); font-size: 11px; }
+    .ps-bac { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: .5px; color: var(--accent-bright, #E0B84A); background: rgba(var(--rgb-soft, 224, 184, 74), .10); border: 1px solid rgba(var(--rgb-soft, 224, 184, 74), .22); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+    .ps-phrase { font-size: 13.5px; font-weight: 600; line-height: 1.5; color: var(--text-light, #F5F0E8); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .ps-phrase em { font-style: normal; color: var(--accent-bright, #E0B84A); font-weight: 700; }
+    .ps-meta { display: flex; align-items: center; gap: 9px; }
+    .ps-time { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: var(--text-dim, #8A8A7A); white-space: nowrap; }
+    .ps-time i { color: var(--accent-bright, #E0B84A); font-size: 10.5px; }
+    .ps-bar { flex: 1; height: 4px; border-radius: 999px; background: var(--bg-surface, #141414); overflow: hidden; }
+    .ps-bar-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent, #B8860B), var(--accent-bright, #E0B84A)); transition: width .5s ease; box-shadow: 0 0 8px rgba(224, 184, 74, .35); }
+    .ps-pct { font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent-bright, #E0B84A); min-width: 30px; text-align: right; }
+    .ps-cta { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 700; color: var(--text-light, #F5F0E8); background: linear-gradient(135deg, rgba(var(--rgb-soft, 224, 184, 74), .14), rgba(var(--rgb-soft, 224, 184, 74), .07)); border: 1px solid rgba(var(--rgb-soft, 224, 184, 74), .28); border-radius: 999px; padding: 9px 14px; transition: transform .2s ease, background .2s ease; overflow: hidden; white-space: nowrap; }
+    .ps-cta > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ps-cta i { margin-left: auto; color: var(--accent-bright, #E0B84A); flex-shrink: 0; }
+    .ps-wrap:active .ps-cta { transform: scale(.985); background: rgba(var(--rgb-soft, 224, 184, 74), .18); }
+
+    /* ============================================================
        INSTALLATION PWA
        ============================================================ */
     .install-inner {
@@ -1312,6 +1338,13 @@
        ✅ v8.3 — 1er chargement de la session uniquement (marqueur
        sessionStorage « arvexa_splash_seen ») ; retours ensuite :
        supprimé avant la première peinture (zéro flash).
+       ✅ v8.51a — « NE PAS DISPARAÎTRE AVANT QUE TOUT SOIT EN PLACE »
+       (demande du propriétaire : l'écran de chargement « ne doit pas
+       disparaître si toutes les données n'ont pas été mises en place ») :
+       trois PORTES — profil (accueil peint), badges (réalisations
+       peintes), parcours (carte peinte). Le splash ne se dissipe QUAND
+       toutes les portes sont passées ; filet à 6 s pour ne jamais
+       enfermer l'élève derrière un écran d'attente.
        ============================================================ -->
   <div id="appSplash" aria-hidden="true">
     <div class="splash-inner">
@@ -1327,12 +1360,15 @@
      ✅ v5.6 — ÉCRAN DE CHARGEMENT RÉTABLI : il s'affiche à CHAQUE
      ouverture (y compris HORS LIGNE) mais ne bloque JAMAIS l'entrée :
      il se dissipe dès que sa durée minimale est jouée (contenu déjà
-     peint derrière) — plus jamais de suppression avant peinture. */
+     peint derrière) — plus jamais de suppression avant peinture.
+     ✅ v8.51a — la dissipation attend les TROIS PORTES (profil, badges,
+     parcours) : contenu partiel impossible. */
   (function () {
     var MIN_SPLASH_MS = 1200; // durée de branding — 1er chargement uniquement
+    var GATES_FORCE_MS = 6000; // ✅ v8.51a — filet : jamais enfermé plus de 6 s
     /* ✅ v8.3 — « écran de chargement uniquement au PREMIER chargement ».
        Un marqueur de SESSION décide : présent → retour dans la session,
-       le splash est retiré AVANT la première peinture (zéro flash). */
+       le splash n'est retiré qu'une fois les données peintes (v8.51a). */
     var firstLoad = true;
     try {
       firstLoad = sessionStorage.getItem('arvexa_splash_seen') !== '1';
@@ -1344,18 +1380,41 @@
       sp.classList.add('hide');
       setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 600);
     }
-    /* Helper GLOBAL : dissipe le splash en respectant la durée minimale
-       (1er chargement) ou immédiatement (retours, v8.3). Idempotent —
+    /* ✅ v8.51a — PORTES « DONNÉES COMPLÈTES ». __arvexaReady('profile' |
+       'badges' | 'parcours') est appelé par chaque sous-système QUAND sa
+       peinture est terminée ; le splash ne sort que les trois fermées. */
+    var G = window.__ARVEXA_GATES__ = { profile: false, badges: false, parcours: false, __out: false };
+    function gatesDone() { return G.profile && G.badges && G.parcours; }
+    function tryDismiss() {
+      var sp = document.getElementById('appSplash');
+      if (!sp || !gatesDone()) return;
+      var elapsed = Date.now() - (window.__ARVEXA_SPLASH_TS__ || Date.now());
+      var wait = firstLoad ? Math.max(0, MIN_SPLASH_MS - elapsed) : 0;
+      setTimeout(function () { removeSplash(document.getElementById('appSplash')); }, wait);
+    }
+    window.__arvexaReady = function (name) {
+      if (!G || !(name in G) || G[name]) return;
+      G[name] = true;
+      if (G.__out) tryDismiss();
+    };
+    /* Helper GLOBAL : demande la dissipation du splash — qui n'aura lieu
+       QUE quand toutes les portes sont passées (v8.51a). Idempotent —
        appelé par la restauration instantanée, par le module (hideSplash)
        et par le filet anti-blocage. */
     window.__arvexaSplashOut = function () {
       var sp = document.getElementById('appSplash');
-      if (!sp || sp.__arvexaOut) return;
-      sp.__arvexaOut = true;
-      if (!firstLoad) { removeSplash(sp); return; }
-      var elapsed = Date.now() - (window.__ARVEXA_SPLASH_TS__ || Date.now());
-      var wait = Math.max(0, MIN_SPLASH_MS - elapsed);
-      setTimeout(function () { removeSplash(document.getElementById('appSplash')); }, wait);
+      if (!sp || G.__out) return;
+      G.__out = true;
+      if (!gatesDone()) {
+        /* ✅ v8.51a — filet : au bout de 6 s on laisse entrer quoi qu'il
+           arrive (données partielles acceptées plutôt qu'écran bloqué). */
+        setTimeout(function () {
+          if (!gatesDone()) { G.profile = G.badges = G.parcours = true; }
+          try { document.documentElement.classList.add('ready'); } catch (e) {}
+          removeSplash(document.getElementById('appSplash'));
+        }, GATES_FORCE_MS);
+      }
+      tryDismiss();
     };
     var snap = null;
     try {
@@ -1396,13 +1455,16 @@
     }
     window.__ARVEXA_SPLASH_TS__ = Date.now();
     if (!firstLoad) {
-      /* ✅ v8.3 — RETOUR dans la session : splash supprimé avant la
-         1ʳᵉ peinture ; si une snapshot est dispo, accueil instantané. */
-      var sp0 = document.getElementById('appSplash');
-      if (sp0 && sp0.parentNode) sp0.parentNode.removeChild(sp0);
+      /* ✅ v8.51a — RETOUR dans la session : le splash N'EST PLUS supprimé
+         avant la 1ʳᵉ peinture (demande du propriétaire : « elle ne doit pas
+         disparaître si toutes les données n'ont pas été mises en place »).
+         Il reste en place (invisible tant que .on n'est pas posé) jusqu'à
+         ce que les TROIS portes soient passées — profil + badges peints
+         par la restauration instantanée, carte parcours par parcours.js ;
+         filet 6 s dans __arvexaSplashOut. Si une snapshot est dispo, le
+         contenu complet est restauré DERRIÈRE lui. */
       if (snap) {
         document.documentElement.classList.add('instant');
-        document.documentElement.classList.add('ready');
         window.__ARVEXA_INSTANT__ = snap;
       }
       return;
@@ -1416,7 +1478,9 @@
           if (sp) sp.classList.add('on');
         });
       });
-      /* Filet de sécurité : jamais de contenu masqué plus de 600 ms */
+      /* ✅ v8.51a — filet CONTENU (distinct du splash) : le contenu placé
+         derrière le splash n'est jamais masqué plus de 600 ms. La sortie du
+         splash elle-même attend les trois portes (profil/badges/parcours). */
       setTimeout(function () {
         document.documentElement.classList.add('ready');
         window.__arvexaSplashOut();
@@ -1432,6 +1496,71 @@
   })();
   </script>
 
+  <script>
+  /* ================================================================
+     ✅ v8.51a — RÉALISATIONS « EN DUR » (demande du propriétaire : « on va
+     les mettre en dur et fixer à la page… les cartes et symboles seront en
+     dur mais toujours connectées pour voir tes réalisations »). Les 9
+     badges sont ÉCRITS STATIQUEMENT dans le HTML (#badgesScroll) — plus
+     aucune reconstruction du DOM : la peinture se limite à basculer la
+     classe « unlocked » selon les données réelles (cache de la page
+     Résumé arvexa_dash_cache_v1 + activité quotidienne de l'appareil).
+     Source UNIQUE partagée par la restauration instantanée ET le module
+     Firebase — plus jamais deux listes de badges divergentes.
+     ================================================================ */
+  window.ARVEXA_BADGE_CHECKS = {
+    first:     { check: function (st) { return st.sections >= 1; } },
+    five:      { check: function (st) { return st.sections >= 5; } },
+    fifteen:   { check: function (st) { return st.sections >= 15; } },
+    thirty:    { check: function (st) { return st.sections >= 30; } },
+    subjects3: { check: function (st) { return st.subjects >= 3; } },
+    hour1:     { check: function (st) { return st.minutes >= 60; } },
+    hours5:    { check: function (st) { return st.minutes >= 300; } },
+    streak3:   { check: function (st) { return st.streak >= 3; } },
+    streak7:   { check: function (st) { return st.streak >= 7; } }
+  };
+  window.__arvexaBadgeStats = function () {
+    var dash = null;
+    try { dash = JSON.parse(localStorage.getItem('arvexa_dash_cache_v1') || 'null'); } catch (e) { dash = null; }
+    var summary = (dash && dash.summary) || {};
+    var studyTime = (dash && dash.studyTime) || {};
+    var dashStreak = (dash && dash.streak && Number(dash.streak.current || 0)) || 0;
+    /* Série de l'appareil (arvexa_daily_activity) — même logique que le
+       module (computeStreak) : jours consécutifs actifs, aujourd'hui toléré. */
+    var activity = {};
+    try { activity = JSON.parse(localStorage.getItem('arvexa_daily_activity') || '{}') || {}; } catch (e) { activity = {}; }
+    var dayStr = function (dt) {
+      return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+    };
+    var streak = 0;
+    var cursor = new Date();
+    var isActive = function (dt) { return (Number(activity[dayStr(dt)]) || 0) > 0; };
+    if (!isActive(cursor)) cursor.setDate(cursor.getDate() - 1);
+    while (isActive(cursor) && streak < 365) { streak++; cursor.setDate(cursor.getDate() - 1); }
+    return {
+      sections: Number(summary.totalSections || 0) || 0,
+      subjects: Number(summary.subjectsCount || 0) || 0,
+      minutes: Number(studyTime.totalMinutes || 0) || 0,
+      streak: Math.max(dashStreak, streak)
+    };
+  };
+  window.__arvexaPaintBadges = function () {
+    var bsc = document.getElementById('badgesScroll');
+    if (!bsc) return;
+    var st = window.__arvexaBadgeStats();
+    var items = bsc.querySelectorAll('.badge-item');
+    for (var i = 0; i < items.length; i++) {
+      var key = items[i].getAttribute('data-badge');
+      var c = key && window.ARVEXA_BADGE_CHECKS[key];
+      if (c) {
+        try { items[i].classList.toggle('unlocked', !!c.check(st)); } catch (e) {}
+      }
+    }
+    /* ✅ v8.51a — PORTE BADGES : les réalisations sont peintes → la porte
+       du splash « badges » peut se fermer. Idempotent. */
+    try { if (window.__arvexaReady) window.__arvexaReady('badges'); } catch (e) {}
+  };
+  </script>
 
   <!-- ===== BACKGROUND ===== -->
   <div class="gradient-bg"></div>
@@ -1447,8 +1576,7 @@
     <a href="index.html" class="logo">ARVEX<span>A School</span></a>
     <nav class="nav">
       <a href="index.html" class="active"><i class="fas fa-home"></i> Accueil</a>
-      <a href="ma-journee.html"><i class="fas fa-calendar-day"></i> Ma journée</a>
-      <a href="parcours.html"><i class="fas fa-route"></i> Mon parcours</a>
+      <a href="progression.html"><i class="fas fa-chart-line"></i> Progression</a>
       <a href="profil.html"><i class="fas fa-user"></i> Mon profil</a>
       <a href="abonnement.html"><i class="fas fa-crown"></i> Mon abonnement</a>
       <a href="notifications.html"><i class="fas fa-bell"></i> Notifications</a>
@@ -1524,13 +1652,29 @@
         </section>
 
         <!-- ============================================================
-
              BLOC 3 — PARCOURS (Modèle A « Ton parcours vers le BAC »)
+             ✅ v8.51a — CARTE EN DUR (demande du propriétaire : « on va les
+             mettre en dur et fixer à la page ») : le squelette complet
+             (en-tête, phrase, métrique, action) est ÉCRIT STATIQUEMENT —
+             plus aucun re-rendu au chargement, la carte existe dès la
+             première image. parcours.js ne fait que METTRE À JOUR les
+             valeurs (phrase, temps, trait, %, cta) sans reconstruire le
+             DOM ; les données restent vivantes (cache + getSmartCard).
              ============================================================ -->
         <div class="section-title"><h3>🧭 Ton parcours vers le BAC</h3></div>
-        <div class="next-card parcours-card" id="parcoursCard">
-          <div class="ps-wrap">
-            <div class="ps-phrase">Ton parcours se prépare…</div>
+        <div class="next-card parcours-card pc-wrap" id="parcoursCard">
+          <div class="ps-wrap" id="psWrap">
+            <div class="ps-head">
+              <span class="ps-title"><i class="fas fa-route"></i> Ton parcours</span>
+              <span class="ps-bac" id="psBac" style="display:none"><i class="fas fa-flag-checkered"></i> <span id="psBacTxt">…</span></span>
+            </div>
+            <div class="ps-phrase" id="psPhrase">Ton parcours se prépare…</div>
+            <div class="ps-meta">
+              <span class="ps-time"><i class="fas fa-clock"></i> <span id="psTimeTxt">…</span></span>
+              <span class="ps-bar"><span class="ps-bar-fill" id="psBarFill" style="width:0%"></span></span>
+              <span class="ps-pct" id="psPct">…</span>
+            </div>
+            <div class="ps-cta" id="psCtaEl"><span><i class="fas fa-location-dot"></i> <span id="psCta">Ouvrir le Résumé</span></span><i class="fas fa-arrow-right"></i></div>
           </div>
         </div>
 
@@ -1567,9 +1711,23 @@
 
         <!-- ============================================================
              BLOC 5bis — RÉALISATIONS
+             ✅ v8.51a — LES 9 BADGES EN DUR : squelette statique fixé à la
+             page (icône + nom écrits dans le HTML), plus aucune liste
+             reconstruite au chargement — la peinture se limite à la classe
+             « unlocked » (moteur partagé __arvexaPaintBadges).
              ============================================================ -->
         <div class="section-title"><h3>🏆 Tes réalisations</h3></div>
-        <div class="badges-scroll" id="badgesScroll" aria-label="Badges débloqués"></div>
+        <div class="badges-scroll" id="badgesScroll" aria-label="Badges débloqués">
+          <div class="badge-item" data-badge="first"><div class="badge-coin">🧠</div><div class="badge-name">Premier résumé</div></div>
+          <div class="badge-item" data-badge="five"><div class="badge-coin">📚</div><div class="badge-name">5 sections résumées</div></div>
+          <div class="badge-item" data-badge="fifteen"><div class="badge-coin">🎓</div><div class="badge-name">15 sections résumées</div></div>
+          <div class="badge-item" data-badge="thirty"><div class="badge-coin">🏅</div><div class="badge-name">30 sections résumées</div></div>
+          <div class="badge-item" data-badge="subjects3"><div class="badge-coin">🗂️</div><div class="badge-name">3 matières explorées</div></div>
+          <div class="badge-item" data-badge="hour1"><div class="badge-coin">⏱️</div><div class="badge-name">1 heure d'étude</div></div>
+          <div class="badge-item" data-badge="hours5"><div class="badge-coin">💎</div><div class="badge-name">5 heures d'étude</div></div>
+          <div class="badge-item" data-badge="streak3"><div class="badge-coin">🔥</div><div class="badge-name">Série de 3 jours</div></div>
+          <div class="badge-item" data-badge="streak7"><div class="badge-coin">🚀</div><div class="badge-name">Série de 7 jours</div></div>
+        </div>
 
         <!-- ============================================================
              BLOC 6 — AVIS
@@ -2071,106 +2229,26 @@
 
 
 
-    /* — Badges réalisations (localStorage, identique au module) — */
+    /* — Badges réalisations —
+       ✅ v8.51a : badges EN DUR dans le HTML → plus aucune reconstruction
+       ici : un simple appel au moteur partagé __arvexaPaintBadges()
+       (bascule « unlocked » + PORTE BADGES fermée à l'intérieur).
+       L'ancienne liste v8.43 (Première section / Toutes matières…) est
+       retirée — une seule source de vérité, alignée sur le module. */
 
-    try {
+    try { if (window.__arvexaPaintBadges) window.__arvexaPaintBadges(); } catch (e) {}
 
-      var bsc = $('badgesScroll');
-
-      if (bsc) {
-
-        var BADGES = [
-
-          { icon: '📖', name: 'Première section', check: function (st) { return st.totalParts >= 1; } },
-
-          { icon: '📚', name: '5 sections', check: function (st) { return st.totalParts >= 5; } },
-
-          { icon: '🎓', name: '15 sections', check: function (st) { return st.totalParts >= 15; } },
-
-          { icon: '🏅', name: '30 sections', check: function (st) { return st.totalParts >= 30; } },
-
-          { icon: '🌍', name: 'Toutes matières', check: function (st) { return st.subjectsTouched >= 4; } },
-
-          { icon: '🔥', name: 'Série de 3 jours', check: function (st) { return st.streak >= 3; } },
-
-          { icon: '🚀', name: 'Série de 7 jours', check: function (st) { return st.streak >= 7; } },
-
-          { icon: '💎', name: 'Programme complet', check: function (st) { return st.chaptersRead >= st.chaptersTotal; } }
-
-        ];
-
-        var activity = {};
-
-        try { activity = JSON.parse(localStorage.getItem('arvexa_daily_activity') || '{}') || {}; } catch (e2) { activity = {}; }
-
-        var dashDayStr = function (dt) {
-
-          return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
-
-        };
-
-        var streak = 0;
-
-        var cursor = new Date();
-
-        var dashActive = function (dt) { return (Number(activity[dashDayStr(dt)]) || 0) > 0; };
-
-        if (!dashActive(cursor)) cursor.setDate(cursor.getDate() - 1);
-
-        while (dashActive(cursor) && streak < 365) { streak++; cursor.setDate(cursor.getDate() - 1); }
-
-        var chaptersRead = 0, subjectsTouched = 0, chaptersTotal = 0;
-
-        Object.keys(CH).forEach(function (k) {
-
-          chaptersTotal += CH[k];
-
-          var count = Object.keys(per[k]).length;
-
-          if (count > 0) { subjectsTouched++; chaptersRead += count; }
-
-        });
-
-        var st = { totalParts: parts.length, subjectsTouched: subjectsTouched, chaptersRead: chaptersRead, chaptersTotal: chaptersTotal, streak: streak };
-
-        bsc.textContent = '';
-
-        BADGES.forEach(function (b) {
-
-          var item = document.createElement('div');
-
-          item.className = 'badge-item' + (b.check(st) ? ' unlocked' : '');
-
-          var coin = document.createElement('div');
-
-          coin.className = 'badge-coin';
-
-          coin.textContent = b.icon;
-
-          var nm = document.createElement('div');
-
-          nm.className = 'badge-name';
-
-          nm.textContent = b.name;
-
-          item.appendChild(coin);
-
-          item.appendChild(nm);
-
-          bsc.appendChild(item);
-
-        });
-
-      }
-
-    } catch (e) {}
-
-
+    /* ✅ v8.51a — PORTE PROFIL : l'accueil est peint depuis la snapshot
+       (salutation, héros, classe, abonnement, compteurs) → la porte
+       « profil » peut se fermer. Idempotent. */
+    try { if (window.__arvexaReady) window.__arvexaReady('profile'); } catch (e) {}
 
     /* Tout est peint depuis le cache : révéler le contenu */
 
     document.documentElement.classList.add('ready');
-    /* ✅ v5.6 — contenu prêt derrière le splash : le laisser se dissiper */
+    /* ✅ v5.6 — contenu prêt derrière le splash : demander sa dissipation
+       (✅ v8.51a — elle n'aura lieu QUE quand les trois portes sont fermées,
+       filet 6 s sinon) */
     if (typeof window.__arvexaSplashOut === 'function') window.__arvexaSplashOut();
   };
   window.__arvexaApplyInstant();
@@ -2770,61 +2848,23 @@
   // BADGES — réalisations
   // ================================================================
   const badgesScroll = document.getElementById('badgesScroll');
-  // ✅ v8.50a — RÉALISATIONS BRANCHÉES SUR LA PAGE RÉSUMÉ (demande du
-  // propriétaire : fini le comptage matières/parts ouvertes) : les badges
-  // suivent l'évolution réelle du cahier — sections résumées, matières
-  // explorées, temps d'étude cumulé, habitude (série de jours). Tout est lu
-  // dans le cache local écrit par arv-progress.html (arvexa_dash_cache_v1)
-  // + l'activité quotidienne de l'appareil : ZÉRO appel Firebase.
-  function readResumeStats() {
-    let dash = null;
-    try { dash = JSON.parse(localStorage.getItem('arvexa_dash_cache_v1') || 'null'); } catch (e) { dash = null; }
-    const summary = (dash && dash.summary) || {};
-    const studyTime = (dash && dash.studyTime) || {};
-    const dashStreak = (dash && dash.streak && Number(dash.streak.current || 0)) || 0;
-    return {
-      sections: Number(summary.totalSections || 0) || 0,
-      subjects: Number(summary.subjectsCount || 0) || 0,
-      minutes: Number(studyTime.totalMinutes || 0) || 0,
-      dashStreak: dashStreak
-    };
-  }
-
-  const BADGES = [
-    { icon: '🧠', name: 'Premier résumé', check: (st) => st.sections >= 1 },
-    { icon: '📚', name: '5 sections résumées', check: (st) => st.sections >= 5 },
-    { icon: '🎓', name: '15 sections résumées', check: (st) => st.sections >= 15 },
-    { icon: '🏅', name: '30 sections résumées', check: (st) => st.sections >= 30 },
-    { icon: '🗂️', name: '3 matières explorées', check: (st) => st.subjects >= 3 },
-    { icon: '⏱️', name: "1 heure d'étude", check: (st) => st.minutes >= 60 },
-    { icon: '💎', name: "5 heures d'étude", check: (st) => st.minutes >= 300 },
-    { icon: '🔥', name: 'Série de 3 jours', check: (st) => st.streak >= 3 },
-    { icon: '🚀', name: 'Série de 7 jours', check: (st) => st.streak >= 7 }
-  ];
-
+  // ✅ v8.51a — BADGES EN DUR (demande du propriétaire : « on va les mettre
+  // en dur et fixer à la page… toujours connecté pour voir tes
+  // réalisations ») : les 9 badges sont écrits STATIQUEMENT dans le HTML,
+  // une seule source de vérité partagée avec la restauration instantanée
+  // (ARVEXA_BADGE_CHECKS + __arvexaPaintBadges + __arvexaBadgeStats,
+  // définis en tête de page). Le module se CONTENT de déléguer : bascule
+  // de la classe « unlocked » selon les données réelles (cache Résumé +
+  // activité de l'appareil) — plus AUCUNE reconstruction du DOM, la liste
+  // ne « charge » plus jamais à l'écran.
   function renderBadges() {
-    if (!badgesScroll) return;
-    const rs = readResumeStats();
-    const st = {
-      sections: rs.sections,
-      subjects: rs.subjects,
-      minutes: rs.minutes,
-      streak: Math.max(rs.dashStreak, computeStreak(computeActivity()))
-    };
-    badgesScroll.textContent = '';
-    BADGES.forEach((b) => {
-      const item = document.createElement('div');
-      item.className = 'badge-item' + (b.check(st) ? ' unlocked' : '');
-      const coin = document.createElement('div');
-      coin.className = 'badge-coin';
-      coin.textContent = b.icon;
-      const nm = document.createElement('div');
-      nm.className = 'badge-name';
-      nm.textContent = b.name;
-      item.appendChild(coin);
-      item.appendChild(nm);
-      badgesScroll.appendChild(item);
-    });
+    if (typeof window.__arvexaPaintBadges === 'function') {
+      window.__arvexaPaintBadges();
+      return;
+    }
+    /* Repli défensif (moteur absent — ne doit jamais arriver) : ne rien
+       reconstruire, seulement garantir la fermeture de la porte badges. */
+    try { if (window.__arvexaReady) window.__arvexaReady('badges'); } catch (e) {}
   }
 
   window.addEventListener('arvexa-progress-updated', () => {
@@ -3064,6 +3104,11 @@
   }
 
   function showDashboard() {
+    /* ✅ v8.51a — PORTE PROFIL : toutes les données du tableau de bord
+       (salutation, héros, niveau figé, abonnement) sont peintes par
+       renderUserData AVANT cet appel → la porte « profil » se ferme ici,
+       sur TOUS les chemins (snapshot temps réel, cache, erreur). */
+    try { if (window.__arvexaReady) window.__arvexaReady('profile'); } catch (e) {}
     hideSplash();
     const dynamic = document.getElementById('dynamicContent');
     if (dynamic) dynamic.style.display = 'block';
