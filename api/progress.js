@@ -630,9 +630,23 @@ function getProviders() {
       name: 'OpenRouter',
       key: process.env.OPENROUTER_API_KEY,
       endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-      model: process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b',
-      // ✅ v8.9 — replis GRATUITS si le modèle principal tombe/sature
-      fallbackModels: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'meta-llama/llama-3.3-70b-instruct:free'],
+      // ✅ v8.46a — le compte OpenRouter est à 0 crédit : les modèles PAYANTS
+      // (openai/gpt-oss-*, etc.) répondent HTTP 402 et la génération entière
+      // échouait (cause réelle de « carte générée mais rien à l'écran » :
+      // la chaîne Groq [clé morte] → Gemini → OpenRouter-payant était TOUTE
+      // cassée). On repart sur la liste :free VÉRIFIÉE EN DIRECT le 24/11/2026
+      // (sonde réelle : particle 9,4 s · nemotron 13,5 s · flint 28 s — JSON
+      // carte valide 3/3). Modèles à raisonnement (reasoning_tokens) : le
+      // raisonnement arrive dans un champ séparé, `content` reste du JSON pur.
+      model: process.env.OPENROUTER_MODEL || 'particle-ai/particle-1:free',
+      fallbackModels: [
+        'nvidia/nemotron-3.5-super-vl:free',
+        'recursive/flint-v1.0:free',
+        'google/gemma-4-31b-it:free',
+        'google/gemma-4-26b-a4b-it:free',
+        'inclusionai/ling-3.2-flash:free',
+        'baidu/ernie-5.5-flash-preview:free'
+      ],
       jsonMode: true,
       headers: {
         'HTTP-Referer': process.env.APP_ORIGIN || '',
@@ -925,11 +939,16 @@ async function callProvider(provider, { systemPrompt, userPrompt, maxTokens = 40
 // - OpenRouter (lent mais sans TPM serré) : questions + qcm en file
 // - Mistral : structure
 const TASK_PROVIDER_PREF = {
-  explanation: ['Groq', 'Gemini', 'Mistral', 'OpenRouter'],
-  structure:   ['Mistral', 'Gemini', 'OpenRouter', 'Groq'],
-  questions_a: ['Gemini', 'Mistral', 'OpenRouter', 'Groq'],
-  questions_b: ['Mistral', 'Gemini', 'OpenRouter', 'Groq'],
-  qcm:         ['Gemini', 'Mistral', 'OpenRouter', 'Groq']
+  // ✅ v8.46a — OpenRouter EN PREMIER partout : seul fournisseur SAIN (clé
+  // vivante + modèles :free vérifiés) ; Groq = clé morte (Forbidden immédiat),
+  // Gemini = clé non standard instable, Mistral = non configuré. L'ancien
+  // ordre brûlait 20-30 s chez Groq/Gemini AVANT d'atteindre OpenRouter,
+  // puis échouait sur ses modèles payants (402) → HTTP 500 à chaque fois.
+  explanation: ['OpenRouter', 'Gemini', 'Mistral', 'Groq'],
+  structure:   ['OpenRouter', 'Mistral', 'Gemini', 'Groq'],
+  questions_a: ['OpenRouter', 'Gemini', 'Mistral', 'Groq'],
+  questions_b: ['OpenRouter', 'Gemini', 'Mistral', 'Groq'],
+  qcm:         ['OpenRouter', 'Gemini', 'Mistral', 'Groq']
 };
 
 function distributeTasks(tasks, providers) {
@@ -3262,8 +3281,10 @@ function sanitizeMindmap(raw) {
 // le 1er fournisseur répondait un JSON de mauvaise forme, sanitize renvoyait
 // null, et AUCUN relais n'avait lieu — échec déterministe à chaque clic).
 async function callExtrasTask(taskName, providers, { systemPrompt, userPrompt, maxTokens, deadline, validate }) {
-  const pref = { qcm: ['Gemini', 'Mistral', 'OpenRouter', 'Groq'], mindmap: ['Groq', 'Gemini', 'Mistral', 'OpenRouter'] }[taskName]
-    || ['Gemini', 'Mistral', 'OpenRouter', 'Groq'];
+  // ✅ v8.46a — OpenRouter EN PREMIER (seul fournisseur sain, modèles :free
+  // vérifiés en direct) ; les autres restent des relais si OpenRouter sature.
+  const pref = { qcm: ['OpenRouter', 'Gemini', 'Mistral', 'Groq'], mindmap: ['OpenRouter', 'Gemini', 'Mistral', 'Groq'] }[taskName]
+    || ['OpenRouter', 'Gemini', 'Mistral', 'Groq'];
   const byName = new Map(providers.map((p) => [p.name, p]));
   let lastErr = null;
   for (const name of pref) {
@@ -3330,7 +3351,9 @@ Génère un QCM COURT d'auto-évaluation : 4 à 6 questions MAXIMUM, chacune ave
 
 Réponds EXACTEMENT dans ce format :
 {"qcm":[{"q":"…","choices":["…","…","…"],"answer":0,"why":"…"}]}`,
-      maxTokens: 1600,
+      // ✅ v8.46a — 2200 : les modèles :free à RAISONNEMENT consomment 1 300-
+      // 2 500 tokens de raisonnement AVANT le JSON — 1600 tronquait la réponse.
+      maxTokens: 2200,
       deadline,
       validate: (d) => Boolean(d && Array.isArray(d.qcm) && d.qcm.length >= 2)
     });
@@ -3361,7 +3384,9 @@ Chaque carte porte un titre ULTRA COURT (2 à 5 mots, étiquette lisible) et deu
 
 Réponds EXACTEMENT dans ce format :
 {"idea":"…","detail":"…","signif":"…","steps":[{"title":"…","detail":"…","signif":"…","children":[{"title":"…","detail":"…","signif":"…"}]}]}`,
-      maxTokens: 3200,
+      // ✅ v8.46a — 3800 : raisonnement des modèles :free (jusqu'à 2 500 tokens)
+      // + carte complète — 3200 tronquait parfois les dernières branches.
+      maxTokens: 3800,
       deadline,
       // ✅ v8.44a — si le JSON est de mauvaise forme → FOURNISSEUR SUIVANT
       // (fini le « Carte mentale illisible » définitif du bouton)

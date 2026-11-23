@@ -41,24 +41,29 @@
     '.pc-class i{color:var(--pc-b)}',
     '.pc-class strong{color:var(--text-light,#F5F0E8);font-weight:600}',
     '.pc-hero .pc-class{margin:0 0 6px}',
-    /* ✅ v8.43 — CARTE INTELLIGENTE de l\'accueil : simple et luxueuse (demande
-       propriétaire : « les éléments actuels sont trop volumineux, rends-la
-       simple et luxueuse ») — phrase intelligente, 3 mesures fines, trait de
-       progression, une seule action. */
-    '.ps-wrap{display:flex;flex-direction:column;gap:12px;cursor:pointer}',
-    '.ps-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
-    '.ps-bac{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--accent-bright,#E0B84A);background:rgba(var(--rgb-soft,224,184,74),.10);border:1px solid rgba(var(--rgb-soft,224,184,74),.25);padding:5px 11px;border-radius:999px}',
-    '.ps-phrase{font-size:15px;font-weight:600;line-height:1.55;color:var(--text-light,#F5F0E8);overflow-wrap:anywhere}',
+    /* ✅ v8.46a — CARTE INTELLIGENTE de l\'accueil : PLUS PETITE, MOINS
+       D\'ÉLÉMENTS, PLUS MAGNIFIQUE (demande propriétaire : « tu l\'as rendu un
+       peu comme basique donc rend le plus petit moins d\'éléments et plus
+       magnifique »). UNE ligne d\'en-tête (parcours + BAC), UNE phrase fine,
+       UNE ligne métrique (temps + trait de progression + %), UNE action.
+       Fini les 3 boîtes de statistiques — le luxe est dans la sobriété. */
+    '.ps-wrap{display:flex;flex-direction:column;gap:9px;cursor:pointer}',
+    '.ps-head{display:flex;align-items:center;justify-content:space-between;gap:8px}',
+    '.ps-title{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--text-dim,#8A8A7A)}',
+    '.ps-title i{color:var(--accent-bright,#E0B84A);font-size:11px}',
+    '.ps-bac{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--accent-bright,#E0B84A);background:rgba(var(--rgb-soft,224,184,74),.10);border:1px solid rgba(var(--rgb-soft,224,184,74),.22);padding:3px 9px;border-radius:999px;white-space:nowrap}',
+    '.ps-phrase{font-size:13.5px;font-weight:600;line-height:1.5;color:var(--text-light,#F5F0E8);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}',
     '.ps-phrase em{font-style:normal;color:var(--accent-bright,#E0B84A);font-weight:700}',
-    '.ps-stats{display:flex;gap:10px;flex-wrap:wrap}',
-    '.ps-stat{flex:1 1 80px;background:rgba(var(--rgb-soft,224,184,74),.06);border:1px solid rgba(var(--rgb-soft,224,184,74),.14);border-radius:14px;padding:10px 12px;text-align:center}',
-    '.ps-stat strong{display:block;font-size:15px;font-weight:800;color:var(--text-light,#F5F0E8);line-height:1.2}',
-    '.ps-stat span{display:block;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text-dim,#8A8A7A);margin-top:2px}',
-    '.ps-bar{height:6px;border-radius:999px;background:var(--bg-surface,#141414);overflow:hidden}',
-    '.ps-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent,#B8860B),var(--accent-bright,#E0B84A));transition:width .5s ease}',
-    '.ps-cta{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:700;color:var(--text-light,#F5F0E8);background:rgba(var(--rgb-soft,224,184,74),.10);border:1px solid rgba(var(--rgb-soft,224,184,74),.25);border-radius:999px;padding:12px 16px;transition:background .2s ease}',
+    '.ps-meta{display:flex;align-items:center;gap:9px}',
+    '.ps-time{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--text-dim,#8A8A7A);white-space:nowrap}',
+    '.ps-time i{color:var(--accent-bright,#E0B84A);font-size:10.5px}',
+    '.ps-bar{flex:1;height:4px;border-radius:999px;background:var(--bg-surface,#141414);overflow:hidden}',
+    '.ps-bar-fill{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent,#B8860B),var(--accent-bright,#E0B84A));transition:width .5s ease;box-shadow:0 0 8px rgba(224,184,74,.35)}',
+    '.ps-pct{font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent-bright,#E0B84A);min-width:30px;text-align:right}',
+    '.ps-cta{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:700;color:var(--text-light,#F5F0E8);background:linear-gradient(135deg,rgba(var(--rgb-soft,224,184,74),.14),rgba(var(--rgb-soft,224,184,74),.07));border:1px solid rgba(var(--rgb-soft,224,184,74),.28);border-radius:999px;padding:9px 14px;transition:transform .2s ease,background .2s ease;overflow:hidden;white-space:nowrap}',
+    '.ps-cta > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '.ps-cta i{margin-left:auto;color:var(--accent-bright,#E0B84A);flex-shrink:0}',
-    '.ps-cta:hover{background:rgba(var(--rgb-soft,224,184,74),.16)}',
+    '.ps-wrap:active .ps-cta{transform:scale(.985);background:rgba(var(--rgb-soft,224,184,74),.18)}',
     '@media (max-width:560px){.pc-title{font-size:21px}.pc-btn{width:100%;justify-content:center}}'
   ].join('\n');
 
@@ -283,25 +288,27 @@
       .sort(function (a, b) { return (b.minutes || 0) - (a.minutes || 0); });
     var nS = (d && d.summary && d.summary.totalSections) || 0;
     if (subjects.length === 0 || nS === 0) {
-      return { html: 'Ton parcours démarre avec toi — ajoute ton premier cours dans <em>Résumé</em>, l\'IA le classe pour toi.', cta: 'Ouvrir le Résumé', href: 'arv-progress.html' };
+      return { html: 'Ajoute ton premier cours dans <em>Résumé</em> — l\'IA le classe pour toi.', cta: 'Ouvrir le Résumé', href: 'arv-progress.html' };
     }
     var top = subjects[0];
     var lac = d.lacune || null;
+    // ✅ v8.46a — phrases COURTES (carte plus petite, moins d\'éléments) :
+    // l\'essentiel tient en 1-2 lignes, la cta porte l\'action précise.
     if (lac && lac.subject && lac.id) {
       if ((lac.studyMinutes || 0) < 5) {
         return {
-          html: 'Ton temps va surtout à ' + esc(top.label) + ' — ' + esc(fmtMinLocal(top.minutes)) + ' au total. Mais <em>« ' + esc(lac.title) + ' »</em> en ' + esc(lac.subjectLabel) + ' (' + lac.sectionsCount + ' section' + (lac.sectionsCount > 1 ? 's' : '') + ') attend encore : c\'est ta lacune du moment.',
-          cta: 'Reprendre « ' + lac.title + ' »',
+          html: 'Ton temps va surtout à ' + esc(top.label) + ' — <em>' + esc(lac.title) + '</em> attend encore : c\'est ta lacune du moment.',
+          cta: 'Reprendre ' + lac.title,
           href: 'arv-progress.html#/chapter/' + lac.subject + '/' + lac.id
         };
       }
       return {
-        html: 'Bien réparti — mais <em>« ' + esc(lac.title) + ' »</em> en ' + esc(lac.subjectLabel) + ' reste le moins travaillé : ' + esc(fmtMinLocal(lac.studyMinutes)) + ' pour ' + lac.sectionsCount + ' section' + (lac.sectionsCount > 1 ? 's' : '') + '. Un bon point à revoir.',
-        cta: 'Reprendre « ' + lac.title + ' »',
+        html: '<em>' + esc(lac.title) + '</em> en ' + esc(lac.subjectLabel) + ' est ta lacune — ' + esc(fmtMinLocal(lac.studyMinutes)) + ' pour ' + lac.sectionsCount + ' section' + (lac.sectionsCount > 1 ? 's' : '') + '. Un point à revoir.',
+        cta: 'Reprendre ' + lac.title,
         href: 'arv-progress.html#/chapter/' + lac.subject + '/' + lac.id
       };
     }
-    return { html: 'Ton temps d\'étude est bien réparti sur ' + subjects.length + ' matière' + (subjects.length > 1 ? 's' : '') + ' — continue, chaque chapitre compte.', cta: 'Ouvrir le Résumé', href: 'arv-progress.html' };
+    return { html: 'Temps bien réparti sur ' + subjects.length + ' matière' + (subjects.length > 1 ? 's' : '') + ' — chaque chapitre compte.', cta: 'Ouvrir le Résumé', href: 'arv-progress.html' };
   }
 
   function renderSmartCard(el, d) {
@@ -311,20 +318,19 @@
     var bac = daysToBac();
     var pct = M ? Math.round(doneCount() / Math.max(1, M.steps.length) * 100) : null;
 
+    // ✅ v8.46a — 4 éléments AU LIEU DE 6 : en-tête (titre + BAC), phrase,
+    // métrique fine (temps + trait + %), action. Compact et luxueux.
     var html = '<div class="ps-wrap" id="psWrap">';
-    if (bac != null) {
-      html += '<div class="ps-top"><span class="ps-bac"><i class="fas fa-flag-checkered"></i> BAC dans ' + bac + ' jour' + (bac > 1 ? 's' : '') + '</span></div>';
-    }
-    html += '<div class="ps-phrase">' + ph.html + '</div>';
-    html += '<div class="ps-stats">'
-      + '<div class="ps-stat"><strong>' + esc(study.totalLabel || fmtMinLocal(study.totalMinutes || 0)) + '</strong><span>Temps d\'étude</span></div>'
-      + '<div class="ps-stat"><strong>' + Number(summary.totalChapters || 0) + '</strong><span>Chapitres</span></div>'
-      + '<div class="ps-stat"><strong>' + Number(summary.totalSections || 0) + '</strong><span>Sections</span></div>'
+    html += '<div class="ps-head">'
+      + '<span class="ps-title"><i class="fas fa-route"></i> Ton parcours</span>'
+      + (bac != null ? '<span class="ps-bac"><i class="fas fa-flag-checkered"></i> BAC · ' + bac + ' j</span>' : '')
       + '</div>';
-    if (pct != null) {
-      html += '<div class="ps-bar"><div class="ps-bar-fill" style="width:' + pct + '%"></div></div>';
-    }
-    html += '<div class="ps-cta"><i class="fas fa-location-dot"></i> ' + esc(ph.cta) + '<i class="fas fa-arrow-right"></i></div>';
+    html += '<div class="ps-phrase">' + ph.html + '</div>';
+    html += '<div class="ps-meta">'
+      + '<span class="ps-time"><i class="fas fa-clock"></i> ' + esc(study.totalLabel || fmtMinLocal(study.totalMinutes || 0)) + '</span>'
+      + (pct != null ? '<span class="ps-bar"><span class="ps-bar-fill" style="width:' + pct + '%"></span></span><span class="ps-pct">' + pct + ' %</span>' : '<span class="ps-bar"><span class="ps-bar-fill" style="width:0%"></span></span>')
+      + '</div>';
+    html += '<div class="ps-cta"><span><i class="fas fa-location-dot"></i> ' + esc(ph.cta) + '</span><i class="fas fa-arrow-right"></i></div>';
     html += '</div>';
     el.innerHTML = html;
     var wrap = el.querySelector('#psWrap');

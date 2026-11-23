@@ -2799,6 +2799,56 @@ select:focus-visible,
       transition: width 0.3s ease;
     }
 
+    /* ── ✅ v8.46a — ÉTAPES DE L'ANALYSE IA (demande propriétaire : « tu remets
+       ces étapes et lorsque ces étapes s'affichent tu mets en bas continue en
+       arrière-plan ») — checklist vivante pendant l'analyse du cours. ── */
+    .ac-steps {
+      display: flex; flex-direction: column; gap: 0;
+      margin: 4px 0 2px;
+    }
+    .ac-step {
+      display: flex; align-items: center; gap: 11px;
+      padding: 9px 4px;
+      position: relative;
+    }
+    .ac-step + .ac-step { border-top: 1px solid rgba(var(--rgb-soft), 0.05); }
+    .ac-step-ico {
+      flex-shrink: 0;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: rgba(var(--rgb-soft), 0.07);
+      border: 1.5px solid rgba(var(--rgb-soft), 0.10);
+      transition: all 0.35s ease;
+    }
+    .ac-step-txt { flex: 1; min-width: 0; }
+    .ac-step-name {
+      font-size: 13px; font-weight: 700; color: var(--text-muted);
+      line-height: 1.35; transition: color 0.35s ease;
+    }
+    .ac-step-sub { display: block; font-size: 10.5px; color: var(--text-muted); opacity: 0.75; margin-top: 1px; }
+    .ac-step.running .ac-step-ico {
+      color: var(--on-gold);
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      border-color: transparent;
+      box-shadow: 0 2px 12px rgba(184, 134, 11, 0.35);
+      animation: acPulse 1.4s ease-in-out infinite;
+    }
+    .ac-step.running .ac-step-name { color: var(--text-light); }
+    .ac-step.done .ac-step-ico {
+      color: #2ecf7f;
+      background: rgba(46, 207, 127, 0.12);
+      border-color: rgba(46, 207, 127, 0.35);
+      animation: none;
+    }
+    .ac-step.done .ac-step-name { color: var(--text-light); opacity: 0.9; }
+    @keyframes acPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
     /* ── PASTILLE D'EXTRACTION EN ARRIÈRE-PLAN (v8.40) — visible sur toutes
        les vues de la page : l'extraction continue pendant que l'élève
        navigue librement, il ne reste pas bloqué sur la même page. ── */
@@ -3888,8 +3938,18 @@ async function fetchSectionExtras(subject, chapterId, sectionId, parts) {
   const ex = getExtras(subject, chapterId, sectionId);
   try {
     const data = await callApi('generateSectionExtras', { subject, chapterId, sectionId, parts });
-    if (data.qcm) ex.qcm = data.qcm;
-    if (data.mindmap) ex.mindmap = data.mindmap;
+    // ✅ v8.46a — MIROIR localStorage : la carte/QCM générés sont gardés en
+    // local en PLUS de Firestore (écriture best-effort côté serveur). Au retour
+    // sur la page, la carte se restaure INSTANTanément même si l'écriture en
+    // base a échoué — fini le « le bouton Générer réapparaît à chaque visite ».
+    if (data.qcm) {
+      ex.qcm = data.qcm;
+      try { localStorage.setItem('arvexa_qcm_cache_' + extrasKey(subject, chapterId, sectionId), JSON.stringify(data.qcm)); } catch (e) {}
+    }
+    if (data.mindmap) {
+      ex.mindmap = data.mindmap;
+      try { localStorage.setItem('arvexa_mm_cache_' + extrasKey(subject, chapterId, sectionId), JSON.stringify(data.mindmap)); } catch (e) {}
+    }
     return data;
   } finally {
     parts.forEach((p) => { ex.loading[p] = false; });
@@ -4417,6 +4477,23 @@ async function renderSectionView(params) {
     const ex = getExtras(subject, chapterId, sectionId);
     if (!ex.qcm && Array.isArray(a.qcm) && a.qcm.length >= 3) ex.qcm = a.qcm;
     if (!ex.mindmap && a.mindmap && a.mindmap.idea && Array.isArray(a.mindmap.steps) && a.mindmap.steps.length > 0) ex.mindmap = a.mindmap;
+    // ✅ v8.46a — MIROIR localStorage (2e couche de restauration) : si Firestore
+    // n'a pas la carte (écriture échouée) mais qu'elle a été générée sur CET
+    // appareil, elle se réaffiche quand même — le bouton « Générer » ne
+    // réapparaît plus au retour sur la page (plainte propriétaire).
+    const exKeyStr = extrasKey(subject, chapterId, sectionId);
+    if (!ex.mindmap) {
+      try {
+        const lm = JSON.parse(localStorage.getItem('arvexa_mm_cache_' + exKeyStr) || 'null');
+        if (lm && lm.idea && Array.isArray(lm.steps) && lm.steps.length > 0) ex.mindmap = lm;
+      } catch (e) {}
+    }
+    if (!ex.qcm) {
+      try {
+        const lq = JSON.parse(localStorage.getItem('arvexa_qcm_cache_' + exKeyStr) || 'null');
+        if (Array.isArray(lq) && lq.length >= 3) ex.qcm = lq;
+      } catch (e) {}
+    }
     // compteur d'ESSAIS AUTO par section (par chargement de page) — l'IA se
     // lance seule à l'ouverture de l'onglet, mais SANS vider le quota si tout
     // échoue : après 2 essais auto, seul le bouton « Générer » relance.
@@ -4563,7 +4640,7 @@ async function renderSectionView(params) {
       }
     }
 
-    async function launchExtras(kind, isAuto) {
+    async function launchExtras(kind, isAuto, _retried) {
       // ✅ v8.44a — isAuto : les essais AUTOMATIQUES (ouverture d'onglet) sont
       // bornés à 2 par section et par page ; le BOUTON « Générer » reste
       // toujours actif (un clic explicite ne compte pas dans la borne).
@@ -4577,11 +4654,38 @@ async function renderSectionView(params) {
       try {
         await fetchSectionExtras(subject, chapterId, sectionId, [kind]);
         if (kind === 'qcm') mountQcmPanel(); else mountMmPanel();
-        showToast(kind === 'qcm' ? 'QCM prêt — bon entraînement !' : 'Carte mentale prête !', 'success');
+        // ✅ v8.46a — LE TOAST NE CRIE « PRÊT » QUE SI C'EST VRAIMENT AFFICHÉ :
+        // le symptôme « ça affiche que la carte a été générée mais je ne vois
+        // pas la map » venait du toast lancé MÊME quand le rendu rejetait le
+        // contenu (bouton réaffiché + message trompeur). Désormais contenu
+        // reçu mais non affichable = échec traité comme les autres.
+        const rendered = kind === 'qcm'
+          ? Boolean(panel && panel.querySelector('[data-qcmz]'))
+          : Boolean(panel && panel.querySelector('[data-mmap]'));
+        if (rendered) {
+          showToast(kind === 'qcm' ? 'QCM prêt — bon entraînement !' : 'Carte mentale prête !', 'success');
+        } else {
+          throw new Error('Réponse IA inutilisable — nouveau modèle sollicité');
+        }
       } catch (e) {
         ex.loading[kind] = false;
+        // ✅ v8.46a — MODELES GRATUITS SATURÉS (429/5xx/réseau/forme invalide) :
+        // UNE relance auto silencieuse après 2,5 s — les modèles :free sont
+        // limités en cadence, un second essai passe dans la grande majorité
+        // des cas. Bornée à 1 (jamais de boucle), jamais après un échec auth.
+        const transient = e.code === 'NETWORK_ERROR' || e.status === 429
+          || (e.status || 0) >= 500 || !e.status
+          || /inutilisable|illisible/i.test(e.message || '');
+        if (!_retried && transient) {
+          if (panel) panel.innerHTML = extrasGeneratingHtml(kind);
+          await new Promise((r) => setTimeout(r, 2500));
+          if (!ex.loading[kind]) return launchExtras(kind, false, true);
+        }
         if (panel) {
-          panel.innerHTML = extrasErrorHtml(kind, e.message || 'La génération a échoué — réessaie dans quelques secondes.');
+          const msg = /auth|connexion requise/i.test(e.message || '')
+            ? (e.message || 'Connexion requise.')
+            : 'Les modèles IA sont saturés pour un instant — une relance suffit presque toujours.';
+          panel.innerHTML = extrasErrorHtml(kind, msg);
           panel.querySelector(`[data-extras-gen="${kind}"]`)?.addEventListener('click', () => launchExtras(kind));
         }
       }
@@ -5549,7 +5653,8 @@ function acPillEnsure() {
     document.body.appendChild(pill);
     pill.addEventListener('click', () => {
       // rouvrir la modale d'ajout : l'élève retrouve l'écran en cours
-      if (acJob.active && (acJob.kind === 'photos' || acJob.kind === 'pdf')) {
+      // ✅ v8.46a — l'ANALYSE aussi se rouvre (étapes en direct, pas de restart)
+      if (acJob.active && (acJob.kind === 'photos' || acJob.kind === 'pdf' || acJob.kind === 'analyse')) {
         openAddCourseModal();
       }
     });
@@ -5716,6 +5821,141 @@ function acWireProgressButtons(showModeChoice, onCancel) {
     if (typeof onCancel === 'function') onCancel();
     showToast('Extraction annulée', 'info');
     showModeChoice();
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// ✅ v8.46a — ÉTAPES DE L'ANALYSE IA + ARRIÈRE-PLAN RÉEL (demande
+// propriétaire : « tu remets ces étapes et lorsque ces étapes s'affichent
+// tu mets en bas continue en arrière-plan » + « peu importe la page dans
+// laquelle je serai ça va continuer et même si je quitte le site ça va
+// continuer »). Checklist vivante pendant l'analyse : chaque étape décrit
+// ce que l'IA fait RÉELLEMENT côté serveur (détection de matière → résumé
+// → questions → classement) ; le % suit une enveloppe temporelle honnête
+// (l'analyse est UN appel serveur — il n'y a pas de flux d'étapes par
+// réseau) et saute à 100 % dès que la réponse arrive. « Continuer en
+// arrière-plan » ferme la modale : la pastille continue, l'appel part avec
+// keepalive (la section est créée côté serveur même en quittant le site)
+// et le Wake Lock est demandé pour que la génération survive à la veille.
+// ══════════════════════════════════════════════════════════════
+const AC_ANALYSE_STEPS = [
+  { icon: 'fa-paper-plane',        name: 'Envoi de ton cours',                    sub: 'Transfert sécurisé vers l’IA' },
+  { icon: 'fa-magnifying-glass',   name: 'Lecture et détection de la matière',    sub: 'L’IA reconnaît la discipline' },
+  { icon: 'fa-pen-fancy',          name: 'Rédaction du résumé',                   sub: 'Ton cours devient une fiche claire' },
+  { icon: 'fa-circle-question',    name: 'Préparation des questions',             sub: 'QCM et réponses rédigées' },
+  { icon: 'fa-folder-open',        name: 'Classement dans ton cahier',            sub: 'La section rejoint sa matière' }
+];
+// % où chaque étape BASCULE « en cours » (étape 0 part dès l'envoi)
+const AC_ANALYSE_MARKS = [0, 8, 32, 58, 82];
+const AC_ANALYSE_BUDGET_MS = 30000; // enveloppe réaliste d'une analyse complète
+let acAnalysisTimer = null;
+
+function acAnalysisScreenHtml() {
+  const rows = AC_ANALYSE_STEPS.map((st, i) => `
+    <div class="ac-step" data-ac-step="${i}">
+      <span class="ac-step-ico"><i class="fas ${st.icon}"></i></span>
+      <span class="ac-step-txt">
+        <span class="ac-step-name">${st.name}</span>
+        <span class="ac-step-sub">${st.sub}</span>
+      </span>
+    </div>`).join('');
+  return `
+    <div class="extract-progress" style="margin-bottom:10px;">
+      <span class="mini-spinner"></span>
+      <span class="pct-badge" id="acPct">0 %</span>
+      <span id="acProgTxt">Analyse de ton cours…</span>
+    </div>
+    <div class="pct-bar"><div class="pct-bar-fill" id="acBarFill" style="width:0%"></div></div>
+    <div class="ac-steps" style="margin-top:14px;">${rows}</div>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
+      <button type="button" class="btn-full secondary" id="acBgBtn">
+        <span class="btn-icon"><i class="fas fa-layer-group"></i></span>
+        <span class="btn-text">Continuer en arrière-plan</span>
+      </button>
+      <button type="button" class="mode-back" id="acCancelBtn"><i class="fas fa-times"></i> Annuler l'analyse</button>
+    </div>
+  `;
+}
+
+// Peint l'état des étapes depuis acJob.pct (monotone, 0..100).
+function acAnalysisPaint() {
+  const pct = acJob.pct || 0;
+  document.querySelectorAll('[data-ac-step]').forEach((row) => {
+    const i = Number(row.dataset.acStep || 0);
+    const mark = AC_ANALYSE_MARKS[i] || 0;
+    const nextMark = AC_ANALYSE_MARKS[i + 1];
+    row.classList.toggle('running', pct >= mark && (nextMark === undefined || pct < nextMark));
+    row.classList.toggle('done', nextMark !== undefined ? pct >= nextMark : false);
+  });
+  const pctEl = document.getElementById('acPct');
+  const barEl = document.getElementById('acBarFill');
+  const txtEl = document.getElementById('acProgTxt');
+  if (pctEl) pctEl.textContent = `${Math.round(pct)} %`;
+  if (barEl) barEl.style.width = `${Math.round(pct)}%`;
+  if (txtEl) {
+    const run = AC_ANALYSE_STEPS.findIndex((_, i) => {
+      const mark = AC_ANALYSE_MARKS[i] || 0;
+      const nextMark = AC_ANALYSE_MARKS[i + 1];
+      return pct >= mark && (nextMark === undefined || pct < nextMark);
+    });
+    txtEl.textContent = run >= 0 ? `${AC_ANALYSE_STEPS[run].name}…` : 'Analyse de ton cours…';
+  }
+  acPillUpdate();
+}
+
+// Horloge de progression : % monotone plafonné à 95 % tant que la réponse
+// n'est pas arrivée (jamais de 100 % mensonger).
+function acAnalysisTick() {
+  if (!acJob.active || acJob.kind !== 'analyse') return;
+  const elapsed = Date.now() - (acJob.startedAt || Date.now());
+  const frac = Math.min(0.95, elapsed / AC_ANALYSE_BUDGET_MS);
+  acJob.pct = Math.max(acJob.pct || 0, Math.round(frac * 100));
+  acAnalysisPaint();
+}
+function acAnalysisBegin() {
+  acJob.startedAt = Date.now();
+  if (acAnalysisTimer) clearInterval(acAnalysisTimer);
+  acAnalysisTimer = setInterval(acAnalysisTick, 600);
+  acAnalysisTick();
+}
+// Réponse arrivée (succès) → toutes les étapes cochées, 100 %.
+function acAnalysisMarkAllDone() {
+  if (acAnalysisTimer) { clearInterval(acAnalysisTimer); acAnalysisTimer = null; }
+  acJob.pct = 100;
+  document.querySelectorAll('[data-ac-step]').forEach((row) => {
+    row.classList.remove('running');
+    row.classList.add('done');
+  });
+  const pctEl = document.getElementById('acPct');
+  const barEl = document.getElementById('acBarFill');
+  if (pctEl) pctEl.textContent = '100 %';
+  if (barEl) barEl.style.width = '100%';
+}
+function acAnalysisStop() {
+  if (acAnalysisTimer) { clearInterval(acAnalysisTimer); acAnalysisTimer = null; }
+}
+// « Continuer en arrière-plan » pendant l'ANALYSE : la modale se ferme, la
+// pastille prend le relais, le Wake Lock est demandé (autorisation système
+// : la page ne s'endort pas pendant la génération — demande propriétaire
+// « demander une autorisation de continuer en arrière-plan pour forcer ça »).
+function acWireAnalysisButtons() {
+  $('acBgBtn')?.addEventListener('click', () => {
+    closeModal();
+    __isAddCourseModalOpen = false;
+    try { if (window.ARVEXAWakeLock) window.ARVEXAWakeLock.acquire('analyse'); } catch (e) {}
+    acPillUpdate();
+    showToast('Analyse en arrière-plan — navigue librement, tout continue', 'info', 4500);
+  });
+  $('acCancelBtn')?.addEventListener('click', () => {
+    acAnalysisStop();
+    acJobStop();
+    try { if (window.ARVEXAWakeLock) window.ARVEXAWakeLock.release('analyse'); } catch (e) {}
+    closeModal();
+    __isAddCourseModalOpen = false;
+    acPillUpdate();
+    // honnêteté : l'appel serveur part avec keepalive — la section peut
+    // encore être créée malgré l'arrêt du suivi côté écran.
+    showToast('Suivi arrêté — la section peut encore arriver dans ton cahier', 'info', 5000);
   });
 }
 
@@ -6469,35 +6709,65 @@ function openAddCourseModal(context) {
     acResumeQid = null;
     if (qid) acQueueUpsert({ id: qid, status: 'analysee', text: rawInput });
 
-    closeModal();
-    __isAddCourseModalOpen = false;
-
+    // ✅ v8.46a — LES ÉTAPES S'AFFICHENT DANS LA MODALE (retour demandé par le
+    // propriétaire) + bouton « Continuer en arrière-plan » EN BAS. La modale
+    // ne se ferme plus d'office : c'est l'élève qui choisit (bouton) — et
+    // s'il quitte la page entière, l'appel keepalive termine côté serveur et
+    // la section est créée quand même.
     acJob.active = true;
     acJob.kind = 'analyse';
     acJob.cancelled = false;
-    acJob.pct = null;
+    acJob.pct = 1;
     acJob.label = isSectionCtx ? 'Analyse IA en cours — ta section arrive' : 'Analyse IA en cours — ton résumé se prépare';
     acJob.modalToken = ++acJob.seq;
+    if (!acJob.qid) {
+      acJob.qid = `ac${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      acQueueUpsert({
+        id: acJob.qid,
+        mode: 'texte',
+        ctx: isSectionCtx ? 'section' : 'cours',
+        subject: isSectionCtx ? submitCtx.subject : null,
+        chapterId: isSectionCtx ? submitCtx.chapterId : null,
+        ctxLabel: isSectionCtx ? (SUBJECTS[submitCtx.subject]?.label || '') : '',
+        title: acJob.label,
+        status: 'analysee',
+        pct: 1,
+        text: rawInput,
+        createdAt: Date.now()
+      });
+    } else {
+      acQueueUpsert({ id: acJob.qid, status: 'analysee', text: rawInput });
+    }
     acPillEnsure();
-    acPillUpdate();
+    acBody.innerHTML = acAnalysisScreenHtml();
+    acWireAnalysisButtons();
+    acAnalysisBegin();
 
     try {
+      let result;
       if (isSectionCtx) {
         // ✅ v8.41 — SECTION : la matière et le chapitre sont déjà choisis —
         // createSection direct (le même contenu, le même arrière-plan keepalive).
-        const result = await callApi('createSection', { subject: submitCtx.subject, chapterId: submitCtx.chapterId, rawInput }, 1, false, { keepalive: true });
-        if (qid) acQueueRemove(qid); // généré → l'entrée sort de la file
-        acJobStop();
+        result = await callApi('createSection', { subject: submitCtx.subject, chapterId: submitCtx.chapterId, rawInput }, 1, false, { keepalive: true });
+      } else {
+        // COURS : l'IA détecte la matière et classe la section (keepalive).
+        result = await callApi('autoAddSection', { rawInput }, 1, false, { keepalive: true });
+      }
+      acAnalysisMarkAllDone();
+      acAnalysisStop();
+      acJobStop();
+      try { if (window.ARVEXAWakeLock) window.ARVEXAWakeLock.release('analyse'); } catch (e) {}
+      if (qid || acJob.qid) acQueueRemove(qid || acJob.qid); // généré → l'entrée sort de la file
+      closeModal();
+      __isAddCourseModalOpen = false;
+      acPillUpdate();
+      if (isSectionCtx) {
         try { localStorage.removeItem(`arvexa_section_draft_${submitCtx.subject}_${submitCtx.chapterId}`); } catch (e) {}
         delete state.cache.chapters[submitCtx.subject];
         delete state.cache.chapter[`${submitCtx.subject}/${submitCtx.chapterId}`];
         showToast('Section analysée — bon travail !', 'success');
         navigate('section', { subject: submitCtx.subject, chapterId: submitCtx.chapterId, sectionId: result.sectionId });
       } else {
-        // COURS : l'IA détecte la matière et classe la section (keepalive).
-        const result = await callApi('autoAddSection', { rawInput }, 1, false, { keepalive: true });
-        if (qid) acQueueRemove(qid); // généré → l'entrée sort de la file
-        acJobStop();
         state.autoAdded = { chapterId: result.chapterId, sectionId: result.sectionId, createdChapter: !!result.createdChapter };
         delete state.cache.chapters[result.subject];
         delete state.cache.chapter[`${result.subject}/${result.chapterId}`];
@@ -6505,10 +6775,15 @@ function openAddCourseModal(context) {
         navigate('section', { subject: result.subject, chapterId: result.chapterId, sectionId: result.sectionId });
       }
     } catch (e) {
+      acAnalysisStop();
       acJobStop();
+      try { if (window.ARVEXAWakeLock) window.ARVEXAWakeLock.release('analyse'); } catch (err) {}
+      closeModal();
+      __isAddCourseModalOpen = false;
+      acPillUpdate();
       // ✅ v8.41 — échec de l'analyse : l'entrée repasse « Prêt » (texte intact),
       // l'élève relance en un tap depuis la file ou la modale rouverte.
-      if (qid) acQueueUpsert({ id: qid, status: 'done', text: rawInput });
+      if (qid || acJob.qid) acQueueUpsert({ id: qid || acJob.qid, status: 'done', text: rawInput });
       if (e.code === 'FREE_SECTION_LIMIT') {
         showPremiumModal();
         applyRoute({ view: 'notebooks', params: {} });
@@ -6534,6 +6809,9 @@ function openAddCourseModal(context) {
   // ✅ v8.41 — ordre d'ouverture : un extraction LIVE d'abord (la modale
   // rouverte via la pastille doit refléter la progression), sinon la saisie
   // reprise (texte de l'IA / brouillon de section), sinon le choix du mode.
+  // ✅ v8.46a — une ANALYSE en cours se RATTACHE (jamais de redémarrage) :
+  // « dès que je sors et que je rentre ça redémarre la génération » réparé —
+  // la modale rouverte peint les étapes avec le % EN DIRECT du job vivant.
   if (acJob.active && (acJob.kind === 'photos' || acJob.kind === 'pdf')) {
     acBusy = true;
     acBody.innerHTML = acProgressScreenHtml(acJob.label || 'Extraction en cours…');
@@ -6543,6 +6821,11 @@ function openAddCourseModal(context) {
     if (barEl) barEl.style.width = `${acJob.pct || 0}%`;
     if (txtEl) txtEl.textContent = acJob.label || 'Extraction en cours…';
     acJob.modalToken = ++acJob.seq; // la fin de l'extraction alimentera CETTE modale
+  } else if (acJob.active && acJob.kind === 'analyse') {
+    acBody.innerHTML = acAnalysisScreenHtml();
+    acWireAnalysisButtons();
+    acAnalysisPaint(); // états d'étapes calculés depuis le % du job VIVANT
+    acJob.modalToken = ++acJob.seq; // la fin de l'analyse alimentera CETTE modale
   } else if (resumeText.trim().length > 0) {
     acMode = 'texte';
     showVerifyMode();
@@ -6783,7 +7066,7 @@ function isPremiumUser(data) {
 // d'une session précédente deviennent « Reprendre » (texte partiel conservé).
 try { acQueueSweepOnLoad(); } catch (e) {}
 
-console.log("🚀 ARVEXA — Mon cahier — serveur progress v8.12 (carte mentale = chaîne de cartes en ligne droite, déplaçables, plein écran, modale explication+signification · OCR photos de cahier renforcé : transcription manuscrite + relais + enhancement · auth instantanée : cahier peint du cache dès l'arrivée · % d'extraction réel · file des ajouts récents zéro perte)");
+console.log("🚀 ARVEXA — Mon cahier — serveur progress v8.46a (chaîne IA :free vérifiée particle/nemotron/flint + relais — la carte mentale se génère VRAIMENT · toast honnête + relance auto + miroir localStorage : le bouton ne réapparaît plus au retour · étapes d'analyse remises avec Continuer en arrière-plan + Wake Lock + rattachement sans redémarrage · carte accueil compacte et luxueuse)");
 
 // ✅ v8.0 — SYNC FIREBASE : la carte « Ma progression — révisions officielles »
 // se recalcule quand la progression fusionne/arrive du cloud (autre appareil).
