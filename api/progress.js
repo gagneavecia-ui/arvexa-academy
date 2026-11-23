@@ -1289,9 +1289,14 @@ function normalizeAnalysis(analysis) {
   // ✅ v8.48a — la signature de complétion a SERVI (preuve à la réception) :
   // elle est retirée des données stockées — le badge visible de complétion est
   // calculé par le client sur la présence réelle de toutes les parties.
-  delete analysis.signature;
-  if (analysis.explanation && typeof analysis.explanation === 'object') delete analysis.explanation.signature;
-  if (analysis.structure && typeof analysis.structure === 'object') delete analysis.structure.signature;
+  // Parcours RÉCURSIF : aucune branche stockée ne doit garder le champ interne
+  // (top-level, explanation, structure, extracted, questions…).
+  (function stripSig(obj, depth) {
+    if (!obj || typeof obj !== 'object' || depth > 6) return;
+    if (Array.isArray(obj)) { obj.forEach((v) => stripSig(v, depth + 1)); return; }
+    delete obj.signature;
+    Object.values(obj).forEach((v) => stripSig(v, depth + 1));
+  })(analysis, 0);
 
   // Banque de questions : filtrer + renuméroter + borner
   if (Array.isArray(analysis.questions)) {
@@ -4230,11 +4235,20 @@ function explanationIsReal(expl) {
     && !expl.understanding.includes('Analyse automatique indisponible'));
 }
 
-function sectionCompleteness(analysis) {
+// ✅ v8.48a — complétion SENSIBLE AU PROFIL : l'histoire-géo (profil « history »)
+// est NARRATIVE par conception (understanding + context + keyFacts, SANS
+// « parts » — format v8.47a) : exiger parts > 0 la déclarait à jamais
+// incomplète et le bouton « Terminer la section » tournait en rond. Pour
+// history : explication réelle + 3+ points clés ; pour les autres profils :
+// explication réelle + parties.
+function sectionCompleteness(analysis, profile) {
   const a = analysis || {};
+  const expl = a.explanation || {};
+  const historyStyle = profile === 'history';
+  const factsOk = Array.isArray(expl.keyFacts) && expl.keyFacts.length >= 3;
+  const partsOk = Array.isArray(expl.parts) && expl.parts.length > 0;
   return {
-    explanation: explanationIsReal(a.explanation) &&
-      (Array.isArray(a.explanation.parts) ? a.explanation.parts.length > 0 : false),
+    explanation: explanationIsReal(expl) && (historyStyle ? factsOk : partsOk),
     structure: Boolean(a.structure && typeof a.structure === 'object' && Object.keys(a.structure).length > 0),
     questions: Array.isArray(a.questions) && a.questions.length >= 4
   };
@@ -4247,7 +4261,7 @@ async function completeSection(uid, body) {
   const s = snap.data();
   const analysis = s.analysis || {};
   const profile = s.profile || 'scientific';
-  const complete = sectionCompleteness(analysis);
+  const complete = sectionCompleteness(analysis, profile);
 
   const missing = [];
   if (!complete.explanation) missing.push('explanation');
@@ -4293,7 +4307,11 @@ async function completeSection(uid, body) {
   const fresh = mergeAnalysis(results, profile);
 
   // Fusion : on ne remplace une partie existante que si la nouvelle est RÉELLE.
-  if (explanationIsReal(fresh.explanation) && (Array.isArray(fresh.explanation.parts) && fresh.explanation.parts.length > 0)) {
+  const freshExplOk = explanationIsReal(fresh.explanation) &&
+    (profile === 'history'
+      ? (Array.isArray(fresh.explanation?.keyFacts) && fresh.explanation.keyFacts.length >= 3)
+      : (Array.isArray(fresh.explanation?.parts) && fresh.explanation.parts.length > 0));
+  if (freshExplOk) {
     analysis.explanation = fresh.explanation;
     if (fresh.sectionTitle && !analysis.sectionTitle) analysis.sectionTitle = fresh.sectionTitle;
   }
@@ -4308,7 +4326,7 @@ async function completeSection(uid, body) {
   cleaned = normalizeAnalysis(cleaned);
 
   const { FieldValue } = getAdminServices();
-  const nowComplete = sectionCompleteness(cleaned);
+  const nowComplete = sectionCompleteness(cleaned, profile);
   const update = { analysis: cleaned, updatedAt: FieldValue.serverTimestamp() };
   try { await ref.update(update); } catch (e) { /* best-effort */ }
 

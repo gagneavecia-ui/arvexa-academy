@@ -4652,7 +4652,7 @@ async function renderSectionView(params) {
     // + structure + questions sont réellement là ; sinon « partial » → le bloc
     // « Terminer la section » appelle l'action completeSection (seules les
     // parties manquantes sont régénérées, puis la vue se repeint).
-    const comp = analysisCompleteness(a);
+    const comp = analysisCompleteness(a, profile);
     const sigMode = comp.all ? 'complete' : 'partial';
     container.innerHTML = renderAnalysis(a, profile, { noQuestions: true, signature: sigMode });
 
@@ -4895,21 +4895,25 @@ async function renderSectionView(params) {
 // Si des parties manquent → bouton « Terminer la section » → action
 // completeSection qui régénère UNIQUEMENT ce qui manque.
 // ════════════════════════════════════════════════════════════════
-function analysisCompleteness(a) {
+function analysisCompleteness(a, profile) {
   const x = a || {};
   const expl = x.explanation || {};
   const explReal = typeof expl.understanding === 'string'
     && expl.understanding.trim().length > 20
     && !expl.understanding.includes("n'a pas pu être générée")
     && !expl.understanding.includes('Analyse automatique indisponible');
+  // ✅ v8.48a — l'histoire-géo est NARRATIVE par conception : pas de « parts »
+  // exigées, ce sont les points clés (3+) qui prouvent que l'explication est
+  // entière — aligné sur sectionCompleteness du serveur.
+  const factsOk = safeArray(expl.keyFacts).length >= 3;
+  const partsOk = safeArray(expl.parts).length > 0;
   const structOk = Boolean(x.structure && typeof x.structure === 'object' && Object.keys(x.structure).length > 0);
   const qOk = safeArray(x.questions).length >= 4;
   return {
-    explanation: explReal,
-    parts: explReal && safeArray(expl.parts).length > 0,
+    explanation: explReal && (profile === 'history' ? factsOk : partsOk),
     structure: structOk,
     questions: qOk,
-    get all() { return explReal && safeArray(expl.parts).length > 0 && structOk && qOk; }
+    get all() { return explReal && (profile === 'history' ? factsOk : partsOk) && structOk && qOk; }
   };
 }
 

@@ -68,11 +68,16 @@ const goodAnalysis = {
   structure: { formulas: [] },
   questions: [{ question: 'a', answer: 'b' }, { question: 'c', answer: 'd' }, { question: 'e', answer: 'f' }, { question: 'g', answer: 'h' }]
 };
-const comp = ctx.sectionCompleteness(goodAnalysis);
+const comp = ctx.sectionCompleteness(goodAnalysis, 'scientific');
 check('3.1 analyse complète → tout vrai', comp.explanation && comp.structure && comp.questions);
 const badAnalysis = { explanation: { understanding: "L'explication pédagogique n'a pas pu être générée." }, structure: null, questions: [] };
-const compBad = ctx.sectionCompleteness(badAnalysis);
+const compBad = ctx.sectionCompleteness(badAnalysis, 'scientific');
 check('3.2 analyse amputée → tout faux', !compBad.explanation && !compBad.structure && !compBad.questions);
+const histAnalysis = { explanation: { understanding: 'Le traité de Versailles est signé le 28 juin 1919, voici ce qu il faut comprendre en détail.', keyFacts: ['f1', 'f2', 'f3', 'f4'] }, structure: { formulas: [] }, questions: [{}, {}, {}, {}] };
+const compHist = ctx.sectionCompleteness(histAnalysis, 'history');
+check('3.3 histoire narrative (sans parts) → complète', compHist.explanation === true);
+const compHistSci = ctx.sectionCompleteness(histAnalysis, 'scientific');
+check('3.4 même analyse en profil scientific → explanation fausse (parts requis)', compHistSci.explanation === false);
 
 // ── 4. normalizeAnalysis : signature retirée, questions renumérotées ──
 const toNorm = JSON.parse(JSON.stringify(goodAnalysis));
