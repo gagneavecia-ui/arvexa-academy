@@ -120,7 +120,7 @@ check('7.3 mini-signature QCM + carte', (html.match(/mini-signature/g) || []).le
 check('7.4 z-index modale 11000 > plein écran 10000', /modal-backdrop \{[^}]*z-index: 11000/.test(html));
 check('7.5 toasts 12000', html.includes('z-index: 12000'));
 check('7.6 swallow du click fantôme (appui simple)', html.includes('openModal.__swallow'));
-check('7.7 SW version courante (test épinglé mis à jour à chaque bump)', fs.readFileSync(path.join(__dirname, '..', 'service-worker.js'), 'utf8').includes("SW_VERSION = 'arvexa-offline-v8.55b'"));
+check('7.7 SW version courante (test épinglé mis à jour à chaque bump)', fs.readFileSync(path.join(__dirname, '..', 'service-worker.js'), 'utf8').includes("SW_VERSION = 'arvexa-offline-v8.56a'"));
 
 console.log(fails === 0 ? '\nTOUS LES TESTS UNITAIRES PASSANT ✅' : `\n${fails} ÉCHEC(S) ❌`);
 process.exit(fails === 0 ? 0 : 1);

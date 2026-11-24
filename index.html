@@ -1625,7 +1625,7 @@
       <a href="arv-progress.html"><i class="fas fa-graduation-cap"></i> Résumé</a>
       <a href="outils.html"><i class="fas fa-toolbox"></i> Outils</a>
       <a href="localisation.html"><i class="fas fa-location-dot"></i> À proximité</a>
-      <a href="#" data-soon="Marketplace ARVEXA — bientôt disponible"><i class="fas fa-store"></i> Marketplace</a>
+      <a href="marketplace.html"><i class="fas fa-store"></i> Marketplace</a>
       <div class="nav-divider"></div>
       <a href="#" class="avis-link" id="avisLinkSidebar">
         <i class="fas fa-star"></i> Donner mon avis
@@ -1797,10 +1797,11 @@
             Recommande ARVEXA autour de toi et <strong>gagne en fonction des abonnements</strong>
             de tes camarades — commissions, avantages exclusifs et rang d'ambassadeur.
           </div>
-          <button class="avis-btn-inline" data-soon="Programme Ambassadeur ARVEXA — ouverture bientôt">
+          <a class="avis-btn-inline" href="ambassadeur.html"
+             style="text-decoration:none;display:inline-flex;align-items:center;gap:8px;color:inherit">
             <i class="fas fa-crown"></i> Découvrir le programme
-          </button>
-          <div class="amb-badge"><i class="fas fa-hourglass-half"></i> Bientôt</div>
+          </a>
+          <div class="amb-badge"><i class="fas fa-bolt"></i> Nouveau</div>
         </div>
 
         <!-- ============================================================
@@ -4098,5 +4099,17 @@
 <script src="parcours.js" defer></script>
 <script src="arvexa-vivant.js"></script>
 <script src="arvexa-modal.js" defer></script>
+<!-- ⚡ v8.56a — capture du code parrainage ?ref=CODE (30 jours, lue à l'inscription) -->
+<script>
+(function () {
+  try {
+    var raw = (new URLSearchParams(window.location.search).get('ref') || '').toUpperCase().trim();
+    if (/^[A-Z0-9][A-Z0-9_-]{2,23}$/.test(raw)) {
+      localStorage.setItem('arvexaRef', JSON.stringify({ code: raw, ts: Date.now() }));
+      history.replaceState(null, '', window.location.pathname);
+    }
+  } catch (e) { /* no-op */ }
+})();
+</script>
 </body>
 </html>

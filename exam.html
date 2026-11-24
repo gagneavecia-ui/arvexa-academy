@@ -3038,6 +3038,8 @@ async function generateExam(event) {
     if (error.message === 'FREE_EXAM_LIMIT') {
       showView('configView');
       showPremiumPopup();
+      // ⚡ v8.56a — orienter aussi vers les crédits Marketplace
+      setStatus('configStatus', 'Limite du jour (2 examens gratuits). Recharge tes crédits ⚡ dans la Marketplace ou passe Premium.', 'error');
     } else if (error.message === 'AUTH_REQUIRED') {
       setStatus('configStatus', 'Connecte-toi pour générer un test.', 'error');
     } else if (error.message === 'RATE_LIMIT') {

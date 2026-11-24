@@ -520,6 +520,14 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin();
       }
 
+      // ─── ⚡ v8.56a — Purchases : historique « Ma bibliothèque » (Marketplace) ──
+      // Écrit UNIQUEMENT par le webhook SasPay (SDK admin, bypass règles).
+      // Le client lit ses propres achats, jamais ne les crée.
+      match /purchases/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
       // ─── Toute autre sous-collection : accès refusé par défaut ──
       match /{otherSub=**} {
         allow read, write: if false;
@@ -595,6 +603,59 @@ service cloud.firestore {
     match /adminLogs/{docId} {
       allow read: if isAdmin();
       allow write: if false;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ⚡ v8.56a — MARKETPLACE + PROGRAMME AMBASSADEUR
+    // ══════════════════════════════════════════════════════════════
+
+    // ─── Products : catalogue boutique (écrit par SDK admin uniquement) ──
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ─── Candidatures ambassadeur : création/lecture par le candidat ──
+    match /ambassadorApplications/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // ─── Ambassadeurs : lecture par l'ambassadeur lui-même (écrit admin) ──
+    match /ambassadors/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // ─── Parrainages : création par le nouveau compte, lecture par les ──
+    // ─── deux parties concernées ; toute écriture de conversion est admin ──
+    // (get() sur un doc inexistant → erreur → accès refusé : un non-ambassadeur
+    //  ne peut lire que ses propres filleuls)
+    match /referrals/{referralId} {
+      allow read: if request.auth != null
+        && (
+          resource.data.newUid == request.auth.uid
+          || resource.data.code == get(/databases/$(database)/documents/ambassadors/$(request.auth.uid)).data.code
+        );
+      allow create: if request.auth != null
+        && request.resource.data.newUid == request.auth.uid
+        && request.resource.data.code is string
+        && request.resource.data.code.size() <= 40;
+      allow update, delete: if false;
+    }
+
+    // ─── Clics de liens parrainage : anonymes peuvent créer, ambassadeur ──
+    // ─── lit uniquement les clics portant SON code ──
+    match /refClicks/{clickId} {
+      allow create: if request.resource.data.code is string
+        && request.resource.data.code.size() <= 40
+        && request.resource.data.ts is number;
+      allow read: if request.auth != null
+        && resource.data.code == get(/databases/$(database)/documents/ambassadors/$(request.auth.uid)).data.code;
+      allow update, delete: if false;
     }
   }
 }

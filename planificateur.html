@@ -2135,6 +2135,14 @@ async function loadPlan(forceRefresh = false) {
 
     const payload = await response.json().catch(() => null);
 
+    if (response.status === 403 && payload?.code === 'PLANNER_CREDITS_REQUIRED') {
+      // ⚡ v8.56a — planificateur accessible avec crédits Marketplace
+      $('skeletonView').classList.remove('show');
+      const needed = payload.creditsNeeded || 5;
+      const left = typeof payload.creditsRemaining === 'number' ? payload.creditsRemaining : 0;
+      setStatus('Le planificateur IA coûte ' + needed + ' crédits ⚡ (ton solde : ' + left + '). Recharge dans la Marketplace ou passe Premium.', 'error');
+      return;
+    }
     if (response.status === 403 && payload?.code === 'PREMIUM_REQUIRED') {
       openPremiumGate(); // ✅ v8.3 — modale uniforme
       setStatus('Premium requis.', 'error');

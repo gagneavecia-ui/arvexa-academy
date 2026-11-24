@@ -39,8 +39,8 @@ console.log('\n═══ AUDIT v8.55a — ' + new Date().toISOString() + ' ═�
 
 /* ── T1 : SW version + let ── */
 const sw = read('service-worker.js');
-test('T1  SW_VERSION = arvexa-offline-v8.55b avec let',
-  /let SW_VERSION = 'arvexa-offline-v8\.55b'/.test(sw) && !/const SW_VERSION/.test(sw));
+test('T1  SW_VERSION = arvexa-offline-v8.56a avec let',
+  /let SW_VERSION = 'arvexa-offline-v8\.56a'/.test(sw) && !/const SW_VERSION/.test(sw));
 
 /* ── T2 : précache des 2 nouveaux modules ── */
 test('T2  SW précache arvexa-net.js + arvexa-soon.js',
@@ -67,8 +67,9 @@ test('T4  auth-choice : #examens + nav ×2 + meta universelle',
 
 /* ── T5 : Marketplace dans les 7 sidebars ── */
 const menuPages = ['index.html', 'profil.html', 'notifications.html', 'abonnement.html', 'progression.html', 'arv.html', 'localisation.html'];
-const missingMenu = menuPages.filter(p => !read(p).includes('data-soon="Marketplace ARVEXA — bientôt disponible"'));
-test('T5  Marketplace présent dans les 7 menus', missingMenu.length === 0, missingMenu.join(', '));
+// ⚡ v8.56a — la Marketplace est une VRAIE page : les 7 sidebars pointent marketplace.html
+const missingMenu = menuPages.filter(p => !read(p).includes('<a href="marketplace.html"><i class="fas fa-store"></i> Marketplace</a>'));
+test('T5  Marketplace présent dans les 7 menus (vrai lien v8.56a)', missingMenu.length === 0, missingMenu.join(', '));
 
 /* ── T6 : arvexa-soon.js inclus + data-soon câblé ── */
 const soonPages = menuPages.filter(p => !read(p).includes('arvexa-soon.js'));
@@ -77,9 +78,9 @@ test('T6b arvexa-soon.js syntaxe valide', nodeCheck('arvexa-soon.js'));
 
 /* ── T7 : carte Ambassadeur sur l'accueil ── */
 const ix = read('index.html');
-test('T7  Ambassadeur ARVEXA : carte + bouton + badge Bientôt',
+test('T7  Ambassadeur ARVEXA : carte + lien réel ambassadeur.html (v8.56a)',
   ix.includes('amb-card') && ix.includes('Deviens Ambassadeur ARVEXA') &&
-  ix.includes('data-soon="Programme Ambassadeur ARVEXA') &&
+  ix.includes('href="ambassadeur.html"') &&
   ix.includes('gagne en fonction des abonnements'));
 
 /* ── T8 : arvexa-net.js sur 17 pages ── */

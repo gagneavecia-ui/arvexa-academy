@@ -8,7 +8,9 @@
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
-const PRICES = { monthly: 2000, annual: 18000 };
+// ⚡ v1.1 — prix mensuel porté de 2 000 à 3 000 FCFA (décision propriétaire),
+// annuel inchangé (18 000 F = l'offre mise en avant).
+const PRICES = { monthly: 3000, annual: 18000 };
 const BASE = 'https://api.saspay.me/api/v1';
 
 // ✅ FIX (2026-10-26) — SITE_URL n'est plus codée en dur : l'ancien domaine
@@ -86,17 +88,48 @@ export default async function handler(req, res) {
     }
 
     // 🔒 clientAmount volontairement ignoré : seul le serveur décide du prix
-    const { uid, plan, promoCode, customerEmail, customerName } = req.body || {};
+    // ⚡ v1.1 — kind : 'subscription' (défaut) | 'credits' (packs Marketplace)
+    const { uid, plan, kind, productId, promoCode, customerEmail, customerName } = req.body || {};
+    const checkoutKind = kind === 'credits' ? 'credits' : 'subscription';
 
-    if (!uid || !plan) return res.status(400).json({ error: 'Champs manquants' });
-    if (!PRICES[plan]) return res.status(400).json({ error: 'Plan invalide' });
+    if (!uid) return res.status(400).json({ error: 'Champs manquants' });
     if (typeof uid !== 'string' || uid.length > 128) return res.status(400).json({ error: 'UID invalide' });
 
-    let amount = PRICES[plan];
+    let amount = 0;
+    let planValue = null;
+    let productInfo = null;
+
+    if (checkoutKind === 'credits') {
+      // ─── Pack de crédits : le prix vient TOUJOURS du produit Firestore ───
+      if (!productId || typeof productId !== 'string' || productId.length > 64) {
+        return res.status(400).json({ error: 'Produit invalide' });
+      }
+      const productSnap = await db.collection('products').doc(productId).get();
+      const product = productSnap.exists ? productSnap.data() : null;
+      if (!product || product.status !== 'approved' || product.type !== 'credits') {
+        return res.status(400).json({ error: 'Produit indisponible' });
+      }
+      amount = Math.round(Number(product.price) || 0);
+      if (!amount || amount <= 0 || amount > 1000000) {
+        return res.status(400).json({ error: 'Produit mal configuré' });
+      }
+      productInfo = {
+        productId,
+        title: String(product.title || 'Pack').substring(0, 80),
+        credits: Math.max(1, Math.floor(Number(product.credits) || 0)),
+        validityDays: Math.max(1, Math.floor(Number(product.validityDays) || 30))
+      };
+    } else {
+      if (!plan) return res.status(400).json({ error: 'Champs manquants' });
+      if (!PRICES[plan]) return res.status(400).json({ error: 'Plan invalide' });
+      planValue = plan;
+      amount = PRICES[plan];
+    }
+
     let promoApplied = null;
 
     // 1. Vérification du code promo (lecture directe via SDK admin)
-    if (promoCode && plan === 'annual') {
+    if (promoCode && checkoutKind === 'subscription' && plan === 'annual') {
       try {
         const codeUpper = String(promoCode).toUpperCase().trim().replace(/[^A-Z0-9_-]/g, '');
         if (codeUpper && codeUpper.length <= 40) {
@@ -127,11 +160,17 @@ export default async function handler(req, res) {
       currency: 'XOF',
       country: 'NE', // Force le Niger
       reference,
-      description: `Abonnement ARVEXA ${plan}${promoApplied ? ` (promo ${promoApplied.code})` : ''}`,
+      description: checkoutKind === 'credits'
+        ? `Pack ARVEXA ${productInfo.title}${promoApplied ? ` (promo ${promoApplied.code})` : ''}`
+        : `Abonnement ARVEXA ${planValue}${promoApplied ? ` (promo ${promoApplied.code})` : ''}`,
       customer_name: String(customerName || 'Élève ARVEXA').substring(0, 80),
       customer_email: String(customerEmail || 'eleve@arvexaschool.com').substring(0, 120),
-      success_url: `${SITE_URL}/abonnement.html?statut=succes&ref=${reference}`,
-      cancel_url: `${SITE_URL}/abonnement.html?statut=annule`,
+      success_url: checkoutKind === 'credits'
+        ? `${SITE_URL}/marketplace.html?statut=succes&ref=${reference}`
+        : `${SITE_URL}/abonnement.html?statut=succes&ref=${reference}`,
+      cancel_url: checkoutKind === 'credits'
+        ? `${SITE_URL}/marketplace.html?statut=annule`
+        : `${SITE_URL}/abonnement.html?statut=annule`,
       webhook_url: `${SITE_URL}/api/saspay-webhook`
     };
 
@@ -160,7 +199,12 @@ export default async function handler(req, res) {
       const batch = db.batch();
       batch.set(db.collection('saspayPendingCheckouts').doc(reference), {
         uid,
-        plan,
+        kind: checkoutKind,
+        plan: planValue,
+        productId: productInfo ? productInfo.productId : null,
+        productTitle: productInfo ? productInfo.title : null,
+        credits: productInfo ? productInfo.credits : null,
+        validityDays: productInfo ? productInfo.validityDays : null,
         amount,
         promo: promoApplied ? promoApplied.code : null,
         status: 'pending',

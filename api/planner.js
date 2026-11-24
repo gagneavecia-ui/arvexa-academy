@@ -19,6 +19,11 @@ let adminServices;
 // ════════════════════════════════════════════════════════════════
 // FIREBASE ADMIN
 // ════════════════════════════════════════════════════════════════
+
+// ⚡ v1.1 — CRÉDITS IA (packs Marketplace) : planificateur accessible aux
+// non-Premium pour 5 crédits (plan en cache = gratuit pour tous).
+const { COSTS, consumeCredits, refundCredits } = require('./_credits');
+
 function getAdminServices() {
   if (adminServices) return adminServices;
   const credentials = process.env.FIREBASE_ADMIN_CREDENTIALS;
@@ -945,11 +950,10 @@ module.exports = async function handler(request, response) {
     const { db } = getAdminServices();
     const uid = user.uid;
 
-    // Premium check
+    // ⚡ v1.1 — ACCÈS PLANIFICATEUR : Premium OU 5 crédits Marketplace.
+    // Le plan en cache reste GRATUIT pour tous (aucun appel IA derrière).
     const userSnapshot = await db.collection('users').doc(uid).get();
-    if (!isPremiumUser(userSnapshot.data())) {
-      return jsonError(response, 403, 'Le planificateur est réservé aux comptes Premium.', 'PREMIUM_REQUIRED');
-    }
+    const isPremium = isPremiumUser(userSnapshot.data());
 
     // Récupérer les examens
     const snapshot = await db.collection('users').doc(uid)
@@ -980,6 +984,29 @@ module.exports = async function handler(request, response) {
     const aggregated = aggregateStudentData(results);
     console.log(`[AI-PLANNER] ${resultCount} examens, qualité: ${aggregated.dataQuality}, readiness: ${aggregated.readinessScore}`);
 
+    // ⚡ v1.1 — ici on a besoin de l'IA (cache absent) : Premium OU 5 crédits
+    let creditMode = false;
+    let creditRemaining = 0;
+    if (!isPremium) {
+      try {
+        const creditResult = await consumeCredits(db, uid, COSTS.planner);
+        if (!creditResult.allowed) {
+          return response.status(403).json({
+            success: false,
+            error: 'Le planificateur IA coûte 5 crédits ⚡. Recharge-les dans la Marketplace ou passe Premium.',
+            code: 'PLANNER_CREDITS_REQUIRED',
+            creditsRemaining: creditResult.remaining,
+            creditsNeeded: COSTS.planner
+          });
+        }
+        creditMode = true;
+        creditRemaining = creditResult.remaining;
+      } catch (creditError) {
+        console.error('[AI-PLANNER] credits error:', creditError.message);
+        return jsonError(response, 503, 'Vérification des crédits temporairement indisponible.');
+      }
+    }
+
     // IA
     let plan;
     let aiSucceeded = false;
@@ -993,6 +1020,12 @@ module.exports = async function handler(request, response) {
     } catch (aiError) {
       console.warn('[AI-PLANNER] ⚠️ Fallback local:', aiError.message);
       plan = buildLocalPlan(aggregated);
+      // ⚡ v1.1 — l'IA n'a pas tourné (plan local gratuit) : remboursement des crédits
+      if (creditMode) {
+        try { await refundCredits(db, uid, COSTS.planner); } catch (_) {}
+        creditMode = false;
+        creditRemaining = 0;
+      }
     }
 
     // Enrichir avec métadonnées
@@ -1022,7 +1055,9 @@ module.exports = async function handler(request, response) {
       plan: enrichedPlan,
       resultCount,
       aiGenerated: aiSucceeded,
-      cached: false
+      cached: false,
+      creditMode: Boolean(creditMode),
+      creditsRemaining: creditMode ? creditRemaining : undefined
     });
 
   } catch (error) {
