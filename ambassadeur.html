@@ -137,6 +137,77 @@
     .form-msg.error { display: block; background: rgba(192,57,43,.12); color: #EF9A9A; border: 1px solid rgba(192,57,43,.3); }
     .form-msg.info { display: block; background: rgba(46,125,50,.1); color: #A5D6A7; border: 1px solid rgba(46,125,50,.3); }
 
+    /* ===== v8.57a — SÉLECTEUR PAYS + TÉLÉPHONE (identique à l'inscription) ===== */
+    .picker-btn {
+      width: 100%; display: flex; align-items: center; gap: 9px;
+      padding: 13px 14px; border-radius: 13px;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+      color: var(--text-light); font-family: 'Inter', sans-serif; font-size: 14px;
+      cursor: pointer; outline: none; transition: border-color .2s;
+    }
+    .picker-btn:focus, .picker-btn:active { border-color: var(--accent-bright); }
+    .picker-btn .picker-flag { font-size: 19px; line-height: 1; }
+    .picker-btn .picker-label { flex: 1; text-align: left; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .picker-btn .picker-dial { color: var(--text-dim); font-weight: 700; font-size: 13px; }
+    .picker-btn .picker-chevron { color: var(--text-dim); font-size: 12px; }
+    .phone-wrap {
+      display: flex; align-items: stretch; gap: 0;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 13px; overflow: hidden;
+    }
+    .phone-wrap:focus-within { border-color: var(--accent-bright); }
+    .dial-chip {
+      display: flex; align-items: center; padding: 0 12px;
+      font-size: 14px; font-weight: 800; color: var(--accent-bright);
+      background: rgba(224,184,74,.1); border-right: 1px solid rgba(255,255,255,.08);
+      white-space: nowrap;
+    }
+    .phone-wrap input {
+      flex: 1; min-width: 0; padding: 13px 14px; border: none; background: transparent;
+      color: var(--text-light); font-family: 'Inter', sans-serif; font-size: 14px; outline: none;
+    }
+    .phone-wrap input::placeholder { color: rgba(138,138,122,.7); }
+
+    /* Modale pays — 100 % custom aux couleurs du site (jamais la popup native) */
+    .picker-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,.66); backdrop-filter: blur(3px);
+      display: none; align-items: flex-end; justify-content: center;
+    }
+    .picker-overlay.show { display: flex; }
+    .picker-sheet {
+      width: 100%; max-width: 520px; max-height: 78vh; overflow: hidden;
+      background: #121212; border: 1px solid rgba(224,184,74,.28);
+      border-radius: 22px 22px 0 0; display: flex; flex-direction: column;
+      box-shadow: 0 -18px 50px rgba(0,0,0,.6);
+      animation: sheetUp .22s ease-out;
+    }
+    @keyframes sheetUp { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+    .picker-handle { width: 44px; height: 4px; border-radius: 99px; background: rgba(224,184,74,.5); margin: 12px auto 4px; flex-shrink: 0; }
+    .picker-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px 6px; flex-shrink: 0; }
+    .picker-head h2 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 800; }
+    .picker-close {
+      width: 34px; height: 34px; border-radius: 11px; border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.06); color: var(--text-light); cursor: pointer; font-size: 14px;
+    }
+    .picker-search-wrap { padding: 6px 18px 10px; flex-shrink: 0; }
+    .picker-search-wrap input {
+      width: 100%; padding: 12px 14px; border-radius: 13px;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+      color: var(--text-light); font-family: 'Inter', sans-serif; font-size: 14px; outline: none;
+    }
+    .picker-search-wrap input:focus { border-color: var(--accent-bright); }
+    .picker-list { list-style: none; overflow-y: auto; padding: 0 10px 18px; flex: 1; }
+    .picker-list li {
+      display: flex; align-items: center; gap: 11px;
+      padding: 12px 12px; border-radius: 13px; cursor: pointer; font-size: 14.5px;
+    }
+    .picker-list li:active, .picker-list li:hover { background: rgba(224,184,74,.08); }
+    .picker-list li .flag { font-size: 20px; line-height: 1; }
+    .picker-list li .nm { flex: 1; font-weight: 700; }
+    .picker-list li .dl { color: var(--text-dim); font-size: 13px; font-weight: 700; }
+    .picker-list li.sel { background: rgba(224,184,74,.12); }
+
     /* ===== VUES STATUT ===== */
     .status-card {
       margin-top: 22px; padding: 26px 22px; border-radius: 20px; text-align: center;
@@ -201,6 +272,21 @@
     .level-row .name { font-weight: 700; }
     .level-row .name.active { color: var(--accent-bright); }
     .level-row .req { color: var(--text-dim); font-size: 11.5px; }
+
+    /* ===== v8.57a — CTA de fin de dashboard (Gérer ma promo / Marketplace) ===== */
+    .amb-cta {
+      display: flex; align-items: center; gap: 13px; text-decoration: none;
+      padding: 16px 16px; border-radius: 18px; margin-top: 14px;
+      background: linear-gradient(150deg, rgba(224,184,74,.12), rgba(20,20,20,.85));
+      border: 1px solid rgba(224,184,74,.32);
+    }
+    .amb-cta .crown { width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent)); color: var(--bg-dark); }
+    .amb-cta-body { flex: 1; min-width: 0; }
+    .amb-cta-body h3 { font-size: 14.5px; font-weight: 800; color: var(--text-light); }
+    .amb-cta-body p { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; line-height: 1.45; }
+    .amb-cta .arrow { color: var(--accent-bright); font-size: 13px; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -309,20 +395,44 @@
         <h3>Qui peut devenir ambassadeur ?</h3>
         <ul>
           <li>Un élève inscrit sur ARVEXA, actif sur le site</li>
-          <li>Une connexion ou un groupe (classe, lycée, quartier) où partager</li>
+          <li>Une promo réelle (ta classe, ton lycée, ton quartier) que tu veux fédérer</li>
           <li>Aucun diplôme requis — juste l'envie de faire réviser tes camarades</li>
         </ul>
       </div>
       <div class="form-card" id="formCard">
         <h3>Ma candidature</h3>
-        <p class="sub">Réponse de l'équipe ARVEXA sous 48 h. Aucun paiement demandé, jamais.</p>
+        <p class="sub">Tous les champs sont importants : ils nous aident à choisir le profil qui convient. Réponse de l'équipe ARVEXA sous 48 h. Aucun paiement demandé, jamais.</p>
+        <div class="field">
+          <label for="appCountryBtn">Pays</label>
+          <button type="button" class="picker-btn" id="appCountryBtn" aria-haspopup="dialog">
+            <span class="picker-flag" id="appCountryFlag">🇳🇪</span>
+            <span class="picker-label" id="appCountryName">Niger</span>
+            <span class="picker-dial" id="appCountryDial">+227</span>
+            <i class="fas fa-chevron-down picker-chevron"></i>
+          </button>
+        </div>
         <div class="field">
           <label for="appPhone">Numéro de téléphone (WhatsApp de préférence)</label>
-          <input id="appPhone" type="tel" inputmode="tel" placeholder="+227 XX XX XX XX" autocomplete="tel">
+          <div class="phone-wrap">
+            <span class="dial-chip" id="appDialChip">+227</span>
+            <input id="appPhone" type="tel" inputmode="tel" placeholder="70 12 34 56" autocomplete="tel-national">
+          </div>
         </div>
         <div class="field">
           <label for="appSchool">Établissement</label>
           <input id="appSchool" type="text" placeholder="Nom de ton lycée / collège" maxlength="80">
+        </div>
+        <div class="field">
+          <label for="appPromoName">Ta promo (classe / série)</label>
+          <input id="appPromoName" type="text" placeholder="Ex. : Terminale D — Lycée Sahel" maxlength="80">
+        </div>
+        <div class="field">
+          <label for="appPromoSize">Combien d'élèves compte ta promo ?</label>
+          <input id="appPromoSize" type="number" inputmode="numeric" min="1" max="2000" placeholder="Ex. : 45">
+        </div>
+        <div class="field">
+          <label for="appInviteCount">Combien d'élèves peux-tu inviter sur ARVEXA ?</label>
+          <input id="appInviteCount" type="number" inputmode="numeric" min="1" max="2000" placeholder="Ex. : 30">
         </div>
         <div class="field">
           <label for="appMotivation">Pourquoi veux-tu devenir ambassadeur ?</label>
@@ -334,9 +444,151 @@
     mainArea.appendChild(wrap);
 
     if (prefill.establishment) $('appSchool').value = prefill.establishment;
-    if (prefill.phone) $('appPhone').value = prefill.phone;
+    if (prefill.promoName) $('appPromoName').value = prefill.promoName;
+
+    // ── v8.57a — pré-remplissage téléphone + pays depuis l'inscription ──
+    // (demande propriétaire : « ou bien directement lors de l'inscription
+    //  le numéro fourni soit appliqué »). Le numéro E.164 de users/{uid}
+    // (champ `whatsapp`, ex. +22770123456) sélectionne automatiquement le
+    // bon pays et remplit le champ.
+    let preDial = null, preNational = null;
+    if (prefill.whatsapp) {
+      const m = String(prefill.whatsapp).match(/^(\+\d{1,4})(\d{4,15})$/);
+      if (m) { preDial = m[1]; preNational = m[2]; }
+    }
+    initCountryPicker(preDial, preNational);
 
     $('submitBtn').addEventListener('click', () => submitApplication());
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ⚡ v8.57a — SÉLECTEUR DE PAYS (modale 100 % custom, comme register.html)
+  // 54 pays d'Afrique, défaut NIGER +227, indicatif intelligent.
+  // ══════════════════════════════════════════════════════════════════
+  const AFRIQUE = [
+    ['ZA','🇿🇦','+27','Afrique du Sud'], ['DZ','🇩🇿','+213','Algérie'],
+    ['AO','🇦🇴','+244','Angola'], ['BJ','🇧🇯','+229','Bénin'],
+    ['BW','🇧🇼','+267','Botswana'], ['BF','🇧🇫','+226','Burkina Faso'],
+    ['BI','🇧🇮','+257','Burundi'], ['CM','🇨🇲','+237','Cameroun'],
+    ['CV','🇨🇻','+238','Cap-Vert'], ['KM','🇰🇲','+269','Comores'],
+    ['CG','🇨🇬','+242','Congo-Brazzaville'], ['CI','🇨🇮','+225','Côte d’Ivoire'],
+    ['DJ','🇩🇯','+253','Djibouti'], ['EG','🇪🇬','+20','Égypte'],
+    ['ER','🇪🇷','+291','Érythrée'], ['SZ','🇸🇿','+268','Eswatini'],
+    ['ET','🇪🇹','+251','Éthiopie'], ['GA','🇬🇦','+241','Gabon'],
+    ['GM','🇬🇲','+220','Gambie'], ['GH','🇬🇭','+233','Ghana'],
+    ['GN','🇬🇳','+224','Guinée'], ['GW','🇬🇼','+245','Guinée-Bissau'],
+    ['GQ','🇬🇶','+240','Guinée équatoriale'], ['KE','🇰🇪','+254','Kenya'],
+    ['LS','🇱🇸','+266','Lesotho'], ['LR','🇱🇷','+231','Liberia'],
+    ['LY','🇱🇾','+218','Libye'], ['MG','🇲🇬','+261','Madagascar'],
+    ['MW','🇲🇼','+265','Malawi'], ['ML','🇲🇱','+223','Mali'],
+    ['MA','🇲🇦','+212','Maroc'], ['MR','🇲🇷','+222','Mauritanie'],
+    ['MU','🇲🇺','+230','Maurice'], ['MZ','🇲🇿','+258','Mozambique'],
+    ['NA','🇳🇦','+264','Namibie'], ['NE','🇳🇪','+227','Niger'],
+    ['NG','🇳🇬','+234','Nigéria'], ['UG','🇺🇬','+256','Ouganda'],
+    ['CF','🇨🇫','+236','République centrafricaine'], ['CD','🇨🇩','+243','RD Congo'],
+    ['RW','🇷🇼','+250','Rwanda'], ['ST','🇸🇹','+239','São Tomé-et-Príncipe'],
+    ['SN','🇸🇳','+221','Sénégal'], ['SC','🇸🇨','+248','Seychelles'],
+    ['SL','🇸🇱','+232','Sierra Leone'], ['SO','🇸🇴','+252','Somalie'],
+    ['SD','🇸🇩','+249','Soudan'], ['SS','🇸🇸','+211','Soudan du Sud'],
+    ['TZ','🇹🇿','+255','Tanzanie'], ['TD','🇹🇩','+235','Tchad'],
+    ['TG','🇹🇬','+228','Togo'], ['TN','🇹🇳','+216','Tunisie'],
+    ['ZM','🇿🇲','+260','Zambie'], ['ZW','🇿🇼','+263','Zimbabwe']
+  ].map(([iso, flag, dial, fr]) => ({ iso, flag, dial, fr }));
+
+  let COUNTRY = AFRIQUE.find((c) => c.iso === 'NE') || AFRIQUE[0];
+
+  function paintCountry() {
+    const flag = $('appCountryFlag'), name = $('appCountryName'),
+          dial = $('appCountryDial'), chip = $('appDialChip');
+    if (!flag) return;
+    flag.textContent = COUNTRY.flag;
+    name.textContent = COUNTRY.fr;
+    dial.textContent = COUNTRY.dial;
+    chip.textContent = COUNTRY.dial;
+  }
+
+  // Indicatif intelligent : retrouve le pays depuis un préfixe international
+  // (préfixe le PLUS LONG d'abord — les indicatifs uniques gagnent).
+  function countryByDial(dial) {
+    let best = null;
+    for (const c of AFRIQUE) {
+      if (dial.startsWith(c.dial) && (!best || c.dial.length > best.dial.length)) best = c;
+    }
+    return best;
+  }
+
+  function initCountryPicker(preDial, preNational) {
+    const btn = $('appCountryBtn');
+    if (!btn) return;
+    if (preDial) {
+      const found = countryByDial(preDial);
+      if (found) COUNTRY = found;
+      if (preNational) $('appPhone').value = preNational.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+    } else {
+      try {
+        const saved = JSON.parse(localStorage.getItem('arvexa-dial') || 'null');
+        if (saved && saved.iso) {
+          const found = AFRIQUE.find((c) => c.iso === saved.iso);
+          if (found) COUNTRY = found;
+        }
+      } catch (e) {}
+    }
+    paintCountry();
+
+    // Feuille de modale (créée une seule fois, réutilisée)
+    let overlay = document.getElementById('arvCountryPicker');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'arvCountryPicker';
+      overlay.className = 'picker-overlay';
+      overlay.innerHTML = `
+        <div class="picker-sheet" role="dialog" aria-modal="true" aria-label="Choisis ton pays">
+          <div class="picker-handle"></div>
+          <div class="picker-head">
+            <h2>Choisis ton pays</h2>
+            <button type="button" class="picker-close" id="arvPickerClose" aria-label="Fermer"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="picker-search-wrap"><input type="text" id="arvPickerSearch" placeholder="Rechercher un pays…" autocomplete="off"></div>
+          <ul class="picker-list" id="arvPickerList" role="listbox"></ul>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
+      $('arvPickerClose').addEventListener('click', () => overlay.classList.remove('show'));
+      $('arvPickerSearch').addEventListener('input', () => renderPickerList($('arvPickerSearch').value));
+    }
+    const list = $('arvPickerList');
+
+    function renderPickerList(filter = '') {
+      const f = String(filter || '').toLowerCase().trim();
+      list.replaceChildren();
+      const rows = AFRIQUE.filter((c) => !f || c.fr.toLowerCase().includes(f) || c.dial.includes(f));
+      if (!rows.length) {
+        const li = document.createElement('li');
+        li.textContent = 'Aucun pays trouvé';
+        li.style.color = 'var(--text-dim)';
+        list.appendChild(li);
+        return;
+      }
+      rows.forEach((c) => {
+        const li = document.createElement('li');
+        li.setAttribute('role', 'option');
+        if (c.iso === COUNTRY.iso) li.classList.add('sel');
+        li.innerHTML = `<span class="flag">${c.flag}</span><span class="nm">${c.fr}</span><span class="dl">${c.dial}</span>`;
+        li.addEventListener('click', () => {
+          COUNTRY = c;
+          try { localStorage.setItem('arvexa-dial', JSON.stringify({ iso: c.iso })); } catch (e) {}
+          paintCountry();
+          overlay.classList.remove('show');
+        });
+        list.appendChild(li);
+      });
+    }
+
+    btn.addEventListener('click', () => {
+      $('arvPickerSearch').value = '';
+      renderPickerList('');
+      overlay.classList.add('show');
+    });
   }
 
   async function submitApplication() {
@@ -348,12 +600,36 @@
       window.location.href = 'login.html';
       return;
     }
-    const phone = $('appPhone').value.trim();
+    const national = $('appPhone').value.trim().replace(/\s/g, '');
+    const digits = national.replace(/\D/g, '');
     const establishment = $('appSchool').value.trim();
+    const promoName = $('appPromoName').value.trim();
+    const promoSize = parseInt($('appPromoSize').value, 10);
+    const inviteCount = parseInt($('appInviteCount').value, 10);
     const motivation = $('appMotivation').value.trim();
-    if (phone.replace(/\D/g, '').length < 8) {
+    if (digits.length < 8) {
       msg.className = 'form-msg error';
       msg.textContent = 'Entre un numéro de téléphone valide (au moins 8 chiffres).';
+      return;
+    }
+    if (!establishment) {
+      msg.className = 'form-msg error';
+      msg.textContent = 'Indique ton établissement.';
+      return;
+    }
+    if (promoName.length < 2) {
+      msg.className = 'form-msg error';
+      msg.textContent = 'Indique ta promo (ex. : Terminale D — Lycée Sahel).';
+      return;
+    }
+    if (!promoSize || promoSize < 1 || promoSize > 2000) {
+      msg.className = 'form-msg error';
+      msg.textContent = 'Combien d’élèves compte ta promo ? (entre 1 et 2000).';
+      return;
+    }
+    if (!inviteCount || inviteCount < 1 || inviteCount > 2000) {
+      msg.className = 'form-msg error';
+      msg.textContent = 'Combien d’élèves peux-tu inviter ? (entre 1 et 2000).';
       return;
     }
     if (motivation.length < 15) {
@@ -361,13 +637,21 @@
       msg.textContent = 'Dis-nous en quelques mots de plus (15 caractères minimum).';
       return;
     }
+    const e164 = (COUNTRY.dial + digits).substring(0, 16);
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi…';
     try {
       await setDoc(doc(db, 'ambassadorApplications', user.uid), {
         uid: user.uid,
-        phone: phone.substring(0, 25),
+        phone: e164,
+        phoneNational: digits.substring(0, 15),
+        countryIso: COUNTRY.iso,
+        countryDial: COUNTRY.dial,
+        countryFr: COUNTRY.fr,
         establishment: establishment.substring(0, 80),
+        promoName: promoName.substring(0, 80),
+        promoSize,
+        inviteCount,
         motivation: motivation.substring(0, 500),
         status: 'pending',
         submittedAt: serverTimestamp()
@@ -479,7 +763,12 @@
         <div class="level-row"><span class="name${converted >= 15 && converted < 50 ? ' active' : ''}">🥇 Or</span><span class="req">15 conversions</span></div>
         <div class="level-row"><span class="name${converted >= 50 ? ' active' : ''}">👑 Platine</span><span class="req">50 conversions</span></div>
       </div>
-      <a href="marketplace.html" class="amb-cta" style="margin-top:22px">
+      <a href="ma-promo.html" class="amb-cta" style="margin-top:22px">
+        <i class="fas fa-people-group crown"></i>
+        <div class="amb-cta-body"><h3>Gérer ma promo</h3><p>Communiquer, envoyer des PDF et des exercices à ta promo — et gagner 10 % quand elle s'abonne.</p></div>
+        <i class="fas fa-chevron-right arrow"></i>
+      </a>
+      <a href="marketplace.html" class="amb-cta">
         <i class="fas fa-bolt crown"></i>
         <div class="amb-cta-body"><h3>Voir la Marketplace</h3><p>Packs de requêtes IA et contenus premium.</p></div>
         <i class="fas fa-chevron-right arrow"></i>
@@ -512,7 +801,16 @@
     let prefill = {};
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
-      if (snap.exists()) prefill = { establishment: snap.data().establishment || '' };
+      if (snap.exists()) {
+        const u = snap.data();
+        prefill = {
+          establishment: u.establishment || '',
+          // ✅ v8.57a — le numéro donné à l'inscription préremplit le champ
+          // (pays + indicatif sélectionnés automatiquement).
+          whatsapp: u.whatsapp || u.phone || '',
+          promoName: u.customClass || u.classLabel || ''
+        };
+      }
     } catch (e) { /* no-op */ }
     renderPublic(prefill);
   }

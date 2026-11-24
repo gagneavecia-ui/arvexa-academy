@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>ARVEXA — Gérer ma promo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0A0A0A">
+<script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
+<script src="theme.js"></script><script src="arvexa-net.js" defer></script><script src="arvexa-soon.js" defer></script><script src="arvexa-contact.js"></script><script src="arvexa-i18n.js" defer></script>
+  <meta name="description" content="ARVEXA School — Gérer ma promo : communique avec ta classe, envoie des PDF et des exercices, gagne 10 % sur chaque abonnement.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="stylesheet" href="perf.css">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="arvexa-ui.css">
+  <style>
+    :root {
+      --accent: #B8860B;
+      --accent-bright: #E0B84A;
+      --bg-dark: #0A0A0A;
+      --bg-card: rgba(20, 20, 20, 0.7);
+      --text-light: #F5F0E8;
+      --text-dim: #8A8A7A;
+      --border: rgba(184, 134, 11, 0.18);
+      --danger: #C0392B;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(ellipse at top, #101010 0%, var(--bg-dark) 60%);
+      color: var(--text-light);
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    .page-header {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 14px;
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 18px 14px;
+      background: rgba(10, 10, 10, 0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .back-btn {
+      width: 40px; height: 40px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.05); color: var(--text-light);
+      border: 1px solid rgba(255,255,255,0.08);
+      text-decoration: none; font-size: 16px; flex-shrink: 0;
+    }
+    .page-title h1 { font-family: 'Playfair Display', serif; font-size: 21px; font-weight: 700; }
+    .page-title p { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; }
+
+    .container { max-width: 640px; margin: 0 auto; padding: 20px 16px 0; }
+
+    .loading-block { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
+    .loading-block i { font-size: 20px; color: var(--accent-bright); animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+
+    /* ===== HERO ===== */
+    .hero {
+      position: relative; overflow: hidden; text-align: center;
+      background: linear-gradient(160deg, rgba(184,134,11,.18), rgba(26,58,42,.4) 50%, rgba(10,10,10,.65));
+      border: 1px solid rgba(224,184,74,.3);
+      border-radius: 24px; padding: 28px 22px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.45);
+    }
+    .hero-ico {
+      width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center; font-size: 28px;
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      color: var(--bg-dark);
+      box-shadow: 0 10px 30px rgba(184,134,11,.35);
+    }
+    .hero h2 { font-family: 'Playfair Display', serif; font-size: 25px; font-weight: 800; letter-spacing: .4px; }
+    .hero p.lead { font-size: 14px; color: var(--text-dim); margin: 10px auto 0; max-width: 430px; line-height: 1.6; }
+    .hero .perks { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 22px; }
+    .perk {
+      padding: 13px 8px; border-radius: 15px;
+      background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07);
+      text-align: center;
+    }
+    .perk i { color: var(--accent-bright); font-size: 17px; }
+    .perk b { display: block; font-size: 15px; margin-top: 6px; }
+    .perk span { font-size: 10.5px; color: var(--text-dim); }
+
+    /* ===== CARTES / FORMULAIRES ===== */
+    .card {
+      margin-top: 20px; padding: 20px 18px; border-radius: 20px;
+      background: var(--bg-card); border: 1px solid var(--border);
+    }
+    .card h3 { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+    .card .sub { font-size: 12.5px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.55; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; }
+    .field input, .field textarea {
+      width: 100%; padding: 13px 14px; border-radius: 13px;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+      color: var(--text-light); font-family: 'Inter', sans-serif; font-size: 14px;
+      outline: none; transition: border-color .2s;
+    }
+    .field input:focus, .field textarea:focus { border-color: var(--accent-bright); }
+    .field textarea { resize: vertical; min-height: 84px; }
+    .submit-btn {
+      width: 100%; padding: 14px; border-radius: 14px; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 14.5px; font-weight: 800; color: var(--bg-dark);
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      transition: transform .1s, filter .2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .submit-btn:active { transform: scale(.98); }
+    .submit-btn[disabled] { filter: grayscale(.6); opacity: .6; cursor: wait; }
+    .ghost-btn {
+      width: 100%; padding: 13px; border-radius: 14px; cursor: pointer; margin-top: 10px;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
+      color: var(--text-light); font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .ghost-btn:active { transform: scale(.98); }
+    .ghost-btn.danger { color: #EF9A9A; border-color: rgba(192,57,43,.4); background: rgba(192,57,43,.08); }
+    .form-msg { font-size: 12.5px; margin-top: 10px; display: none; padding: 10px 13px; border-radius: 11px; }
+    .form-msg.error { display: block; background: rgba(192,57,43,.12); color: #EF9A9A; border: 1px solid rgba(192,57,43,.3); }
+    .form-msg.info { display: block; background: rgba(46,125,50,.1); color: #A5D6A7; border: 1px solid rgba(46,125,50,.3); }
+
+    /* ===== CHOIX CRÉER / REJOINDRE ===== */
+    .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+    @media (max-width: 420px) { .choice-row { grid-template-columns: 1fr; } }
+    .choice-card {
+      padding: 22px 16px; border-radius: 20px; text-align: center; cursor: pointer;
+      background: var(--bg-card); border: 1px solid var(--border);
+      transition: transform .1s, border-color .2s;
+    }
+    .choice-card:active { transform: scale(.98); border-color: var(--accent-bright); }
+    .choice-card i { font-size: 26px; color: var(--accent-bright); }
+    .choice-card h3 { font-size: 15px; margin-top: 10px; }
+    .choice-card p { font-size: 11.5px; color: var(--text-dim); margin-top: 6px; line-height: 1.5; }
+
+    /* ===== BANDEAU PROMO (dashboard) ===== */
+    .promo-hero {
+      position: relative; overflow: hidden;
+      background: linear-gradient(150deg, rgba(184,134,11,.2), rgba(26,58,42,.4) 55%, rgba(10,10,10,.65));
+      border: 1px solid rgba(224,184,74,.32);
+      border-radius: 22px; padding: 22px 20px;
+    }
+    .promo-hero .kicker { font-size: 11px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--accent-bright); }
+    .promo-hero h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 800; margin-top: 5px; }
+    .promo-hero p { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
+    .code-box {
+      margin-top: 16px; padding: 14px 16px; border-radius: 15px;
+      background: rgba(0,0,0,.35); border: 1px solid rgba(224,184,74,.35);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .code-box .code { font-size: 19px; font-weight: 900; letter-spacing: 2px; color: var(--accent-bright); font-family: 'Playfair Display', serif; }
+    .code-box .link-mini {
+      font-size: 11px; color: var(--text-dim); margin-top: 4px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; display: block;
+    }
+    .share-row { display: flex; gap: 9px; margin-top: 12px; }
+    .share-btn {
+      flex: 1; padding: 12px; border-radius: 13px; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .share-btn.wa { background: #1FA855; color: #fff; }
+    .share-btn.copy { background: rgba(255,255,255,.07); color: var(--text-light); border: 1px solid rgba(255,255,255,.12); }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 11px; margin-top: 20px; }
+    @media (max-width: 420px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+    .stat-card {
+      padding: 14px; border-radius: 16px; text-align: center;
+      background: var(--bg-card); border: 1px solid rgba(255,255,255,.07);
+    }
+    .stat-card i { color: var(--accent-bright); font-size: 13px; }
+    .stat-card b { display: block; font-size: 22px; font-weight: 800; margin-top: 5px; font-family: 'Playfair Display', serif; }
+    .stat-card span { font-size: 10.5px; color: var(--text-dim); }
+    .stat-card.gold { grid-column: 1 / -1; border-color: rgba(224,184,74,.4); background: linear-gradient(150deg, rgba(184,134,11,.14), rgba(20,20,20,.8)); }
+
+    /* ===== COMPOSER ===== */
+    .composer-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .composer-tab {
+      flex: 1; padding: 11px; border-radius: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.04); color: var(--text-dim);
+      font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 800; text-align: center;
+    }
+    .composer-tab.active { color: var(--bg-dark); background: linear-gradient(135deg, var(--accent-bright), var(--accent)); border-color: transparent; }
+    .file-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+      padding: 12px 14px; border-radius: 13px;
+      background: rgba(255,255,255,.04); border: 1px dashed rgba(224,184,74,.35);
+    }
+    .file-row i { color: var(--accent-bright); font-size: 15px; }
+    .file-row .file-info { flex: 1; min-width: 0; }
+    .file-row .file-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-row .file-size { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+    .file-row .file-clear {
+      width: 30px; height: 30px; border-radius: 10px; border: none; cursor: pointer;
+      background: rgba(192,57,43,.15); color: #EF9A9A; font-size: 12px;
+    }
+    .upload-note { font-size: 11px; color: var(--text-dim); margin-top: -6px; margin-bottom: 12px; line-height: 1.5; }
+
+    /* ===== FIL D'ACTUALITÉ ===== */
+    .feed { margin-top: 20px; }
+    .section-title { font-size: 13.5px; font-weight: 800; color: var(--accent-bright); margin: 4px 0 12px; display: flex; align-items: center; gap: 8px; }
+    .post-card {
+      padding: 16px 16px; border-radius: 18px; margin-bottom: 12px;
+      background: var(--bg-card); border: 1px solid rgba(255,255,255,.07);
+    }
+    .post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .post-ico {
+      width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+      background: rgba(224,184,74,.14); color: var(--accent-bright);
+    }
+    .post-head h4 { font-size: 14px; font-weight: 800; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .post-head .when { font-size: 10.5px; color: var(--text-dim); flex-shrink: 0; }
+    .post-text { font-size: 13px; line-height: 1.65; color: rgba(245,240,232,.92); white-space: pre-wrap; word-break: break-word; }
+    .post-file {
+      display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 11px 13px;
+      border-radius: 12px; background: rgba(224,184,74,.08); border: 1px solid rgba(224,184,74,.25);
+      text-decoration: none; color: var(--text-light);
+    }
+    .post-file i { color: var(--accent-bright); }
+    .post-file .pf-body { flex: 1; min-width: 0; }
+    .post-file .pf-name { font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .post-file .pf-hint { font-size: 10.5px; color: var(--text-dim); }
+    .post-del {
+      width: 30px; height: 30px; border-radius: 10px; border: none; cursor: pointer; flex-shrink: 0;
+      background: rgba(192,57,43,.12); color: #EF9A9A; font-size: 12px;
+    }
+    .empty-block {
+      text-align: center; padding: 30px 18px; border-radius: 18px;
+      background: rgba(255,255,255,.02); border: 1px dashed rgba(184,134,11,.3);
+    }
+    .empty-block i { font-size: 24px; color: var(--accent-bright); }
+    .empty-block h4 { font-size: 14px; margin-top: 10px; }
+    .empty-block p { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.5; }
+
+    /* ===== MEMBRES ===== */
+    .member-row {
+      display: flex; align-items: center; gap: 11px; padding: 11px 12px;
+      border-radius: 13px; background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.06); margin-bottom: 8px;
+    }
+    .member-avatar {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      color: var(--bg-dark); font-weight: 900; font-size: 14px;
+    }
+    .member-body { flex: 1; min-width: 0; }
+    .member-body b { font-size: 13.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .member-body span { font-size: 10.5px; color: var(--text-dim); }
+    .member-del {
+      width: 30px; height: 30px; border-radius: 10px; border: none; cursor: pointer; flex-shrink: 0;
+      background: rgba(192,57,43,.12); color: #EF9A9A; font-size: 12px;
+    }
+    .amb-cta {
+      display: flex; align-items: center; gap: 13px; text-decoration: none;
+      padding: 16px 16px; border-radius: 18px; margin-top: 14px;
+      background: linear-gradient(150deg, rgba(224,184,74,.12), rgba(20,20,20,.85));
+      border: 1px solid rgba(224,184,74,.32);
+    }
+    .amb-cta .crown { width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent)); color: var(--bg-dark); }
+    .amb-cta-body { flex: 1; min-width: 0; }
+    .amb-cta-body h3 { font-size: 14.5px; font-weight: 800; color: var(--text-light); }
+    .amb-cta-body p { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; line-height: 1.45; }
+    .amb-cta .arrow { color: var(--accent-bright); font-size: 13px; flex-shrink: 0; }
+
+    .footer-note { max-width: 560px; margin: 26px auto 0; padding: 0 18px; font-size: 11.5px; color: var(--text-dim); text-align: center; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <a href="index.html" class="back-btn" aria-label="Retour"><i class="fas fa-arrow-left"></i></a>
+    <div class="page-title">
+      <h1>Gérer ma promo</h1>
+      <p>Communique, partage des exercices — fais grandir ta classe</p>
+    </div>
+  </header>
+
+  <div class="container" id="mainArea">
+    <div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement de ta promo…</div>
+  </div>
+
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js",
+    "firebase/storage": "https://www.gstatic.com/firebasejs/12.12.1/firebase-storage.js"
+  }
+}
+</script>
+<script type="module">
+  import { initializeApp } from "firebase/app";
+  import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+  import {
+    initializeFirestore, persistentLocalCache, persistentSingleTabManager,
+    collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, updateDoc,
+    query, where, orderBy, limit, serverTimestamp, getFirestore, writeBatch, increment
+  } from "firebase/firestore";
+  import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "firebase/storage";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDHscOXw3rLuhV6z1Cny-bdYCumqpnG7QE",
+    authDomain: "arvexa-fbf10.firebaseapp.com",
+    projectId: "arvexa-fbf10",
+    storageBucket: "arvexa-fbf10.firebasestorage.app",
+    messagingSenderId: "920108330053",
+    appId: "1:920108330053:web:f532d71cbc2c824bc7472c"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
+  });
+  const storage = getStorage(app);
+
+  const $ = (id) => document.getElementById(id);
+  const mainArea = $('mainArea');
+  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const MAX_FILE_MB = 8;
+
+  // ══════════════════════════════════════════════════════════════════
+  // UTILITAIRES
+  // ══════════════════════════════════════════════════════════════════
+  function genPromoCode() {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans I,O,0,1 : lisible en groupe WhatsApp
+    let s = '';
+    for (let i = 0; i < 6; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+    return 'PROMO-' + s;
+  }
+
+  function fmtWhen(ts) {
+    try {
+      const d = ts?.toDate?.() || null;
+      if (!d) return '';
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) +
+        ' · ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return ''; }
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes && bytes !== 0) return '';
+    if (bytes < 1024) return bytes + ' o';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' Ko';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' Mo';
+  }
+
+  function initials(name) {
+    return String(name || 'É').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || 'É';
+  }
+
+  function toast(message, type = 'info') {
+    if (typeof window.arvexaShowToast === 'function') { window.arvexaShowToast(message, type); return; }
+    const t = document.createElement('div');
+    t.textContent = message;
+    t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:500;' +
+      'background:rgba(20,20,20,.95);border:1px solid rgba(224,184,74,.4);color:#F5F0E8;' +
+      'padding:12px 18px;border-radius:14px;font-size:13px;font-weight:600;max-width:86vw;text-align:center;';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+  }
+
+  function loginHere() {
+    try { sessionStorage.setItem('redirectAfterLogin', 'ma-promo.html'); } catch (e) {}
+    window.location.href = 'login.html';
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // VUE 1 — VISITEUR / NON CONNECTÉ : présentation + connexion
+  // ══════════════════════════════════════════════════════════════════
+  function renderLanding() {
+    mainArea.replaceChildren();
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `
+      <div class="hero">
+        <div class="hero-ico"><i class="fas fa-people-group"></i></div>
+        <h2>Gérer ma promo</h2>
+        <p class="lead">Crée l'espace de ta classe : communique avec tes camarades, envoie des PDF, des exercices
+        et des annonces — et gagne <b style="color:var(--accent-bright)">10 %</b> sur chaque abonnement payé par un membre de ta promo.</p>
+        <div class="perks">
+          <div class="perk"><i class="fas fa-comments"></i><b>Messages</b><span>annonces de classe</span></div>
+          <div class="perk"><i class="fas fa-file-pdf"></i><b>PDF</b><span>exercices &amp; fiches</span></div>
+          <div class="perk"><i class="fas fa-coins"></i><b>10 %</b><span>sur les abonnements</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Connecte-toi pour commencer</h3>
+        <p class="sub">Ton compte ARVEXA te permet de créer l'espace de ta promo ou de rejoindre celui de ton délégué avec son code.</p>
+        <button class="submit-btn" id="goLogin"><i class="fas fa-right-to-bracket"></i> Se connecter / Créer un compte</button>
+      </div>`;
+    mainArea.appendChild(wrap);
+    $('goLogin').addEventListener('click', loginHere);
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // VUE 2 — CONNECTÉ SANS PROMO : créer OU rejoindre
+  // ══════════════════════════════════════════════════════════════════
+  function renderChoice(user, userName) {
+    mainArea.replaceChildren();
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `
+      <div class="hero">
+        <div class="hero-ico"><i class="fas fa-people-group"></i></div>
+        <h2>Bonjour, ${esc(userName)}</h2>
+        <p class="lead">Tu n'as pas encore de promo. Crée l'espace de ta classe, ou rejoins celle de ton délégué avec son code.</p>
+      </div>
+      <div class="choice-row">
+        <div class="choice-card" id="choiceCreate">
+          <i class="fas fa-chess-king"></i>
+          <h3>Créer ma promo</h3>
+          <p>Tu deviens le responsable : tu publies les messages, les PDF et les exercices.</p>
+        </div>
+        <div class="choice-card" id="choiceJoin">
+          <i class="fas fa-ticket"></i>
+          <h3>Rejoindre une promo</h3>
+          <p>Tu as un code <b>PROMO-XXXXXX</b> ? Rejoins l'espace de ta classe.</p>
+        </div>
+      </div>
+      <div class="card" id="createCard" style="display:none">
+        <h3>Créer ma promo</h3>
+        <p class="sub">Tu seras le responsable de l'espace. Tu pourras y publier des messages, des PDF et des exercices.</p>
+        <div class="field">
+          <label for="newPromoName">Nom de la promo *</label>
+          <input id="newPromoName" type="text" placeholder="Ex. : Terminale D — Lycée Sahel" maxlength="80">
+        </div>
+        <div class="field">
+          <label for="newPromoSchool">Établissement</label>
+          <input id="newPromoSchool" type="text" placeholder="Nom de ton lycée / collège" maxlength="120">
+        </div>
+        <button class="submit-btn" id="createPromoBtn"><i class="fas fa-flag"></i> Créer l'espace</button>
+        <div class="form-msg" id="createMsg"></div>
+      </div>
+      <div class="card" id="joinCard" style="display:none">
+        <h3>Rejoindre une promo</h3>
+        <p class="sub">Demande le code au responsable de ta classe (format PROMO-XXXXXX).</p>
+        <div class="field">
+          <label for="joinCodeInput">Code de la promo</label>
+          <input id="joinCodeInput" type="text" placeholder="PROMO-XXXXXX" maxlength="12" autocapitalize="characters" style="text-transform:uppercase">
+        </div>
+        <button class="submit-btn" id="joinBtn"><i class="fas fa-ticket"></i> Rejoindre</button>
+        <div class="form-msg" id="joinMsg"></div>
+      </div>`;
+    mainArea.appendChild(wrap);
+
+    $('choiceCreate').addEventListener('click', () => {
+      const c = $('createCard'), j = $('joinCard');
+      c.style.display = c.style.display === 'none' ? '' : 'none';
+      j.style.display = 'none';
+      c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    $('choiceJoin').addEventListener('click', () => {
+      const c = $('createCard'), j = $('joinCard');
+      j.style.display = j.style.display === 'none' ? '' : 'none';
+      c.style.display = 'none';
+      j.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    $('createPromoBtn').addEventListener('click', () => createPromo(user, userName));
+    $('joinBtn').addEventListener('click', () => joinPromo(user, userName));
+  }
+
+  // ─── Création de promo ───
+  async function createPromo(user, userName) {
+    const msg = $('createMsg'), btn = $('createPromoBtn');
+    const name = $('newPromoName').value.trim();
+    const school = $('newPromoSchool').value.trim();
+    if (name.length < 2) {
+      msg.className = 'form-msg error';
+      msg.textContent = 'Donne un nom à ta promo (au moins 2 caractères).';
+      return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création…';
+    try {
+      // Le code ambassadeur du créateur (s'il est ambassadeur validé) voyage
+      // avec la promo : chaque membre qui la rejoint est rattaché à son
+      // parrainage → il touche 10 % sur les abonnements de sa promo.
+      let ownerCode = null;
+      try {
+        const ambSnap = await getDoc(doc(db, 'ambassadors', user.uid));
+        if (ambSnap.exists() && ambSnap.data().status === 'active') ownerCode = ambSnap.data().code || null;
+      } catch (e) { /* pas ambassadeur : non bloquant */ }
+
+      // Code unique : 2 essais suffisent en pratique (probabilité de collision ~0)
+      let code = genPromoCode();
+      for (let i = 0; i < 3; i++) {
+        const clash = await getDocs(query(collection(db, 'promos'), where('code', '==', code), limit(1)));
+        if (clash.empty) break;
+        code = genPromoCode();
+      }
+
+      const promoRef = doc(collection(db, 'promos'));
+      const batch = writeBatch(db);
+      batch.set(promoRef, {
+        ownerUid: user.uid,
+        ownerName: String(userName || 'Responsable').substring(0, 80),
+        ownerCode,
+        code,
+        name: name.substring(0, 80),
+        school: school.substring(0, 120),
+        memberCount: 1,
+        status: 'active',
+        createdAt: serverTimestamp()
+      });
+      batch.set(doc(promoRef, 'members', user.uid), {
+        uid: user.uid,
+        name: String(userName || 'Responsable').substring(0, 80),
+        role: 'owner',
+        joinedAt: serverTimestamp()
+      });
+      batch.update(doc(db, 'users', user.uid), {
+        promoId: promoRef.id,
+        promoRole: 'owner',
+        promoJoinedAt: serverTimestamp()
+      });
+      await batch.commit();
+      toast('Ton espace promo est créé ! 🎉', 'success');
+      routeTo(user, { promoId: promoRef.id, promoRole: 'owner' });
+    } catch (e) {
+      console.error('Création promo :', e);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-flag"></i> Créer l\'espace';
+      msg.className = 'form-msg error';
+      msg.textContent = 'Création impossible — vérifie ta connexion puis réessaie. (' + (e.code || e.message || 'erreur') + ')';
+    }
+  }
+
+  // ─── Rejoindre par code ───
+  async function joinPromo(user, userName) {
+    const msg = $('joinMsg'), btn = $('joinBtn');
+    const code = String($('joinCodeInput').value || '').toUpperCase().trim();
+    if (!/^PROMO-[A-Z0-9]{6}$/.test(code)) {
+      msg.className = 'form-msg error';
+      msg.textContent = 'Le code ressemble à PROMO-XXXXXX (6 caractères après le tiret).';
+      return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recherche…';
+    try {
+      const snap = await getDocs(query(collection(db, 'promos'), where('code', '==', code), limit(1)));
+      if (snap.empty) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-ticket"></i> Rejoindre';
+        msg.className = 'form-msg error';
+        msg.textContent = 'Aucune promo avec ce code — vérifie auprès du responsable.';
+        return;
+      }
+      const promo = snap.docs[0];
+      const pData = promo.data();
+
+      // Rattachement parrainage : si le membre n'a pas encore de parrain,
+      // le code ambassadeur du responsable de la promo devient son parrain
+      // (le responsable gagne 10 % sur les futurs abonnements du membre).
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+      const uData = userSnap.exists() ? userSnap.data() : {};
+      const batch = writeBatch(db);
+      batch.set(doc(promo.ref, 'members', user.uid), {
+        uid: user.uid,
+        name: String(userName || 'Élève').substring(0, 80),
+        role: 'member',
+        joinedAt: serverTimestamp()
+      });
+      batch.update(promo.ref, { memberCount: increment(1) });
+      const userPatch = {
+        promoId: promo.id,
+        promoRole: 'member',
+        promoJoinedAt: serverTimestamp()
+      };
+      if (!uData.referredBy && pData.ownerCode) userPatch.referredBy = pData.ownerCode;
+      batch.update(userRef, userPatch);
+      await batch.commit();
+      toast('Bienvenue dans « ' + (pData.name || 'la promo') + ' » !', 'success');
+      routeTo(user, { promoId: promo.id, promoRole: 'member' });
+    } catch (e) {
+      console.error('Rejoindre promo :', e);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-ticket"></i> Rejoindre';
+      msg.className = 'form-msg error';
+      msg.textContent = 'Impossible de rejoindre — vérifie ta connexion puis réessaie. (' + (e.code || e.message || 'erreur') + ')';
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // VUE 3 — RESPONSABLE : dashboard complet
+  // ══════════════════════════════════════════════════════════════════
+  let pickedFile = null;
+
+  async function renderOwner(user, promoId) {
+    mainArea.replaceChildren();
+    const wrap = document.createElement('div');
+    wrap.innerHTML = '<div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement de ton espace…</div>';
+    mainArea.appendChild(wrap);
+
+    let promoSnap;
+    try {
+      promoSnap = await getDoc(doc(db, 'promos', promoId));
+    } catch (e) {
+      mainArea.replaceChildren();
+      const err = document.createElement('div');
+      err.className = 'empty-block';
+      err.style.marginTop = '20px';
+      err.innerHTML = '<i class="fas fa-wifi"></i><h4>Espace indisponible</h4><p>Vérifie ta connexion puis rafraîchis la page.</p>';
+      mainArea.appendChild(err);
+      return;
+    }
+    if (!promoSnap.exists()) {
+      // ⚠️ la promo n'existe plus côté serveur : on détache le user (jamais
+      // de deleteDoc sur users/{uid} — c'est le PROFIL de l'élève !)
+      try { await setDoc(doc(db, 'users', user.uid), { promoId: '', promoRole: '' }, { merge: true }); } catch (e) {}
+      mainArea.replaceChildren();
+      const err = document.createElement('div');
+      err.className = 'empty-block';
+      err.style.marginTop = '20px';
+      err.innerHTML = '<i class="fas fa-triangle-exclamation"></i><h4>Promo introuvable</h4><p>Elle a peut-être été supprimée. Reviens à l\'accueil puis rouvre cette page.</p>';
+      mainArea.appendChild(err);
+      return;
+    }
+    const promo = promoSnap.data();
+    const code = String(promo.code || '');
+    const link = `${window.location.origin}/ma-promo.html?promo=${code}`;
+    const members = Math.max(1, Number(promo.memberCount || 1));
+    const waText = encodeURIComponent(
+      `📘 Rejoins l'espace de notre promo sur ARVEXA : messages, exercices et PDF partagés — tout dans ton téléphone.\nCode : ${code}\n${link}`
+    );
+
+    mainArea.replaceChildren();
+    const dash = document.createElement('div');
+    dash.innerHTML = `
+      <div class="promo-hero">
+        <div class="kicker">Espace responsable</div>
+        <h2>${esc(promo.name || 'Ma promo')}</h2>
+        <p>${esc(promo.school || '')}${promo.school ? ' · ' : ''}Tu publies, ta promo reçoit. Chaque membre qui s'abonne te rapporte 10 %.</p>
+        <div class="code-box">
+          <div style="min-width:0">
+            <div class="code">${esc(code)}</div>
+            <span class="link-mini">${esc(link)}</span>
+          </div>
+          <i class="fas fa-ticket" style="color:var(--accent-bright);font-size:22px"></i>
+        </div>
+        <div class="share-row">
+          <button class="share-btn wa" id="shareWa"><i class="fab fa-whatsapp"></i> Partager sur WhatsApp</button>
+          <button class="share-btn copy" id="shareCopy"><i class="fas fa-copy"></i> Copier</button>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><i class="fas fa-user-group"></i><b>${members}</b><span>membres</span></div>
+        <div class="stat-card" id="postsCount"><i class="fas fa-paper-plane"></i><b>…</b><span>publications</span></div>
+        <div class="stat-card"><i class="fas fa-crown"></i><b>10 %</b><span>sur chaque abonnement</span></div>
+        <div class="stat-card gold"><i class="fas fa-coins"></i><b style="font-size:16px">Tes gains</b><span>suivis dans le programme Ambassadeur — retraits mobile money bientôt disponibles</span></div>
+      </div>
+
+      <div class="card" id="composerCard">
+        <h3>Publier dans la promo</h3>
+        <p class="sub">Une annonce, un exercice scanné, une fiche PDF — tout arrive dans le fil de ta promo.</p>
+        <div class="composer-tabs">
+          <button class="composer-tab active" id="tabMessage" type="button"><i class="fas fa-comments"></i> Message</button>
+          <button class="composer-tab" id="tabFile" type="button"><i class="fas fa-file-pdf"></i> PDF / Exercice</button>
+        </div>
+        <div class="field">
+          <label for="postTitle">Titre *</label>
+          <input id="postTitle" type="text" placeholder="Ex. : Devoir surveillé n°3 — à rendre vendredi" maxlength="120">
+        </div>
+        <div class="field">
+          <label for="postText">Message</label>
+          <textarea id="postText" placeholder="Écris ta consigne, ta consigne de travail, ton annonce…" maxlength="4000"></textarea>
+        </div>
+        <div id="fileZone" style="display:none">
+          <div class="file-row" id="fileRow" style="display:none">
+            <i class="fas fa-file-pdf"></i>
+            <div class="file-info">
+              <div class="file-name" id="fileName">—</div>
+              <div class="file-size" id="fileSize">—</div>
+            </div>
+            <button class="file-clear" id="fileClear" type="button" aria-label="Retirer le fichier"><i class="fas fa-xmark"></i></button>
+          </div>
+          <input type="file" id="fileInput" accept=".pdf,image/*" style="display:none">
+          <button class="ghost-btn" id="filePick" type="button"><i class="fas fa-paperclip"></i> Choisir un PDF ou une photo</button>
+          <p class="upload-note">PDF ou image, ${MAX_FILE_MB} Mo maximum. Le fichier est envoyé dans l'espace sécurisé de ta promo.</p>
+          <div class="field">
+            <label for="postFileUrl">…ou colle un lien (Google Drive, WhatsApp…) <span style="font-weight:400">(repli si l'envoi direct ne passe pas)</span></label>
+            <input id="postFileUrl" type="url" inputmode="url" placeholder="https://drive.google.com/…" maxlength="2000">
+          </div>
+        </div>
+        <button class="submit-btn" id="publishBtn"><i class="fas fa-paper-plane"></i> Publier</button>
+        <div class="form-msg" id="publishMsg"></div>
+      </div>
+
+      <div class="feed">
+        <div class="section-title"><i class="fas fa-stream"></i> Fil de la promo</div>
+        <div id="feedArea"><div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement…</div></div>
+      </div>
+
+      <div class="feed">
+        <div class="section-title"><i class="fas fa-user-group"></i> Membres (<span id="memberCountLbl">${members}</span>)</div>
+        <div id="memberArea"><div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement…</div></div>
+      </div>
+
+      <a href="ambassadeur.html" class="amb-cta" style="margin-top:20px">
+        <i class="fas fa-crown crown"></i>
+        <div class="amb-cta-body"><h3>Mes gains ambassadeur</h3><p>Suis tes commissions et ton rang dans le programme.</p></div>
+        <i class="fas fa-chevron-right arrow"></i>
+      </a>
+      <button class="ghost-btn danger" id="leavePromo" style="margin-top:14px"><i class="fas fa-door-open"></i> Quitter / dissoudre cette promo</button>`;
+    mainArea.appendChild(dash);
+
+    $('shareWa').addEventListener('click', () => window.open(`https://wa.me/?text=${waText}`, '_blank', 'noopener'));
+    $('shareCopy').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(`${link} — code : ${code}`);
+        $('shareCopy').innerHTML = '<i class="fas fa-check"></i> Copié !';
+        setTimeout(() => { $('shareCopy').innerHTML = '<i class="fas fa-copy"></i> Copier'; }, 2000);
+      } catch (e) { window.prompt('Copie ton lien :', link); }
+    });
+
+    // ─── Composer ───
+    let mode = 'message';
+    const tabMessage = $('tabMessage'), tabFile = $('tabFile'), fileZone = $('fileZone');
+    function setMode(m) {
+      mode = m;
+      tabMessage.classList.toggle('active', m === 'message');
+      tabFile.classList.toggle('active', m === 'file');
+      fileZone.style.display = m === 'file' ? '' : 'none';
+    }
+    tabMessage.addEventListener('click', () => setMode('message'));
+    tabFile.addEventListener('click', () => setMode('file'));
+
+    $('filePick').addEventListener('click', () => $('fileInput').click());
+    $('fileInput').addEventListener('change', () => {
+      const f = $('fileInput').files && $('fileInput').files[0];
+      pickedFile = f || null;
+      if (f) {
+        $('fileRow').style.display = '';
+        $('fileName').textContent = f.name;
+        $('fileSize').textContent = fmtSize(f.size);
+      } else {
+        $('fileRow').style.display = 'none';
+      }
+    });
+    $('fileClear').addEventListener('click', () => {
+      pickedFile = null;
+      $('fileInput').value = '';
+      $('fileRow').style.display = 'none';
+    });
+
+    $('publishBtn').addEventListener('click', () => publishPost(user, promoId));
+    $('leavePromo').addEventListener('click', () => dissolvePromo(user, promoId, promo.name));
+
+    loadFeed(user, promoId, true);
+    loadMembers(user, promoId, true);
+  }
+
+  // ─── Publication (message, fichier uploadé ou lien) ───
+  async function publishPost(user, promoId) {
+    const msg = $('publishMsg'), btn = $('publishBtn');
+    const title = $('postTitle').value.trim();
+    const text = $('postText').value.trim();
+    const linkUrl = String($('postFileUrl')?.value || '').trim();
+    if (title.length < 1) {
+      msg.className = 'form-msg error';
+      msg.textContent = 'Donne un titre à ta publication.';
+      return;
+    }
+    if (mode === 'message' && text.length < 1) {
+      msg.className = 'form-msg error';
+      msg.textContent = 'Écris ton message (ou bascule sur « PDF / Exercice » pour envoyer un fichier).';
+      return;
+    }
+    const hasLink = /^https:\/\/\S{4,2000}$/.test(linkUrl);
+    if (mode === 'file' && !pickedFile && !hasLink) {
+      msg.className = 'form-msg error';
+      msg.textContent = 'Choisis un fichier (PDF ou photo), colle un lien https, ou repasse en mode Message.';
+      return;
+    }
+    if (pickedFile && pickedFile.size > MAX_FILE_MB * 1024 * 1024) {
+      msg.className = 'form-msg error';
+      msg.textContent = `Fichier trop lourd (${fmtSize(pickedFile.size)}) — maximum ${MAX_FILE_MB} Mo.`;
+      return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (pickedFile ? 'Envoi du fichier…' : 'Publication…');
+    try {
+      let fileUrl = null, fileName = null, fileSize = null;
+      if (pickedFile) {
+        try {
+          const safeName = pickedFile.name.replace(/[^\w.\-() ]+/g, '_').substring(0, 120);
+          const path = `promo-files/${promoId}/${Date.now()}-${safeName}`;
+          const storageRef = sRef(storage, path);
+          await uploadBytes(storageRef, pickedFile, { contentType: pickedFile.type || 'application/octet-stream' });
+          fileUrl = await getDownloadURL(storageRef);
+          fileName = safeName;
+          fileSize = pickedFile.size;
+        } catch (upErr) {
+          // ✅ v8.57a — repli intelligent : si l'envoi Storage est refusé
+          // (règles à déployer / réseau), la publication part avec le LIEN
+          // collé — la promo n'attend jamais. Sinon message clair.
+          console.error('Upload Storage :', upErr);
+          if (hasLink) {
+            toast('Envoi direct indisponible — publication avec ton lien à la place.', 'info');
+          } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Publier';
+            msg.className = 'form-msg error';
+            msg.textContent = 'Envoi du fichier impossible pour l\'instant. Colle un lien (Drive/WhatsApp) dans le champ « ou colle un lien » puis republie — ou réessaie plus tard.';
+            return;
+          }
+        }
+      }
+      const finalUrl = fileUrl || (hasLink ? linkUrl : '');
+      const finalName = fileName || (hasLink ? 'Fichier partagé (lien)' : '');
+      await addDoc(collection(db, 'promos', promoId, 'posts'), {
+        type: (fileUrl || hasLink) ? 'fichier' : 'message',
+        title: title.substring(0, 120),
+        text: text.substring(0, 4000),
+        fileUrl: finalUrl || '',
+        fileName: finalName || '',
+        fileSize: fileSize || 0,
+        authorUid: user.uid,
+        createdAt: serverTimestamp()
+      });
+      // Reset du formulaire
+      $('postTitle').value = '';
+      $('postText').value = '';
+      pickedFile = null;
+      $('fileInput').value = '';
+      $('fileRow').style.display = 'none';
+      if ($('postFileUrl')) $('postFileUrl').value = '';
+      msg.className = 'form-msg info';
+      msg.textContent = 'Publié ! Ta promo le voit dans son fil. ✅';
+      setTimeout(() => { msg.className = 'form-msg'; }, 2600);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Publier';
+      loadFeed(user, promoId, false);
+    } catch (e) {
+      console.error('Publication :', e);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Publier';
+      msg.className = 'form-msg error';
+      msg.textContent = 'Publication impossible — vérifie ta connexion puis réessaie. (' + (e.code || e.message || 'erreur') + ')';
+    }
+  }
+
+  // ─── Fil ───
+  async function loadFeed(user, promoId, isOwner) {
+    const area = $('feedArea');
+    if (!area) return;
+    try {
+      const snap = await getDocs(query(collection(db, 'promos', promoId, 'posts'), orderBy('createdAt', 'desc'), limit(50)));
+      area.replaceChildren();
+      if (snap.empty) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-block';
+        empty.innerHTML = '<i class="fas fa-inbox"></i><h4>Rien pour le moment</h4><p>' +
+          (isOwner ? 'Publie ton premier message ou ton premier exercice — ta promo le recevra ici.' : 'Le responsable n\'a encore rien publié.') + '</p>';
+        area.appendChild(empty);
+        return;
+      }
+      snap.forEach((d) => {
+        const p = d.data();
+        const card = document.createElement('div');
+        card.className = 'post-card';
+        const when = fmtWhen(p.createdAt);
+        const isFile = p.type === 'fichier' && p.fileUrl;
+        card.innerHTML = `
+          <div class="post-head">
+            <div class="post-ico"><i class="fas ${isFile ? 'fa-file-pdf' : 'fa-comment'}"></i></div>
+            <h4>${esc(p.title || 'Publication')}</h4>
+            <span class="when">${esc(when)}</span>
+            ${isOwner ? '<button class="post-del" data-post="' + esc(d.id) + '" aria-label="Supprimer"><i class="fas fa-trash"></i></button>' : ''}
+          </div>
+          ${p.text ? '<div class="post-text">' + esc(p.text) + '</div>' : ''}
+          ${isFile ? `
+            <a class="post-file" href="${esc(p.fileUrl)}" target="_blank" rel="noopener">
+              <i class="fas fa-download"></i>
+              <div class="pf-body">
+                <div class="pf-name">${esc(p.fileName || 'Fichier')}</div>
+                <div class="pf-hint">${p.fileSize ? fmtSize(p.fileSize) + ' · ' : ''}Ouvrir / télécharger</div>
+              </div>
+              <i class="fas fa-chevron-right" style="color:var(--text-dim);font-size:12px"></i>
+            </a>` : ''}`;
+        if (isOwner) {
+          card.querySelector('.post-del')?.addEventListener('click', async () => {
+            try {
+              await deleteDoc(doc(db, 'promos', promoId, 'posts', d.id));
+              card.remove();
+              toast('Publication supprimée.', 'info');
+            } catch (e) { toast('Suppression impossible : ' + (e.code || e.message), 'error'); }
+          });
+        }
+        area.appendChild(card);
+      });
+    } catch (e) {
+      console.error('Fil promo :', e);
+      area.replaceChildren();
+      const err = document.createElement('div');
+      err.className = 'empty-block';
+      err.innerHTML = '<i class="fas fa-wifi"></i><h4>Fil indisponible</h4><p>' + esc(e.code || e.message || 'Erreur réseau') + '</p>';
+      area.appendChild(err);
+    }
+  }
+
+  // ─── Membres ───
+  async function loadMembers(user, promoId, isOwner) {
+    const area = $('memberArea');
+    if (!area) return;
+    try {
+      const snap = await getDocs(query(collection(db, 'promos', promoId, 'members'), limit(300)));
+      area.replaceChildren();
+      let count = 0;
+      snap.forEach((d) => {
+        const m = d.data();
+        count++;
+        const row = document.createElement('div');
+        row.className = 'member-row';
+        row.innerHTML = `
+          <div class="member-avatar">${esc(initials(m.name))}</div>
+          <div class="member-body">
+            <b>${esc(m.name || 'Membre')}</b>
+            <span>${m.role === 'owner' ? '👑 Responsable' : esc(fmtWhen(m.joinedAt) || 'membre')}</span>
+          </div>
+          ${isOwner && m.role !== 'owner' ? '<button class="member-del" data-uid="' + esc(m.uid) + '" aria-label="Retirer"><i class="fas fa-user-minus"></i></button>' : ''}`;
+        if (isOwner && m.role !== 'owner') {
+          row.querySelector('.member-del')?.addEventListener('click', () => removeMember(user, promoId, m.uid, m.name, row));
+        }
+        area.appendChild(row);
+      });
+      const lbl = $('memberCountLbl');
+      if (lbl) lbl.textContent = String(count);
+      const pc = $('postsCount');
+      if (pc && pc.querySelector('b').textContent === '…') {
+        try {
+          const ps = await getDocs(query(collection(db, 'promos', promoId, 'posts'), limit(200)));
+          pc.querySelector('b').textContent = String(ps.size);
+        } catch (e) { pc.querySelector('b').textContent = '—'; }
+      }
+    } catch (e) {
+      console.error('Membres :', e);
+      area.replaceChildren();
+      const err = document.createElement('div');
+      err.className = 'empty-block';
+      err.innerHTML = '<i class="fas fa-wifi"></i><h4>Liste indisponible</h4><p>' + esc(e.code || e.message || 'Erreur réseau') + '</p>';
+      area.appendChild(err);
+    }
+  }
+
+  async function removeMember(user, promoId, uid, name, row) {
+    try {
+      // ⚠️ v8.57a — on ne peut PAS écrire dans users/{uid} d'un autre compte
+      // (règles Firestore). On retire le membre de la promo ; son propre doc
+      // se détache tout seul à sa prochaine visite (vérification d'appartenance).
+      await deleteDoc(doc(db, 'promos', promoId, 'members', uid));
+      await updateDoc(doc(db, 'promos', promoId), { memberCount: increment(-1) });
+      row.remove();
+      toast(name ? (name + ' retiré de la promo.') : 'Membre retiré.', 'info');
+    } catch (e) {
+      console.error('Retrait membre :', e);
+      toast('Retrait impossible : ' + (e.code || e.message), 'error');
+    }
+  }
+
+  async function dissolvePromo(user, promoId, name) {
+    const doDissolve = async () => {
+      try {
+      // Les documents de la promo elle-même sont retirés ; les sous-collections
+      // (posts/membres) restent en archive côté serveur — elles ne sont plus
+      // accessibles (le document parent n'existe plus).
+      await deleteDoc(doc(db, 'promos', promoId));
+      await setDoc(doc(db, 'users', user.uid), { promoId: '', promoRole: '' }, { merge: true });
+      toast('Promo dissoute.', 'info');
+        routeTo(user, { promoId: '', promoRole: '' });
+      } catch (e) {
+        console.error('Dissolution :', e);
+        toast('Impossible de dissoudre : ' + (e.code || e.message), 'error');
+      }
+    };
+    // ✅ modale uniforme du site (callback onConfirm — pas de Promise)
+    window.arvexaConfirm({
+      title: 'Dissoudre la promo ?',
+      message: '« <strong>' + esc(name || 'Ma promo') + '</strong> » sera fermée : le fil disparaît pour tous les membres. Cette action est définitive.',
+      icon: '⚠️',
+      confirmText: 'Dissoudre',
+      cancelText: 'Annuler',
+      variant: 'danger',
+      onConfirm: doDissolve
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // VUE 4 — MEMBRE : fil en lecture seule
+  // ══════════════════════════════════════════════════════════════════
+  async function renderMember(user, promoId, userName) {
+    mainArea.replaceChildren();
+    const wrap = document.createElement('div');
+    wrap.innerHTML = '<div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement du fil…</div>';
+    mainArea.appendChild(wrap);
+
+    let promo = null;
+    try {
+      const snap = await getDoc(doc(db, 'promos', promoId));
+      if (snap.exists()) promo = snap.data();
+    } catch (e) { /* hors-ligne : fil quand même */ }
+
+    mainArea.replaceChildren();
+    const dash = document.createElement('div');
+    dash.innerHTML = `
+      <div class="promo-hero">
+        <div class="kicker">Espace de ta promo</div>
+        <h2>${esc(promo?.name || 'Ma promo')}</h2>
+        <p>${esc(promo?.school || '')}${promo?.school ? ' · ' : ''}Responsable : ${esc(promo?.ownerName || '—')}${promo?.code ? ' · code ' + esc(promo.code) : ''}</p>
+      </div>
+      <div class="feed">
+        <div class="section-title"><i class="fas fa-stream"></i> Fil de la promo</div>
+        <div id="feedArea"><div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement…</div></div>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <h3>Invite tes camarades</h3>
+        <p class="sub">${promo?.code ? 'Partage le code <b>' + esc(promo.code) + '</b> ou le lien direct — plus la promo est active, plus ton responsable gagne.' : 'Partage ARVEXA autour de toi.'}</p>
+        <button class="ghost-btn" id="memberShare"><i class="fab fa-whatsapp"></i> Partager l'espace sur WhatsApp</button>
+      </div>
+      <button class="ghost-btn danger" id="leavePromo" style="margin-top:14px"><i class="fas fa-door-open"></i> Quitter cette promo</button>`;
+    mainArea.appendChild(dash);
+
+    const code = promo?.code || '';
+    const link = code ? `${window.location.origin}/ma-promo.html?promo=${code}` : window.location.origin;
+    const waText = encodeURIComponent(`📘 Rejoins l'espace de notre promo sur ARVEXA : messages, exercices et PDF partagés.\n${code ? 'Code : ' + code + '\n' : ''}${link}`);
+    $('memberShare').addEventListener('click', () => window.open(`https://wa.me/?text=${waText}`, '_blank', 'noopener'));
+
+    loadFeed(user, promoId, false);
+
+    $('leavePromo').addEventListener('click', async () => {
+      try {
+        const batch = writeBatch(db);
+        batch.delete(doc(db, 'promos', promoId, 'members', user.uid));
+        batch.update(doc(db, 'promos', promoId), { memberCount: increment(-1) });
+        batch.update(doc(db, 'users', user.uid), { promoId: '', promoRole: '' });
+        await batch.commit();
+        toast('Tu as quitté la promo.', 'info');
+        routeTo(user, { promoId: '', promoRole: '' });
+      } catch (e) {
+        console.error('Quitter :', e);
+        toast('Impossible de quitter : ' + (e.code || e.message), 'error');
+      }
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ROUTAGE PRINCIPAL
+  // ══════════════════════════════════════════════════════════════════
+  function routeTo(user, userDoc) {
+    const promoId = String(userDoc?.promoId || '');
+    const promoRole = String(userDoc?.promoRole || '');
+    if (promoId && promoRole === 'owner') return renderOwner(user, promoId);
+    if (promoId && promoRole === 'member') return renderMember(user, promoId, userDoc?.firstName || userDoc?.fullName || 'Élève');
+    return renderChoice(user, userDoc?.firstName || userDoc?.fullName || 'Élève');
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) { renderLanding(); return; }
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      let uData = snap.exists() ? snap.data() : {};
+      // ✅ v8.57a — vérification d'appartenance : si le responsable nous a
+      // retirés (il ne peut pas écrire dans NOTRE doc users), on se détache
+      // soi-même et on retombe sur l'écran de choix.
+      if (uData.promoId && uData.promoRole === 'member') {
+        try {
+          const mSnap = await getDoc(doc(db, 'promos', String(uData.promoId), 'members', user.uid));
+          if (!mSnap.exists()) {
+            await setDoc(doc(db, 'users', user.uid), { promoId: '', promoRole: '' }, { merge: true });
+            uData = Object.assign({}, uData, { promoId: '', promoRole: '' });
+          }
+        } catch (e) { /* hors-ligne : on garde le fil en cache */ }
+      }
+      routeTo(user, uData);
+    } catch (e) {
+      console.error('ma-promo :', e);
+      routeTo(user, null);
+    }
+  });
+</script>
+<script src="register-sw.js" defer></script>
+<script src="install-banner.js" defer></script>
+</body>
+</html>
