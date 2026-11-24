@@ -63,7 +63,15 @@ function extractJson(txt) {
   let t = String(txt || '').trim().replace(/```(?:json)?/gi, '');
   const s = t.indexOf('['), e = t.lastIndexOf(']');
   if (s === -1 || e === -1 || e <= s) throw new Error('pas de JSON');
-  return JSON.parse(t.slice(s, e + 1));
+  t = t.slice(s, e + 1);
+  /* ✅ v8.53a — survit aux échappements invalides du modèle (\', \d, …) :
+     toute barre inverse NON suivie d'un caractère d'échappement JSON valide
+     est doublée (\' → \\' — l'apostrophe redevient littérale). */
+  /* ✅ v8.53a — passe atomique : paires valides gardées, \X invalide doublé */
+  t = t.replace(/\\(["\\\/bfnrtu])|\\([\s\S])/g, function (m, valid, other) {
+    return valid ? '\\' + valid : '\\\\' + other;
+  });
+  return JSON.parse(t);
 }
 function normalizeIa(raw) {
   return (Array.isArray(raw) ? raw : []).slice(0, 4).map((it, i) => {
@@ -94,6 +102,10 @@ T('items sans question filtrés', normalizeIa(extractJson('[{"options":["a","b"]
 T('rien de valide → 0 question (→ repli banque)', normalizeIa(extractJson('[]')).length === 0);
 let threw = false; try { extractJson('aucun tableau ici'); } catch (e) { threw = true; }
 T('sans JSON → exception (→ repli banque)', threw);
+/* ✅ v8.53a — échappements invalides du modèle (sonde E2E réelle : \') */
+const apostrophe = "[{\"matiere\":\"Mathématiques\",\"question\":\"Qu\\'est-ce que x ?\",\"options\":[\"l\\'inconnue\",\"le prix\",\"la somme\",\"la limite\"],\"bonne\":0,\"explication\":\"C\\'est l\\'inconnue.\"}]";
+T("apostrophe mal échappée (\') → parsée quand même", normalizeIa(extractJson(apostrophe)).length === 1);
+T('échappement JSON valide préservé (\\n)', normalizeIa(extractJson('[{"question":"A\\nB","options":["a","b"],"bonne":0}]')).length === 1);
 
 /* ── 4. Gardes d'unicité présentes dans les 2 pages ── */
 console.log('\n[4] Gardes « une seule actualisation » dans le code');
@@ -148,8 +160,8 @@ T('quotidien : importmap Firebase présent', qdj.includes('firebasejs/12.12.1/fi
 /* ── 6. SW ── */
 console.log('\n[6] Service worker');
 const sw = read('service-worker.js');
-T('SW_VERSION = arvexa-offline-v8.53a (let)', /let SW_VERSION = 'arvexa-offline-v8\.53a';/.test(sw));
-T('changelog v8.53a sur la ligne du bump', /let SW_VERSION = 'arvexa-offline-v8\.53a'; \/\/ ✅ v8\.53a/.test(sw));
+T('SW_VERSION = arvexa-offline-v8.53b (let)', /let SW_VERSION = 'arvexa-offline-v8.53b';/.test(sw));
+T('changelog v8.53a sur la ligne du bump', /let SW_VERSION = 'arvexa-offline-v8.53b'; \/\/ ✅ v8.53b/.test(sw));
 T('précache : quotidien.html conservé', sw.includes("'./quotidien.html'"));
 T('précache : parcours.js conservé', sw.includes("'./parcours.js'"));
 

@@ -509,7 +509,16 @@ function extractJson(txt) {
   let t = String(txt || '').trim().replace(/```(?:json)?/gi, '');
   const s = t.indexOf('['), e = t.lastIndexOf(']');
   if (s === -1 || e === -1 || e <= s) throw new Error('pas de JSON');
-  return JSON.parse(t.slice(s, e + 1));
+  t = t.slice(s, e + 1);
+  /* ✅ v8.53a — survit aux échappements invalides du modèle (\', \d, …) :
+     passe atomique — les paires JSON valides (\", \\, \n…) sont gardées,
+     toute autre barre inverse est doublée (\' → \\' — l'apostrophe
+     redevient littérale). Sonde E2E réelle : les modèles francophones
+     échappent les apostrophes. */
+  t = t.replace(/\\(["\\\/bfnrtu])|\\([\s\S])/g, function (m, valid, other) {
+    return valid ? '\\' + valid : '\\\\' + other;
+  });
+  return JSON.parse(t);
 }
 function normalizeIa(raw) {
   return (Array.isArray(raw) ? raw : []).slice(0, 4).map((it, i) => {
