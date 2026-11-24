@@ -112,6 +112,21 @@
     exam: function (classId) {
       return EXAMS[classId] || null;
     },
+    /** ✅ v8.53a — CIBLE adaptative (fini le « site 100 % BAC », demande du
+        propriétaire : « tout ce qui fait référence [au BAC] tu le remplaces
+        par des choses plus intelligentes et adaptées à tous les niveaux et
+        domaines ») : renvoie la cible du parcours de CETTE classe —
+        « le BAC » (Terminale), « le BEPC » (3ᵉ, 4ᵉ en vue), « ta licence »
+        (L1/L2/L3), « ton objectif » (6ᵉ/5ᵉ/classe libre). */
+    goalTarget: function (classId) {
+      var exam = EXAMS[classId];
+      if (exam) return 'le ' + exam;
+      var g = GOALS[classId] || '';
+      if (/BEPC/i.test(g)) return 'le BEPC';
+      if (/BAC/i.test(g)) return 'le BAC';
+      if (/licence/i.test(g)) return 'ta licence';
+      return 'ton objectif';
+    },
     /** Objectif affiché : « BEPC 2027 » (legacy avec session), « BAC »,
         « BAC en vue », « Réussir ta licence », « Ton objectif »… */
     goal: function (classId, year) {

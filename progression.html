@@ -612,11 +612,14 @@
   /* ── Dessin d'une courbe dans son SVG statique (squelette en dur dans
      le HTML) + ANIMATION DE TRACÉ : la ligne se dessine du début à la
      fin (stroke-dasharray), l'aire et les points apparaissent ensuite.
-     prefers-reduced-motion respecté. ── */
+     prefers-reduced-motion respecté.
+     ✅ v8.53a — l'animation ne tourne qu'UNE FOIS (1re peinture) ; les
+     mises à jour suivantes remplacent le tracé sans ré-animer. ── */
   const W = 640, H = 150, PAD_L = 10, PAD_R = 10, PAD_T = 16, PAD_B = 10;
-  function drawSpline(svgId, values, days) {
+  function drawSpline(svgId, values, days, opts) {
     const svg = $(svgId);
     if (!svg) return;
+    const animate = !(opts && opts.animate === false);
     const innerW = W - PAD_L - PAD_R;
     const innerH = H - PAD_T - PAD_B;
     const maxVal = pgNiceMax(Math.max(1, ...values));
@@ -652,10 +655,10 @@
       const lbl = svg.parentElement.querySelector('.pg-chart-days');
       if (lbl) lbl.innerHTML = '<span>' + dayLabel(days[0]) + '</span><span>' + dayLabel(days[Math.floor(n / 2)]) + '</span><span>Aujourd\'hui</span>';
     }
-    /* Animation de tracé */
+    /* Animation de tracé — ✅ v8.53a : UNE seule fois (1re peinture) */
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     svg.classList.remove('is-drawn');
-    if (linePath && !reduce && line.getTotalLength) {
+    if (linePath && animate && !reduce && line.getTotalLength) {
       try {
         const L = line.getTotalLength();
         line.style.transition = 'none';
@@ -689,10 +692,35 @@
     return streak;
   }
 
-  /* ── Peinture complète depuis le dashboard (cache ou frais) ── */
+  /* ── Peinture complète depuis le dashboard (cache ou frais) ──
+     ✅ v8.53a — UNE SEULE ACTUALISATION (demande propriétaire : « la courbe
+     fait plusieurs actualisations au lieu d'une seule ») : une SIGNATURE du
+     contenu décide si la page doit être repeinte. Cache === frais, retour
+     d'onglet, pageshow : paintAll devient un NO-OP tant que les données ne
+     changent pas. Les 2 courbes ne se re-tracent plus 2-3 fois. */
   let painted = false;
+  function pgSig(dash) {
+    try {
+      const act = (Array.isArray(dash.activity) ? dash.activity : [])
+        .map((a) => (a.date || '') + ':' + (a.minutes || 0) + ':' + (a.sections || 0)).join(',');
+      const sub = (Array.isArray(dash.subjects) ? dash.subjects : [])
+        .map((s) => (s.key || '') + ':' + (s.sectionsCount || 0) + ':' + (s.minutes || 0)).join(',');
+      const sm = dash.summary ? (dash.summary.totalSections || 0) + '/' + (dash.summary.totalChapters || 0) : '';
+      const st = dash.studyTime ? (dash.studyTime.totalMinutes || 0) : '';
+      const sk = (dash.streak && Number(dash.streak.current || 0)) || 0;
+      return sm + '|' + st + '|' + sk + '|' + act + '|' + sub;
+    } catch (e) { return 'x' + Date.now(); }
+  }
+  let __pgSig = null;
+  let __pgAnimated = false;
   function paintAll(dash) {
     if (!dash) return;
+    const __sig = pgSig(dash);
+    if (painted && __sig === __pgSig) return; // ✅ v8.53a — rien n'a changé : zéro re-rendu
+    painted = true;
+    __pgSig = __sig;
+    const __animate = !__pgAnimated;
+    __pgAnimated = true;
     const summary = dash.summary || {};
     const studyTime = dash.studyTime || {};
     const activity = Array.isArray(dash.activity) ? dash.activity : [];
@@ -725,14 +753,14 @@
     const secVals = days14.map((k) => Math.max(0, Number(dayAct(k).sections) || 0));
     const secTotal = secVals.reduce((a, b) => a + b, 0);
     $('badgeSections14').textContent = secTotal + ' en 14 jours';
-    drawSpline('chartSections', secVals, days14);
+    drawSpline('chartSections', secVals, days14, { animate: __animate });
     $('emptySections').style.display = secTotal === 0 ? '' : 'none';
 
     /* Courbe 2 — minutes / jour (axe = dates réelles) */
     const minVals = days14.map((k) => Math.max(0, Number(dayAct(k).minutes) || 0));
     const minTotal = minVals.reduce((a, b) => a + b, 0);
     $('badgeTime14').textContent = fmtMin(minTotal) + ' en 14 jours';
-    drawSpline('chartTime', minVals, days14);
+    drawSpline('chartTime', minVals, days14, { animate: __animate });
 
     /* Courbe 3 — répartition par matière (barres) */
     const active = subjects.filter((s) => (s.sectionsCount || 0) > 0)

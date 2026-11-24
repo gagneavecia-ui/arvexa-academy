@@ -322,27 +322,63 @@
      restent vivantes : cache local puis getSmartCard (Firebase) en fond. */
   var __psHref = 'arv-progress.html';
 
+  /* ✅ v8.53a — cible adaptative de la carte (fini le « site 100 % BAC ») :
+     « le BAC » (Terminale), « le BEPC » (3ᵉ/4ᵉ), « ta licence » (L1-L3),
+     « ton objectif » (6ᵉ/5ᵉ/classe libre) — via arvexa-classes.js. */
+  function goalTargetSafe() {
+    try {
+      var CL = window.ARVEXA_CLASSES;
+      var up = window.ARVEXA_USER_PROFILE || {};
+      if (CL && CL.goalTarget && (up.classId || up.customClass)) return CL.goalTarget(up.classId);
+    } catch (e) {}
+    return 'ton objectif';
+  }
+
   function updateSmartCard(el, d) {
     if (!el) return;
     var ph = smartPhrase(d || {});
     var study = (d && d.study) || {};
-    var bac = daysToBac();
+    var summary = (d && d.summary) || {};
+    var lac = (d && d.lacune) || null;
     var pct = M ? Math.round(doneCount() / Math.max(1, M.steps.length) * 100) : null;
     var byId = function (id) { return document.getElementById(id); };
-    /* Puce examen — label adapté à la classe figée (BEPC pour la 3ᵉ, etc.) */
-    var examLabel = 'BAC';
+
+    /* ✅ v8.53a — TITRE adaptatif : « Ton parcours vers le BAC / le BEPC /
+       ta licence / ton objectif » selon la classe figée à l'inscription. */
+    var target = goalTargetSafe();
+    var titleEl = byId('parcoursTitle');
+    if (titleEl) titleEl.textContent = '🧭 Ton parcours vers ' + target;
+    var cap = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
+
+    /* Puce cible — jours affichés SEULEMENT pour les classes à examen
+       national (BEPC/BAC) : le compte à rebours n'a pas de sens pour une
+       licence ou une classe libre. */
+    var days = daysToBac();
+    var hasExam = true;
     try {
-      var uP = window.ARVEXA_USER_PROFILE || {};
-      var CL = window.ARVEXA_CLASSES;
-      if (CL && CL.exam && uP.classId) examLabel = CL.exam(uP.classId) || 'BAC';
-    } catch (eC) {}
+      var CLx = window.ARVEXA_CLASSES;
+      var uPx = window.ARVEXA_USER_PROFILE || {};
+      if (CLx && uPx.classId) hasExam = (CLx.isLegacy && CLx.isLegacy(uPx.classId)) ? true : !!CLx.exam(uPx.classId);
+    } catch (eH) {}
     var bacEl = byId('psBac'), bacTxt = byId('psBacTxt');
-    if (bacEl) bacEl.style.display = (bac != null) ? '' : 'none';
-    if (bacTxt && bac != null) bacTxt.textContent = examLabel + ' · ' + bac + ' j';
+    if (bacTxt && target) bacTxt.textContent = cap(target) + (hasExam && days != null ? ' · ' + days + ' j' : '');
+    if (bacEl) bacEl.style.display = target ? '' : 'none';
+
     var phrase = byId('psPhrase');
     if (phrase) phrase.innerHTML = ph.html;
-    var timeTxt = byId('psTimeTxt');
-    if (timeTxt) timeTxt.textContent = study.totalLabel || fmtMinLocal(study.totalMinutes || 0);
+
+    /* ✅ v8.53a — rangée de stats en dur (temps total · série · sections) */
+    var stT = byId('psStatTime');
+    if (stT) stT.textContent = study.totalLabel || fmtMinLocal(study.totalMinutes || 0);
+    var stS = byId('psStatStreak');
+    if (stS) {
+      var sTxt = '0 j';
+      try { sTxt = ((window.ARVEXA_STREAK && window.ARVEXA_STREAK.get().count) || 0) + ' j'; } catch (eS) {}
+      stS.textContent = sTxt;
+    }
+    var stN = byId('psStatSections');
+    if (stN) stN.textContent = String(summary.totalSections || 0);
+
     var fill = byId('psBarFill');
     if (fill) fill.style.width = (pct != null ? pct : 0) + '%';
     var pctEl = byId('psPct');
@@ -350,6 +386,16 @@
       pctEl.textContent = pct != null ? pct + ' %' : '—';
       pctEl.style.display = pct != null ? '' : 'none';
     }
+
+    /* ✅ v8.53a — chip LACUNE (détectée par getSmartCard : le chapitre qui
+       reçoit le moins de temps par section) affiché en dur sur la carte. */
+    var lacEl = byId('psLacune'), lacTxt = byId('psLacuneTxt');
+    if (lacEl) lacEl.style.display = (lac && lac.title) ? '' : 'none';
+    if (lacTxt && lac && lac.title) {
+      lacTxt.textContent = 'Lacune : ' + lac.title
+        + (lac.studyMinutes != null ? ' — ' + fmtMinLocal(lac.studyMinutes) + ' pour ' + (lac.sectionsCount || 0) + ' section' + ((lac.sectionsCount || 1) > 1 ? 's' : '') : '');
+    }
+
     var ctaTxt = byId('psCta');
     if (ctaTxt) ctaTxt.textContent = ph.cta;
     __psHref = ph.href || 'arv-progress.html';
@@ -380,9 +426,9 @@
     var weekNow = cur ? cur.week : (M.steps.length ? M.steps[M.steps.length - 1].week : 1);
 
     var html = '<section class="pc-hero">'
-      + '<div class="pc-hero-badge"><i class="fas fa-route"></i> Ton parcours vers le BAC</div>'
+      + '<div class="pc-hero-badge"><i class="fas fa-route"></i> Ton parcours vers ' + goalTargetSafe() + '</div>'
       + '<h1 class="pc-hero-title">Une seule route, ' + M.steps.length + ' étapes, <em>zéro hésitation</em></h1>'
-      + '<p class="pc-hero-sub">Le programme mêle toutes les matières semaine par semaine jusqu\'au BAC. '
+      + '<p class="pc-hero-sub">Le programme mêle toutes les matières semaine par semaine jusqu\'à ton objectif. '
       + 'Valide une étape dès que tu maîtrises son chapitre — le parcours avance, toi aussi.</p>'
       + classLineHtml()
       + '<div class="pc-hero-stats">'

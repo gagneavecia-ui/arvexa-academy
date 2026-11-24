@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
-  <meta name="description" content="ARVEXA — Question du jour : 4 questions, 1 par matière, 90 secondes. Fais vivre ta série 🔥">
+  <meta name="description" content="ARVEXA — Question du jour : 4 questions générées par tes IA depuis TES cours, 90 secondes. Fais vivre ta série 🔥">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
 <script src="theme.js"></script><script src="arvexa-i18n.js" defer></script>
   <title>ARVEXA — Question du jour</title>
@@ -191,12 +191,12 @@
     <div class="hero">
       <div class="hero-icon">🎯</div>
       <h1>Question du <em>jour</em></h1>
-      <p>4 questions — une par matière · 90 secondes · ta série 🔥 avance</p>
+      <p>4 questions générées par tes IA · tirées de tes cours du Résumé · ta série 🔥 avance</p>
     </div>
 
     <div class="card">
       <!-- CHARGEMENT -->
-      <div id="loadingView" class="qd-center">⏳ Chargement des questions…</div>
+      <div id="loadingView" class="qd-center">⏳ Tes IA préparent tes questions du jour…</div>
 
       <!-- ERREUR -->
       <div id="errorView" class="hidden">
@@ -234,173 +234,13 @@
   </div>
 
 <script src="arvexa-streak.js" defer></script>
-<script>
-(function () {
-  'use strict';
-  var KEY = 'arvexa-quotidien-v1';
-  var MATIERES = [
-    { id: 'mathematiques', label: 'Mathématiques', icon: '📐' },
-    { id: 'physique', label: 'Physique', icon: '⚡' },
-    { id: 'chimie', label: 'Chimie', icon: '⚗️' },
-    { id: 'svt', label: 'SVT', icon: '🧬' }
-  ];
-  var LETTRES = ['A', 'B', 'C', 'D'];
-  var bank = null;
-  var ordre = [];
-  var idx = 0;
-  var score = 0;
-  var verrouille = false;
-
-  function $(id) { return document.getElementById(id); }
-  function dayKey(d) {
-    var dt = d || new Date();
-    var m = String(dt.getMonth() + 1).padStart(2, '0');
-    var j = String(dt.getDate()).padStart(2, '0');
-    return dt.getFullYear() + '-' + m + '-' + j;
-  }
-  function etat() {
-    try {
-      var raw = localStorage.getItem(KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
-  }
-  function saveEtat(e) {
-    try { localStorage.setItem(KEY, JSON.stringify(e)); } catch (err) {}
-  }
-  function show(view) {
-    ['loadingView', 'errorView', 'quizView', 'doneView'].forEach(function (v) {
-      $(v).classList.toggle('hidden', v !== view);
-    });
-  }
-  function renderChip() {
-    var st = window.ARVEXA_STREAK ? window.ARVEXA_STREAK.get() : { count: 0, activeToday: false };
-    $('streakChip').textContent = '🔥 ' + (st.count || 0);
-  }
-  function renderDots() {
-    var html = '';
-    for (var i = 0; i < ordre.length; i++) {
-      var cls = 'qd-dot' + (i < idx ? ' ok' : (i === idx && verrouille ? ' on' : (i === idx ? ' on' : '')));
-      html += '<span class="' + cls + '"></span>';
-    }
-    $('qdDots').innerHTML = html;
-  }
-  function renderQuestion() {
-    verrouille = false;
-    var item = ordre[idx];
-    var mat = MATIERES.filter(function (m) { return m.id === item.matiere; })[0];
-    renderDots();
-    $('qdMatiere').textContent = mat.icon + ' ' + mat.label;
-    $('qdChap').textContent = item.data.c ? 'Chapitre : ' + item.data.c : '';
-    $('qdQ').textContent = item.data.q;
-    var box = $('qdOpts');
-    box.innerHTML = '';
-    item.data.o.forEach(function (opt, i) {
-      var b = document.createElement('button');
-      b.className = 'qd-opt';
-      b.type = 'button';
-      b.innerHTML = '<span class="lettre">' + LETTRES[i] + '</span><span></span>';
-      b.lastChild.textContent = opt;
-      b.addEventListener('click', function () { repondre(i, b); });
-      box.appendChild(b);
-    });
-    $('qdFb').className = 'qd-feedback';
-    $('qdFb').innerHTML = '';
-    $('nextBtn').classList.add('hidden');
-    $('nextBtn').textContent = (idx === ordre.length - 1) ? 'Voir mon résultat' : 'Suivant';
-  }
-  function repondre(choice, btn) {
-    if (verrouille) return;
-    verrouille = true;
-    var item = ordre[idx];
-    var juste = choice === item.data.a;
-    if (juste) score += 1;
-    var opts = $('qdOpts').children;
-    for (var i = 0; i < opts.length; i++) {
-      opts[i].disabled = true;
-      if (i === item.data.a) opts[i].classList.add('good');
-      if (i === choice && !juste) opts[i].classList.add('bad');
-    }
-    var dots = $('qdDots').children;
-    if (dots[idx]) dots[idx].className = 'qd-dot ' + (juste ? 'ok' : 'ko');
-    var fb = $('qdFb');
-    fb.className = 'qd-feedback show ' + (juste ? 'good' : 'bad');
-    fb.innerHTML = '';
-    var strong = document.createElement('strong');
-    strong.textContent = juste ? '✅ Exact !' : '❌ Raté — la bonne réponse était ' + LETTRES[item.data.a];
-    fb.appendChild(strong);
-    var p = document.createElement('span');
-    p.textContent = item.data.e || '';
-    fb.appendChild(p);
-    $('nextBtn').classList.remove('hidden');
-  }
-  function terminer() {
-    var e = etat();
-    e.lastDone = dayKey();
-    e.score = score;
-    saveEtat(e);
-    var st = window.ARVEXA_STREAK ? window.ARVEXA_STREAK.mark() : { count: 0, best: 0, freeze: 0, activeToday: true };
-    $('doneScore').textContent = score + '/' + ordre.length;
-    var msg;
-    if (score === ordre.length) msg = 'Parfait ! Tu maîtrises le programme du jour 🎯';
-    else if (score >= Math.ceil(ordre.length / 2)) msg = 'Bien joué ! Revois les détails et ta série grandira 🔥';
-    else msg = "C'est un début — le cours du jour t'attend, et demain tu feras mieux !";
-    $('doneMsg').textContent = msg;
-    var jours = st.count === 1 ? 'jour' : 'jours';
-    var ligne = '🔥 Série : ' + st.count + ' ' + jours + ' (record : ' + st.best + ')';
-    if (st.freeze > 0) ligne += ' · <span class="conge">🛡️ 1 congé disponible</span>';
-    $('doneStreak').innerHTML = ligne;
-    $('doneSub').textContent = 'Les mêmes questions reviennent en révision : chaque jour, un nouveau tour du programme.';
-    show('doneView');
-    renderChip();
-  }
-  function demarrerQuiz() {
-    idx = 0;
-    score = 0;
-    show('quizView');
-    renderQuestion();
-  }
-  function charger() {
-    show('loadingView');
-    fetch('./quotidien.json')
-      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (data) {
-        bank = data;
-        var lancement = new Date(data.lancement + 'T00:00:00');
-        var today = new Date();
-        today.setHours(0, 0, 0, 0);
-        var jourNum = Math.floor((today - lancement) / 86400000);
-        if (!isFinite(jourNum) || jourNum < 0) jourNum = 0;
-        ordre = MATIERES.map(function (m) {
-          var liste = (data.matieres && data.matieres[m.id]) || [];
-          if (!liste.length) return null;
-          return { matiere: m.id, data: liste[jourNum % liste.length] };
-        }).filter(Boolean);
-        if (ordre.length === 0) throw new Error('banque vide');
-        var e = etat();
-        if (e.lastDone === dayKey()) {
-          $('doneScore').textContent = (typeof e.score === 'number' ? e.score : '—') + '/' + ordre.length;
-          $('doneMsg').textContent = "Tu as déjà fait la question du jour aujourd'hui. Reviens demain à 7h — ta série t'attend 🔥";
-          $('doneSub').textContent = 'Chaque jour apporte 4 nouvelles questions, une par matière.';
-          var st = window.ARVEXA_STREAK ? window.ARVEXA_STREAK.get() : { count: 0, best: 0, freeze: 0 };
-          $('doneStreak').textContent = '🔥 Série actuelle : ' + (st.count || 0) + (st.count === 1 ? ' jour' : ' jours');
-          show('doneView');
-        } else {
-          demarrerQuiz();
-        }
-      })
-      .catch(function () { show('errorView'); });
-  }
-  $('nextBtn').addEventListener('click', function () {
-    if (idx < ordre.length - 1) { idx += 1; renderQuestion(); }
-    else terminer();
-  });
-  $('retryBtn').addEventListener('click', charger);
-  document.addEventListener('arvexa-streak-change', renderChip);
-  window.addEventListener('DOMContentLoaded', function () {
-    renderChip();
-    charger();
-  });
-})();
+<script src="arvexa-classes.js" defer></script><!-- ✅ v8.53a — registre des classes (niveau adaptatif) -->
+<script type="importmap">
+{ "imports": {
+  "firebase/app": "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js",
+  "firebase/auth": "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js",
+  "firebase/firestore": "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js"
+} }
 </script>
 <script>
 (function () {
@@ -408,7 +248,16 @@
   function textePartage() {
     var st = window.ARVEXA_STREAK ? window.ARVEXA_STREAK.get() : { count: 0 };
     var n = Math.max(0, st.count || 0);
-    return '🔥 ' + n + (n === 1 ? ' jour' : ' jours') + ' de série sur ARVEXA School — je prépare le BAC, rejoins-moi : https://arvexaschool.vercel.app';
+    /* ✅ v8.53a — fini le « site 100 % BAC » : le partage s'adapte au
+       niveau réel de l'élève (BEPC pour la 3ᵉ, BAC pour le lycée,
+       licence pour le supérieur, objectif pour les classes libres). */
+    var cible = 'mes examens';
+    try {
+      var up = JSON.parse(localStorage.getItem('arvexa_user_data') || 'null') || window.ARVEXA_USER_PROFILE || {};
+      var CL = window.ARVEXA_CLASSES;
+      if (CL && CL.goalTarget && (up.classId || up.customClass)) cible = CL.goalTarget(up.classId);
+    } catch (e) {}
+    return '🔥 ' + n + (n === 1 ? ' jour' : ' jours') + ' de série sur ARVEXA School — je prépare ' + cible + ', rejoins-moi : https://arvexa-academy.vercel.app';
   }
   document.addEventListener('DOMContentLoaded', function () {
     var btn = document.getElementById('qdShareBtn');
@@ -423,6 +272,328 @@
     });
   });
 })();
+</script>
+<script type="module">
+import { initializeApp } from "firebase/app";
+import { getAuth, onAuthStateChanged, getIdToken } from "firebase/auth";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+
+/* ═══════════════════════════════════════════════════════════════
+   QUESTION DU JOUR v2 — ✅ v8.53a
+   (demande du propriétaire : « tu connectes Question du jour à mes IA
+   et à la page Résumé pour lire les cours et fournir de nouvelles
+   questions chaque jour »)
+   (1) CONNECTÉE AUX IA : la page appelle /api/arv (chaîne ARV — Groq,
+       OpenRouter, Gemini) UNE fois par jour ; la réponse est un QCM
+       JSON de 4 questions mis en cache local (une seule dépense de
+       quota par jour et par élève).
+   (2) CONNECTÉE AU RÉSUMÉ : le prompt embarque les VRAIS cours de
+       l'élève (getDashboard → matières actives + derniers chapitres du
+       cahier) — l'IA pioche dans ce qu'il étudie réellement.
+   (3) ADAPTATIF : le niveau (3ᵉ, Terminale C, Licence 2, classe
+       libre…) vient du profil Firebase — fini le quiz « BAC » unique.
+   (4) REPLI TOTAL : pas de connexion, pas de compte, quota épuisé ou
+       IA muette → la banque statique quotidien.json du jour prend le
+       relais, comme avant. La série 🔥 fonctionne dans les deux cas.
+   ═══════════════════════════════════════════════════════════════ */
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDHscOXw3rLuhV6z1Cny-bdYCumqpnG7QE",
+  authDomain: "arvexa-fbf10.firebaseapp.com",
+  projectId: "arvexa-fbf10",
+  storageBucket: "arvexa-fbf10.firebasestorage.app",
+  messagingSenderId: "920108330053",
+  appId: "1:920108330053:web:f532d71cbc2c824bc7472c"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const KEY = 'arvexa-quotidien-v1';        // état du jour (fait / score)
+const KEY_IA = 'arvexa-quotidien-ia-v1';  // ✅ v8.53a — banque IA du jour
+const MATIERES = [
+  { id: 'mathematiques', label: 'Mathématiques', icon: '📐' },
+  { id: 'physique', label: 'Physique', icon: '⚡' },
+  { id: 'chimie', label: 'Chimie', icon: '⚗️' },
+  { id: 'svt', label: 'SVT', icon: '🧬' }
+];
+const ICONES = [
+  [/math/i, '📐'], [/phys/i, '⚡'], [/chim/i, '⚗️'], [/svt|bio|nat/i, '🧬'],
+  [/philo/i, '🧠'], [/hist|g[ée]o/i, '🌍'], [/fran|lett|angl|espagn|allemand/i, '📖'],
+  [/info|informat/i, '💻'], [/techno/i, '⚙️']
+];
+const LETTRES = ['A', 'B', 'C', 'D'];
+let ordre = [];
+let idx = 0;
+let score = 0;
+let verrouille = false;
+
+function $(id) { return document.getElementById(id); }
+function dayKey(d) {
+  const dt = d || new Date();
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const j = String(dt.getDate()).padStart(2, '0');
+  return dt.getFullYear() + '-' + m + '-' + j;
+}
+function etat() {
+  try { const raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : {}; } catch (e) { return {}; }
+}
+function saveEtat(e) { try { localStorage.setItem(KEY, JSON.stringify(e)); } catch (err) {} }
+function show(view) {
+  ['loadingView', 'errorView', 'quizView', 'doneView'].forEach((v) => {
+    $(v).classList.toggle('hidden', v !== view);
+  });
+}
+function renderChip() {
+  const st = window.ARVEXA_STREAK ? window.ARVEXA_STREAK.get() : { count: 0, activeToday: false };
+  $('streakChip').textContent = '🔥 ' + (st.count || 0);
+}
+function renderDots() {
+  let html = '';
+  for (let i = 0; i < ordre.length; i++) {
+    const cls = 'qd-dot' + (i < idx ? ' ok' : (i === idx ? ' on' : ''));
+    html += '<span class="' + cls + '"></span>';
+  }
+  $('qdDots').innerHTML = html;
+}
+function iconFor(label) {
+  const t = String(label || '');
+  for (const [re, ic] of ICONES) if (re.test(t)) return ic;
+  return '📘';
+}
+function renderQuestion() {
+  verrouille = false;
+  const item = ordre[idx];
+  renderDots();
+  $('qdMatiere').textContent = (item.icon || '📘') + ' ' + (item.label || 'Question');
+  $('qdChap').textContent = item.c ? 'Chapitre : ' + item.c : '';
+  $('qdQ').textContent = item.q;
+  const box = $('qdOpts');
+  box.innerHTML = '';
+  item.o.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'qd-opt';
+    b.type = 'button';
+    b.innerHTML = '<span class="lettre">' + LETTRES[i] + '</span><span></span>';
+    b.lastChild.textContent = opt;
+    b.addEventListener('click', () => repondre(i, b));
+    box.appendChild(b);
+  });
+  $('qdFb').className = 'qd-feedback';
+  $('qdFb').innerHTML = '';
+  $('nextBtn').classList.add('hidden');
+  $('nextBtn').textContent = (idx === ordre.length - 1) ? 'Voir mon résultat' : 'Suivant';
+}
+function repondre(choice, btn) {
+  if (verrouille) return;
+  verrouille = true;
+  const item = ordre[idx];
+  const juste = choice === item.a;
+  if (juste) score += 1;
+  const opts = $('qdOpts').children;
+  for (let i = 0; i < opts.length; i++) {
+    opts[i].disabled = true;
+    if (i === item.a) opts[i].classList.add('good');
+    if (i === choice && !juste) opts[i].classList.add('bad');
+  }
+  const dots = $('qdDots').children;
+  if (dots[idx]) dots[idx].className = 'qd-dot ' + (juste ? 'ok' : 'ko');
+  const fb = $('qdFb');
+  fb.className = 'qd-feedback show ' + (juste ? 'good' : 'bad');
+  fb.innerHTML = '';
+  const strong = document.createElement('strong');
+  strong.textContent = juste ? '✅ Exact !' : '❌ Raté — la bonne réponse était ' + LETTRES[item.a];
+  fb.appendChild(strong);
+  const p = document.createElement('span');
+  p.textContent = item.e || '';
+  fb.appendChild(p);
+  $('nextBtn').classList.remove('hidden');
+}
+function terminer() {
+  const e = etat();
+  e.lastDone = dayKey();
+  e.score = score;
+  saveEtat(e);
+  const st = window.ARVEXA_STREAK ? window.ARVEXA_STREAK.mark() : { count: 0, best: 0, freeze: 0, activeToday: true };
+  $('doneScore').textContent = score + '/' + ordre.length;
+  let msg;
+  if (score === ordre.length) msg = 'Parfait ! Tes IA t\'ont préparé un sans-faute 🎯';
+  else if (score >= Math.ceil(ordre.length / 2)) msg = 'Bien joué ! Revois les détails et ta série grandira 🔥';
+  else msg = "C'est un début — relis le cours visé dans Résumé, et demain tu feras mieux !";
+  $('doneMsg').textContent = msg;
+  const jours = st.count === 1 ? 'jour' : 'jours';
+  let ligne = '🔥 Série : ' + st.count + ' ' + jours + ' (record : ' + st.best + ')';
+  if (st.freeze > 0) ligne += ' · <span class="conge">🛡️ 1 congé disponible</span>';
+  $('doneStreak').innerHTML = ligne;
+  $('doneSub').textContent = 'Nouvelles questions demain — générées depuis tes cours du Résumé.';
+  show('doneView');
+  renderChip();
+}
+function demarrerQuiz() {
+  idx = 0;
+  score = 0;
+  show('quizView');
+  renderQuestion();
+}
+function apresChargement(items) {
+  ordre = items;
+  const e = etat();
+  if (e.lastDone === dayKey()) {
+    $('doneScore').textContent = (typeof e.score === 'number' ? e.score : '—') + '/' + ordre.length;
+    $('doneMsg').textContent = "Tu as déjà fait la question du jour aujourd'hui. Reviens demain à 7h — tes IA préparent la suite 🔥";
+    $('doneSub').textContent = 'Chaque jour, de nouvelles questions tirées de tes cours du Résumé.';
+    const st = window.ARVEXA_STREAK ? window.ARVEXA_STREAK.get() : { count: 0, best: 0, freeze: 0 };
+    $('doneStreak').textContent = '🔥 Série actuelle : ' + (st.count || 0) + (st.count === 1 ? ' jour' : ' jours');
+    show('doneView');
+  } else {
+    demarrerQuiz();
+  }
+}
+
+/* ── ✅ v8.53a — BANQUE IA DU JOUR (cache local, 1 appel / jour) ── */
+function cacheIa() {
+  try {
+    const v = JSON.parse(localStorage.getItem(KEY_IA) || 'null');
+    return (v && v.date === dayKey() && Array.isArray(v.qs) && v.qs.length >= 2) ? v : null;
+  } catch (e) { return null; }
+}
+function saveCacheIa(qs) {
+  try { localStorage.setItem(KEY_IA, JSON.stringify({ date: dayKey(), qs })); } catch (e) {}
+}
+function attendreUser(ms) {
+  return new Promise((resolve) => {
+    let fini = false;
+    const t = setTimeout(() => { if (!fini) { fini = true; resolve(null); } }, ms);
+    try {
+      onAuthStateChanged(auth, (u) => { if (!fini) { fini = true; clearTimeout(t); resolve(u || null); } });
+    } catch (e) { if (!fini) { fini = true; clearTimeout(t); resolve(null); } }
+  });
+}
+async function profilDe(user) {
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (snap.exists()) return snap.data();
+  } catch (e) { /* cache local */ }
+  try { return JSON.parse(localStorage.getItem('arvexa_user_data') || 'null'); } catch (e) { return null; }
+}
+async function coursDuResume(token) {
+  const out = [];
+  try {
+    const r = await fetch('/api/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action: 'getDashboard' })
+    });
+    if (!r.ok) return out;
+    const dash = await r.json();
+    (Array.isArray(dash && dash.subjects) ? dash.subjects : [])
+      .filter((s) => (s.sectionsCount || 0) > 0)
+      .forEach((s) => out.push((s.label || s.key) + ' — ' + (s.sectionsCount || 0) + ' section' + ((s.sectionsCount || 0) > 1 ? 's' : '') + (s.last ? ' (dernière : ' + s.last + ')' : '')));
+    (Array.isArray(dash && dash.recentActivity) ? dash.recentActivity : []).slice(0, 6)
+      .forEach((a) => { if (a && a.chapterTitle) out.push(String(a.chapterTitle)); });
+  } catch (e) { /* hors ligne → prompt générique */ }
+  return out;
+}
+function buildPrompt(niveau, cours) {
+  const lignes = cours.length
+    ? 'COURS SUIVIS PAR CET ÉLÈVE (cahier Résumé) :\n' + cours.map((c, i) => (i + 1) + '. ' + c).join('\n')
+    : 'COURS SUIVIS : aucun pour l\'instant — base-toi sur le programme officiel de son niveau.';
+  return 'Tu génères la « Question du jour » d\'ARVEXA School.\n\n'
+    + 'NIVEAU DE L\'ÉLÈVE : ' + niveau + '.\n'
+    + lignes + '\n\n'
+    + 'CONSIGNE : crée EXACTEMENT 4 questions de quiz INÉDITES pour AUJOURD\'HUI, ancrées EN PRIORITÉ dans les cours suivis par cet élève (sinon, programme officiel de son niveau). Une question par domaine étudié — pour un profil littéraire ou supérieur, adapte les domaines (philosophie, histoire, français, économie…) au lieu des sciences. Questions courtes et précises, niveau ' + niveau + ', QCM à 4 choix avec exactement UNE bonne réponse, explication en 1-2 phrases.\n\n'
+    + 'RÉPONSE : UNIQUEMENT un tableau JSON STRICT, sans texte avant/après, sans balises markdown :\n'
+    + '[{"matiere":"…","chapitre":"…","question":"…","options":["…","…","…","…"],"bonne":0,"explication":"…"}]';
+}
+function extractJson(txt) {
+  let t = String(txt || '').trim().replace(/```(?:json)?/gi, '');
+  const s = t.indexOf('['), e = t.lastIndexOf(']');
+  if (s === -1 || e === -1 || e <= s) throw new Error('pas de JSON');
+  return JSON.parse(t.slice(s, e + 1));
+}
+function normalizeIa(raw) {
+  return (Array.isArray(raw) ? raw : []).slice(0, 4).map((it, i) => {
+    const o = (Array.isArray(it && it.options) ? it.options : (Array.isArray(it && it.o) ? it.o : []))
+      .map((x) => String(x).trim()).filter((x) => x.length > 0 && x.length < 200).slice(0, 4);
+    const label = String((it && (it.matiere || it.matiereLabel || it.subject)) || '').trim() || 'Culture générale';
+    let a = Number(it && (it.bonne != null ? it.bonne : it.a));
+    if (!Number.isInteger(a) || a < 0 || a >= o.length) a = 0;
+    return {
+      label,
+      icon: iconFor(label),
+      c: String((it && (it.chapitre || it.c)) || '').trim().slice(0, 80),
+      q: String((it && (it.question || it.q)) || '').trim().slice(0, 400),
+      o, a,
+      e: String((it && (it.explication || it.e)) || '').trim().slice(0, 300)
+    };
+  }).filter((it) => it.q && it.o.length >= 2);
+}
+async function chargerIa(user) {
+  const token = await getIdToken(user);
+  const profil = await profilDe(user) || {};
+  const CL = window.ARVEXA_CLASSES || null;
+  const niveau = CL
+    ? CL.full(profil.classId || '', profil.customClass || '', profil.series)
+    : (profil.classId || 'Terminale');
+  const cours = await coursDuResume(token);
+  const r = await fetch('/api/arv', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ message: buildPrompt(niveau, cours) })
+  });
+  const data = await r.json().catch(() => null);
+  if (!r.ok || !data || !data.reply) {
+    throw new Error(data && data.error ? String(data.error).slice(0, 90) : 'HTTP ' + r.status);
+  }
+  const qs = normalizeIa(extractJson(data.reply));
+  if (qs.length < 2) throw new Error('questions IA invalides');
+  return qs;
+}
+
+/* ── Repli : banque statique du jour (comme avant v8.53a) ── */
+async function chargerBanque() {
+  const r = await fetch('./quotidien.json');
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const data = await r.json();
+  const lancement = new Date(data.lancement + 'T00:00:00');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let jourNum = Math.floor((today - lancement) / 86400000);
+  if (!isFinite(jourNum) || jourNum < 0) jourNum = 0;
+  const items = MATIERES.map((m) => {
+    const liste = (data.matieres && data.matieres[m.id]) || [];
+    if (!liste.length) return null;
+    const it = liste[jourNum % liste.length];
+    return { label: m.label, icon: m.icon, c: it.c || '', q: it.q, o: it.o, a: it.a, e: it.e || '' };
+  }).filter(Boolean);
+  if (!items.length) throw new Error('banque vide');
+  return items;
+}
+
+/* ── Chargement : IA d'abord, banque en repli ── */
+async function charger() {
+  show('loadingView');
+  const c = cacheIa();
+  if (c) { apresChargement(c.qs); return; }
+  try {
+    const user = await attendreUser(5000);
+    if (!user) throw new Error('non connecté');
+    const qs = await chargerIa(user);
+    saveCacheIa(qs);
+    apresChargement(qs);
+  } catch (e) {
+    try {
+      apresChargement(await chargerBanque());
+    } catch (e2) { show('errorView'); }
+  }
+}
+$('nextBtn').addEventListener('click', () => {
+  if (idx < ordre.length - 1) { idx += 1; renderQuestion(); }
+  else terminer();
+});
+$('retryBtn').addEventListener('click', charger);
+document.addEventListener('arvexa-streak-change', renderChip);
+renderChip();
+charger();
 </script>
 <script src="analytics.js" defer></script>
 <script src="register-sw.js" defer></script>

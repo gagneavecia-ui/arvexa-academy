@@ -3785,8 +3785,36 @@ function dashCacheWrite(data) {
   try { localStorage.setItem(DASH_CACHE_KEY, JSON.stringify(data)); } catch (e) {}
 }
 
+/* ✅ v8.53a — UNE SEULE ACTUALISATION (demande propriétaire : « la courbe
+   fait plusieurs actualisations au lieu d'une seule ») : une SIGNATURE du
+   contenu décide si la vue doit être repeinte. Tant que les données ne
+   CHANGENT pas (cache === frais, listener Firestore users/{uid}, retour
+   d'onglet), paintDashboard est un NO-OP — la courbe n'est plus redessinée
+   2-3 fois au chargement. L'animation de tracé ne tourne qu'à la PREMIÈRE
+   peinture ; si les données changent réellement, la mise à jour se fait
+   SANS ré-animer (courbe figée, valeurs correctes). */
+function dashSig(data) {
+  try {
+    const act = safeArray(data && data.activity)
+      .map((a) => (a.date || '') + ':' + (a.minutes || 0) + ':' + (a.sections || 0)).join(',');
+    const sub = safeArray(data && data.subjects)
+      .map((s) => (s.key || '') + ':' + (s.sectionsCount || 0) + ':' + (s.minutes || 0) + ':' + (s.last || '')).join(',');
+    const rec = safeArray(data && data.recentActivity)
+      .map((a) => (a.chapterId || '') + ':' + (a.time || '')).join(',');
+    const sm = (data && data.summary) ? (data.summary.totalSections || 0) + '/' + (data.summary.totalChapters || 0) : '';
+    const stt = (data && data.studyTime) ? (data.studyTime.totalMinutes || 0) : '';
+    return sm + '|' + stt + '|' + act + '|' + sub + '|' + rec;
+  } catch (e) { return 'x' + Date.now(); }
+}
+
 function paintDashboard(data) {
   const el = $('view-notebooks');
+  /* ✅ v8.53a — garde d'unicité : signature + drapeau « déjà peint » */
+  const __sig = dashSig(data);
+  const __first = !el.dataset.painted;
+  if (!__first && el.dataset.sig === __sig) return;
+  el.dataset.painted = '1';
+  el.dataset.sig = __sig;
 
   const safeSubjectsList = safeArray(data.subjects);
     const safeActivityList = safeArray(data.recentActivity);
@@ -3859,8 +3887,11 @@ function paintDashboard(data) {
       ${activityHtml}
     `;
 
-    /* ✅ v8.51a — la courbe se TRACE du début à la fin à chaque affichage */
-    try { animateStatCharts(el); } catch (e) {}
+    /* ✅ v8.53a — l'animation de tracé ne tourne qu'à la PREMIÈRE peinture
+       (exactement UNE actualisation animée par chargement) ; les peintures
+       suivantes — données réellement changées — remplacent la courbe sans
+       ré-animer. */
+    if (__first) { try { animateStatCharts(el); } catch (e) {} }
 
     el.querySelectorAll('[data-subject]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -3895,6 +3926,9 @@ async function renderNotebooksView() {
   }
   state.cache.dashboard = data;
   dashCacheWrite(data);
+  // ✅ v8.53a — UNE SEULE ACTUALISATION : si le cache était déjà peint avec
+  // les MÊMES données, ce 2e paintDashboard est un no-op (signature) ; si
+  // les données ont changé, la courbe est remplacée SANS ré-animer le tracé.
   try { paintDashboard(data); } catch (e) {}
 }
 
@@ -4772,7 +4806,7 @@ async function renderSectionView(params) {
           <i class="fas fa-file-circle-check"></i>
           <div class="cta-exam-body">
             <div class="cta-exam-title">Tester mes connaissances</div>
-            <div class="cta-exam-sub">Teste-toi dans les conditions du BAC</div>
+            <div class="cta-exam-sub">Teste-toi dans les conditions de ton examen</div>
           </div>
           <i class="fas fa-chevron-right cta-exam-arrow"></i>
         </button>
@@ -5567,7 +5601,7 @@ async function renderLessonView(params) {
           <i class="fas fa-file-circle-check"></i>
           <div class="cta-exam-body">
             <div class="cta-exam-title">Tester mes connaissances</div>
-            <div class="cta-exam-sub">Teste tout le chapitre dans les conditions du BAC</div>
+            <div class="cta-exam-sub">Teste tout le chapitre dans les conditions de ton examen</div>
           </div>
           <i class="fas fa-chevron-right cta-exam-arrow"></i>
         </button>

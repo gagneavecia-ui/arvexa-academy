@@ -1100,6 +1100,19 @@
     .ps-cta > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ps-cta i { margin-left: auto; color: var(--accent-bright, #E0B84A); flex-shrink: 0; }
     .ps-wrap:active .ps-cta { transform: scale(.985); background: rgba(var(--rgb-soft, 224, 184, 74), .18); }
+    /* ✅ v8.53a — carte « Ton parcours » améliorée (demande du propriétaire :
+       « améliore la carte ton parcours vers le bac ») : rangée de stats EN
+       DUR (temps total · série · sections), chip lacune, traitement premium
+       (liseré doré dégradé + halo doux). Le squelette reste fixé à la
+       page — parcours.js ne met que les valeurs à jour. */
+    .parcours-card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(135deg, rgba(var(--rgb-soft, 224, 184, 74), .50), rgba(var(--rgb-soft, 224, 184, 74), .10) 42%, rgba(var(--rgb-soft, 224, 184, 74), .30)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+    .parcours-card::after { content: ''; position: absolute; width: 170px; height: 170px; right: -55px; top: -65px; background: radial-gradient(circle, rgba(var(--rgb-soft, 224, 184, 74), .15), transparent 65%); pointer-events: none; }
+    .ps-stats { display: flex; gap: 8px; }
+    .ps-stat { flex: 1; min-width: 0; background: rgba(255, 255, 255, .035); border: 1px solid rgba(255, 255, 255, .07); border-radius: 12px; padding: 8px 6px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+    .ps-stat strong { font-size: 13.5px; font-weight: 800; color: var(--text-light, #F5F0E8); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ps-stat span { font-size: 9.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-dim, #8A8A7A); }
+    .ps-lacune { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 600; color: var(--accent-bright, #E0B84A); background: rgba(var(--rgb-soft, 224, 184, 74), .08); border: 1px dashed rgba(var(--rgb-soft, 224, 184, 74), .30); border-radius: 11px; padding: 7px 10px; overflow-wrap: anywhere; }
+    .ps-lacune i { flex-shrink: 0; }
 
     /* ============================================================
        INSTALLATION PWA
@@ -1660,7 +1673,7 @@
              valeurs (phrase, temps, trait, %, cta) sans reconstruire le
              DOM ; les données restent vivantes (cache + getSmartCard).
              ============================================================ -->
-        <div class="section-title"><h3>🧭 Ton parcours vers le BAC</h3></div>
+        <div class="section-title"><h3 id="parcoursTitle">🧭 Ton parcours</h3></div>
         <div class="next-card parcours-card pc-wrap" id="parcoursCard">
           <div class="ps-wrap" id="psWrap">
             <div class="ps-head">
@@ -1668,11 +1681,16 @@
               <span class="ps-bac" id="psBac" style="display:none"><i class="fas fa-flag-checkered"></i> <span id="psBacTxt">…</span></span>
             </div>
             <div class="ps-phrase" id="psPhrase">Ton parcours se prépare…</div>
+            <div class="ps-stats">
+              <div class="ps-stat"><strong id="psStatTime">…</strong><span>temps total</span></div>
+              <div class="ps-stat"><strong id="psStatStreak">…</strong><span>série 🔥</span></div>
+              <div class="ps-stat"><strong id="psStatSections">…</strong><span>sections</span></div>
+            </div>
             <div class="ps-meta">
-              <span class="ps-time"><i class="fas fa-clock"></i> <span id="psTimeTxt">…</span></span>
               <span class="ps-bar"><span class="ps-bar-fill" id="psBarFill" style="width:0%"></span></span>
               <span class="ps-pct" id="psPct">…</span>
             </div>
+            <div class="ps-lacune" id="psLacune" style="display:none"><i class="fas fa-crosshairs"></i><span id="psLacuneTxt"></span></div>
             <div class="ps-cta" id="psCtaEl"><span><i class="fas fa-location-dot"></i> <span id="psCta">Ouvrir le Résumé</span></span><i class="fas fa-arrow-right"></i></div>
           </div>
         </div>
