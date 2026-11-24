@@ -39,8 +39,8 @@ console.log('\n═══ AUDIT v8.55a — ' + new Date().toISOString() + ' ═�
 
 /* ── T1 : SW version + let ── */
 const sw = read('service-worker.js');
-test('T1  SW_VERSION = arvexa-offline-v8.55a avec let',
-  /let SW_VERSION = 'arvexa-offline-v8\.55a'/.test(sw) && !/const SW_VERSION/.test(sw));
+test('T1  SW_VERSION = arvexa-offline-v8.55b avec let',
+  /let SW_VERSION = 'arvexa-offline-v8\.55b'/.test(sw) && !/const SW_VERSION/.test(sw));
 
 /* ── T2 : précache des 2 nouveaux modules ── */
 test('T2  SW précache arvexa-net.js + arvexa-soon.js',
