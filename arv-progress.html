@@ -3287,23 +3287,39 @@ async function callApi(action, params = {}, _attempt = 1, _rateRetried = false, 
 
   if (window.ARVEXAWakeLock) ARVEXAWakeLock.acquire('progress');
   let response;
+  // ✅ v8.57a — FAUX « PROBLÈME DE CONNEXION » RÉPARÉ (signalement propriétaire :
+  // « ma connexion est stable et normale mais ça affiche problème de connexion »).
+  // CAUSE 1 : keepalive:true + corps > 64 Ko → le navigateur lève une TypeError
+  // INSTANTANÉE (limite interne du fetch keepalive) qui s'affichait comme une
+  // erreur réseau — typiquement à l'ajout d'un long cours. Le keepalive n'est
+  // plus posé que pour les petits corps (< 60 Ko, marge de sécurité).
+  // CAUSE 2 : bascule WiFi ↔ data / DNS lent → une retente SILENCIEUSE unique
+  // (sans keepalive) laisse l'appel passer au lieu d'afficher l'erreur.
+  const makeBody = () => { try { return JSON.stringify({ action, ...params }); } catch (e) { return ''; } };
+  const doProgressFetch = (ka) => fetch('/api/progress', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: makeBody(),
+    // ✅ v8.40 — analyse IA en ARRIÈRE-PLAN : keepalive permet à l'appel
+    // d'aboutir côté serveur même si l'élève quitte la page pendant
+    // l'analyse (la section sera créée — il la retrouve à son retour).
+    keepalive: !!ka
+  });
   try {
-    response = await fetch('/api/progress', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ action, ...params }),
-      // ✅ v8.40 — analyse IA en ARRIÈRE-PLAN : keepalive permet à l'appel
-      // d'aboutir côté serveur même si l'élève quitte la page pendant
-      // l'analyse (la section sera créée — il la retrouve à son retour).
-      keepalive: !!_opts.keepalive
-    });
+    response = await doProgressFetch(!!_opts.keepalive && makeBody().length < 60000);
   } catch (networkErr) {
-    const err = new Error('Problème de connexion. Vérifie ton réseau et réessaie.');
-    err.code = 'NETWORK_ERROR';
-    throw err;
+    try {
+      await new Promise((r) => setTimeout(r, 350));
+      response = await doProgressFetch(false);
+    } catch (retryErr) {
+      if (window.ARVEXAWakeLock) ARVEXAWakeLock.release('progress');
+      const err = new Error('Problème de connexion. Vérifie ton réseau et réessaie.');
+      err.code = 'NETWORK_ERROR';
+      throw err;
+    }
   }
 
   try {
@@ -7402,11 +7418,53 @@ requireAuth({
     if (!window.location.hash) window.history.replaceState(null, '', '#/notebooks');
     try { applyRoute(routeFromHash()); } catch (e) {}
 
+    // ⚡ v8.57a — NOM INSTANTANÉ (signalement propriétaire : « le nom de
+    // l'utilisateur ne s'affiche pas »). Jusqu'ici arv-progress ne lisait
+    // le nom QUE dans Firestore : si la relecture serveur traînait (démarrage
+    // à froid, réseau mobile) la carte restait sur « Élève ». On SÈME
+    // maintenant l'affichage depuis arvexa_user_data puis arvexa_session
+    // (uid vérifié, ZÉRO réseau — mêmes clés que index/profil), et le
+    // Firestore ci-dessous ne fait que rafraîchir si nécessaire.
+    try {
+      if (!state.userData) {
+        let seed = null;
+        try {
+          const cached = JSON.parse(localStorage.getItem('arvexa_user_data') || 'null');
+          if (cached && (!cached._uid || cached._uid === user.uid)) seed = cached;
+        } catch (e) {}
+        if (!seed || !seed.firstName) {
+          try {
+            const sess = JSON.parse(localStorage.getItem('arvexa_session') || 'null');
+            if (sess && sess.uid === user.uid && sess.firstName) {
+              seed = Object.assign({}, seed || {}, {
+                firstName: sess.firstName,
+                lastName: sess.lastName || '',
+                displayName: ((sess.firstName || '') + ' ' + (sess.lastName || '')).trim()
+              });
+            }
+          } catch (e) {}
+        }
+        if (seed && (seed.firstName || seed.displayName)) {
+          state.userData = seed;
+          if (state.view === 'notebooks') {
+            try { paintDashboard(state.cache.dashboard || dashCacheRead() || {}); } catch (e) {}
+          }
+        }
+      }
+    } catch (e) {}
+
     // ⚡ Cache-first Firestore : userData + badge Premium ; rafraîchit
     // l'accueil si c'est la vue courante (nom affiché, éléments Premium).
     try {
       docSWR(doc(db, 'users', user.uid), (snap) => {
         state.userData = snap.data();
+        // ✅ v8.57a — re-cache local : le prochain chargement peint le nom
+        // instantanément même si Firestore est lent à répondre.
+        try {
+          localStorage.setItem('arvexa_user_data', JSON.stringify(
+            Object.assign({}, snap.data(), { _uid: user.uid, _cachedAt: Date.now() })
+          ));
+        } catch (e) {}
         state.isPremium = isPremiumUser(state.userData);
         updatePremiumBadge();
         if (state.view === 'notebooks') {

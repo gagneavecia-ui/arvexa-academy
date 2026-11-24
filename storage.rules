@@ -14,7 +14,26 @@ service firebase.storage {
       return signedIn() && request.auth.token.admin == true;
     }
 
-    // No application upload path is currently used. Keep Storage closed until
+    // ⚡ v8.57a — FICHIERS DE PROMO (Gérer ma promo) : PDF / images publiés
+    // par le RESPONSABLE de la promo dans son espace de classe.
+    //  - lecture : tout utilisateur connecté (membres de la promo + liens
+    //    de téléchargement du fil)
+    //  - écriture : uniquement le responsable (ownerUid vérifié en
+    //    CROSS-SERVICE sur Firestore — la règle promos/{promoId} read:true
+    //    l'autorise), 8 Mo max, PDF ou image uniquement
+    //  - suppression : uniquement le responsable
+    match /promo-files/{promoId}/{fileName} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && request.resource.size <= 8 * 1024 * 1024
+        && (request.resource.contentType.matches('application/pdf')
+            || request.resource.contentType.matches('image/.*'))
+        && firestore.get(/databases/(default)/documents/promos/$(promoId)).data.ownerUid == request.auth.uid;
+      allow delete: if signedIn()
+        && firestore.get(/databases/(default)/documents/promos/$(promoId)).data.ownerUid == request.auth.uid;
+    }
+
+    // No other application upload path is currently used. Keep Storage closed until
     // a server-validated upload flow is introduced.
     match /{allPaths=**} {
       allow read, write: if false;

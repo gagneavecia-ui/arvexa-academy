@@ -871,7 +871,8 @@
         Content de te <em>revoir</em> !
       </h1>
       <p class="hero-subtitle">
-        Retrouve ton espace personnel et continue ta préparation pour le BAC.
+        Retrouve ton espace personnel et continue à réviser, à ton rythme,
+        toutes tes matières, tous tes objectifs.
       </p>
     </section>
 
@@ -1091,7 +1092,13 @@
     'exam-history.html',
     'planificateur.html',
     'mathmind.html',
-    'arv.html'
+    'arv.html',
+    // ✅ v8.58a — AUDIT : pages récentes absentes de la liste blanche → un
+    // membre venu d'un lien de promo (?promo=) ou d'un achat Marketplace
+    // retombait toujours sur index.html après connexion.
+    'ambassadeur.html',
+    'marketplace.html',
+    'localisation.html'
   ]);
 
   function saveSession(user) {
@@ -1119,6 +1126,12 @@
 
   // ================================================================
   // SÉCURISATION DES REDIRECTIONS
+  // ✅ v8.58a — AUDIT : la query (?promo=PROMO-XXXXXX du lien partagé par
+  // l'ambassadeur, ?ref=ARV-…) était PERDUE (sanitize ne renvoyait que le
+  // chemin) → un membre qui se connectait depuis un lien de promo tombait
+  // sur la page ambassadeur générique au lieu de rejoindre l'espace.
+  // La liste blanche porte sur le CHEMIN ; la query et le hash d'un chemin
+  // autorisé sont désormais préservés (protocole //.. js: toujours rejetés).
   // ================================================================
   function sanitizeRedirect(raw) {
     if (typeof raw !== 'string' || raw.length === 0) return null;
@@ -1132,14 +1145,21 @@
     // Rejeter ".." pour éviter la traversée de répertoire
     if (raw.includes('..')) return null;
 
-    // Extraire le chemin (sans query / hash)
-    const path = raw.split('?')[0].split('#')[0];
+    // Extraire le chemin, la query et le hash
+    const qIdx = raw.indexOf('?');
+    const hIdx = raw.indexOf('#');
+    const path = raw.slice(0, qIdx === -1 && hIdx === -1 ? raw.length : Math.min(
+      qIdx === -1 ? Infinity : qIdx,
+      hIdx === -1 ? Infinity : hIdx
+    ));
+    const query = qIdx === -1 ? '' : raw.slice(qIdx, hIdx === -1 ? raw.length : hIdx);
+    const hash = hIdx === -1 ? '' : raw.slice(hIdx);
 
     // Autoriser uniquement les fichiers HTML de la liste blanche
     const clean = path.replace(/^\/+/, '').replace(/^\.\//, '');
     if (!ALLOWED_REDIRECTS.has(clean)) return null;
 
-    return clean;
+    return clean + query + hash;
   }
 
   function consumeRedirectFromSession() {

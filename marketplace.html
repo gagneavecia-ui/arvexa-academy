@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+    <title>ARVEXA — Marketplace</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0A0A0A">
+<script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
+<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-contact.js"></script><script src="arvexa-i18n.js" defer></script>
+  <meta name="description" content="ARVEXA School - Marketplace : packs de requêtes IA et contenus premium">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="stylesheet" href="perf.css">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="arvexa-ui.css">
+  <style>
+    :root {
+      --primary: #1A3A2A;
+      --primary-dark: #0A1A12;
+      --primary-light: #2A5A3A;
+      --accent: #B8860B;
+      --accent-bright: #E0B84A;
+      --accent-dim: rgba(184, 134, 11, 0.08);
+      --bg-dark: #0A0A0A;
+      --bg-surface: #141414;
+      --bg-card: rgba(20, 20, 20, 0.7);
+      --text-light: #F5F0E8;
+      --text-dim: #8A8A7A;
+      --border: rgba(184, 134, 11, 0.18);
+      --success: #2E7D32;
+      --danger: #C0392B;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(ellipse at top, #101010 0%, var(--bg-dark) 60%);
+      color: var(--text-light);
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    /* ===== HEADER ===== */
+    .page-header {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 14px;
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 18px 14px;
+      background: rgba(10, 10, 10, 0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .back-btn {
+      width: 40px; height: 40px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.05); color: var(--text-light);
+      border: 1px solid rgba(255,255,255,0.08);
+      text-decoration: none; font-size: 16px; flex-shrink: 0;
+      transition: background .2s;
+    }
+    .back-btn:active { background: rgba(255,255,255,0.12); }
+    .page-title { flex: 1; min-width: 0; }
+    .page-title h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 21px; font-weight: 700; letter-spacing: .3px;
+    }
+    .page-title p { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; }
+    .credits-chip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 13px; border-radius: 999px;
+      background: linear-gradient(135deg, rgba(184,134,11,.18), rgba(184,134,11,.06));
+      border: 1px solid rgba(224,184,74,.35);
+      font-size: 13px; font-weight: 800; color: var(--accent-bright);
+      flex-shrink: 0;
+    }
+
+    .container { max-width: 640px; margin: 0 auto; padding: 18px 16px 0; }
+
+    /* ===== BANDEAU STATUT ===== */
+    .status-banner {
+      display: none; align-items: center; gap: 10px;
+      padding: 13px 16px; border-radius: 14px; margin-bottom: 16px;
+      font-size: 13.5px; font-weight: 600;
+    }
+    .status-banner.show { display: flex; }
+    .status-banner.success {
+      background: rgba(46,125,50,.12); border: 1px solid rgba(46,125,50,.4); color: #A5D6A7;
+    }
+    .status-banner.cancel {
+      background: rgba(192,57,43,.1); border: 1px solid rgba(192,57,43,.35); color: #EF9A9A;
+    }
+
+    /* ===== SOLDE ===== */
+    .balance-card {
+      position: relative; overflow: hidden;
+      background: linear-gradient(150deg, rgba(184,134,11,.16), rgba(26,58,42,.35) 55%, rgba(10,10,10,.6));
+      border: 1px solid rgba(224,184,74,.3);
+      border-radius: 22px; padding: 22px 20px; margin-bottom: 22px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.45);
+    }
+    .balance-card::after {
+      content: ''; position: absolute; top: -60px; right: -60px;
+      width: 180px; height: 180px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(224,184,74,.14), transparent 70%);
+      pointer-events: none;
+    }
+    .balance-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 700; letter-spacing: 1.4px;
+      text-transform: uppercase; color: var(--accent-bright);
+    }
+    .balance-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 44px; font-weight: 800; line-height: 1.15; margin-top: 6px;
+      color: var(--text-light);
+    }
+    .balance-value small { font-size: 15px; font-weight: 600; color: var(--text-dim); font-family: 'Inter', sans-serif; }
+    .balance-expiry { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; }
+    .balance-costs {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+    }
+    .cost-pill {
+      font-size: 11.5px; font-weight: 600; color: var(--text-dim);
+      padding: 6px 11px; border-radius: 999px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+    }
+    .cost-pill b { color: var(--accent-bright); font-weight: 800; }
+
+    /* ===== SECTIONS ===== */
+    .section-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 16px; font-weight: 800; margin: 26px 0 14px;
+    }
+    .section-title i { color: var(--accent-bright); font-size: 15px; }
+    .section-title span { color: var(--text-dim); font-size: 12.5px; font-weight: 600; }
+
+    /* ===== PACKS ===== */
+    .packs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    @media (max-width: 420px) { .packs-grid { grid-template-columns: 1fr; } }
+    .pack-card {
+      position: relative; overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 18px 16px;
+      display: flex; flex-direction: column; gap: 8px;
+      transition: transform .18s, border-color .18s;
+    }
+    .pack-card:active { transform: scale(.985); }
+    .pack-card.featured { border-color: rgba(224,184,74,.5); }
+    .pack-badge {
+      position: absolute; top: 12px; right: 12px;
+      font-size: 10px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase;
+      color: var(--bg-dark); background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      padding: 4px 9px; border-radius: 999px;
+    }
+    .pack-icon {
+      width: 44px; height: 44px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, rgba(184,134,11,.25), rgba(184,134,11,.08));
+      border: 1px solid rgba(224,184,74,.3);
+      color: var(--accent-bright); font-size: 19px;
+    }
+    .pack-name { font-size: 15.5px; font-weight: 800; margin-top: 2px; }
+    .pack-credits { font-size: 13px; color: var(--accent-bright); font-weight: 700; }
+    .pack-validity { font-size: 11.5px; color: var(--text-dim); }
+    .pack-price {
+      margin-top: auto; padding-top: 10px;
+      display: flex; align-items: baseline; gap: 4px;
+    }
+    .pack-price .amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px; font-weight: 800; color: var(--text-light);
+    }
+    .pack-price .cur { font-size: 12px; font-weight: 700; color: var(--text-dim); }
+    .pack-buy {
+      margin-top: 10px; width: 100%;
+      padding: 12px; border-radius: 13px; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 800;
+      color: var(--bg-dark);
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      transition: filter .2s, transform .1s;
+    }
+    .pack-buy:active { transform: scale(.97); }
+    .pack-buy[disabled] { filter: grayscale(.6); opacity: .6; cursor: wait; }
+
+    /* ===== TEASERS ===== */
+    .teaser {
+      display: flex; align-items: center; gap: 14px;
+      padding: 15px 16px; border-radius: 16px; margin-bottom: 11px;
+      background: rgba(255,255,255,.02); border: 1px dashed rgba(184,134,11,.28);
+    }
+    .teaser-icon {
+      width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(184,134,11,.1); color: var(--accent-bright); font-size: 16px;
+    }
+    .teaser-body { flex: 1; min-width: 0; }
+    .teaser-body h3 { font-size: 14px; font-weight: 800; }
+    .teaser-body p { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+    .teaser-soon {
+      font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase;
+      color: var(--accent-bright); flex-shrink: 0;
+      padding: 5px 10px; border-radius: 999px; background: rgba(184,134,11,.12);
+    }
+
+    /* ===== BIBLIOTHÈQUE ===== */
+    .library-empty {
+      text-align: center; padding: 26px 18px;
+      border-radius: 16px; border: 1px dashed rgba(255,255,255,.12);
+      color: var(--text-dim); font-size: 13px;
+    }
+    .library-empty i { font-size: 22px; color: var(--accent); display: block; margin-bottom: 8px; }
+    .purchase-item {
+      display: flex; align-items: center; gap: 13px;
+      padding: 14px 15px; border-radius: 15px; margin-bottom: 10px;
+      background: var(--bg-card); border: 1px solid rgba(255,255,255,.07);
+    }
+    .purchase-icon {
+      width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+      background: rgba(46,125,50,.14); color: #A5D6A7;
+    }
+    .purchase-icon.sub { background: rgba(184,134,11,.14); color: var(--accent-bright); }
+    .purchase-body { flex: 1; min-width: 0; }
+    .purchase-body h4 { font-size: 13.5px; font-weight: 700; }
+    .purchase-body p { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+    .purchase-ok { color: #A5D6A7; font-size: 11px; font-weight: 800; flex-shrink: 0; }
+
+    /* ===== AMBASSADEUR CTA ===== */
+    .amb-cta {
+      display: flex; align-items: center; gap: 14px;
+      margin-top: 26px; padding: 17px 18px; border-radius: 18px;
+      background: linear-gradient(135deg, rgba(26,58,42,.55), rgba(10,10,10,.7));
+      border: 1px solid rgba(224,184,74,.25);
+      text-decoration: none; color: var(--text-light);
+    }
+    .amb-cta i.crown { color: var(--accent-bright); font-size: 20px; }
+    .amb-cta-body { flex: 1; }
+    .amb-cta-body h3 { font-size: 14.5px; font-weight: 800; }
+    .amb-cta-body p { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+    .amb-cta > i.arrow { color: var(--accent-bright); font-size: 14px; }
+
+    .loading-block { text-align: center; padding: 30px; color: var(--text-dim); font-size: 13px; }
+    .loading-block i { font-size: 20px; color: var(--accent-bright); animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+
+    .footer-note {
+      max-width: 640px; margin: 30px auto 0; padding: 0 16px;
+      font-size: 11px; color: var(--text-muted, #5A5A4A); text-align: center; line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <a href="index.html" class="back-btn" aria-label="Retour"><i class="fas fa-arrow-left"></i></a>
+    <div class="page-title">
+      <h1>Marketplace</h1>
+      <p>Recharge tes requêtes IA ⚡</p>
+    </div>
+    <div class="credits-chip" id="creditsChip">⚡ <span id="creditsChipValue">—</span></div>
+  </header>
+
+  <div class="container">
+
+    <div class="status-banner success" id="bannerSuccess">
+      <i class="fas fa-circle-check"></i>
+      <span id="bannerSuccessText">Paiement réussi ! Tes crédits sont déjà crédités.</span>
+    </div>
+    <div class="status-banner cancel" id="bannerCancel">
+      <i class="fas fa-circle-xmark"></i>
+      <span>Paiement annulé — aucun montant n'a été débité.</span>
+    </div>
+
+    <!-- ═══ SOLDE ═══ -->
+    <div class="balance-card">
+      <div class="balance-label"><i class="fas fa-bolt"></i> Tes requêtes IA</div>
+      <div class="balance-value" id="balanceValue">—</div>
+      <div class="balance-expiry" id="balanceExpiry">Chaque jour : 10 messages ARV + 2 examens gratuits. Les crédits prennent le relais.</div>
+      <div class="balance-costs">
+        <span class="cost-pill">💬 Message ARV <b>1</b></span>
+        <span class="cost-pill">📝 Examen <b>5</b></span>
+        <span class="cost-pill">🗓️ Plan d'études <b>5</b></span>
+      </div>
+    </div>
+
+    <!-- ═══ PACKS ═══ -->
+    <div class="section-title"><i class="fas fa-bolt"></i> Packs de requêtes <span id="packsCount"></span></div>
+    <div class="packs-grid" id="packsGrid">
+      <div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement des packs…</div>
+    </div>
+
+    <!-- ═══ BIENTÔT ═══ -->
+    <div class="section-title"><i class="fas fa-hourglass-half"></i> Bientôt dans la boutique</div>
+    <div class="teaser">
+      <div class="teaser-icon"><i class="fas fa-file-lines"></i></div>
+      <div class="teaser-body">
+        <h3>Packs d'annales corrigées</h3>
+        <p>Sujets d'examens des années passées + corrections détaillées, par matière.</p>
+      </div>
+      <span class="teaser-soon">Bientôt</span>
+    </div>
+    <div class="teaser">
+      <div class="teaser-icon"><i class="fas fa-layer-group"></i></div>
+      <div class="teaser-body">
+        <h3>Fiches de révision premium</h3>
+        <p>Fiches condensées par chapitre, imprimables, hors-ligne.</p>
+      </div>
+      <span class="teaser-soon">Bientôt</span>
+    </div>
+    <div class="teaser">
+      <div class="teaser-icon"><i class="fas fa-video"></i></div>
+      <div class="teaser-body">
+        <h3>Formations &amp; masterclass</h3>
+        <p>Réussir son examen : méthodologie, gestion du temps, pièges classiques.</p>
+      </div>
+      <span class="teaser-soon">Bientôt</span>
+    </div>
+
+    <!-- ═══ BIBLIOTHÈQUE ═══ -->
+    <div class="section-title"><i class="fas fa-bookmark"></i> Ma bibliothèque <span>tes achats</span></div>
+    <div id="libraryArea">
+      <div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement…</div>
+    </div>
+
+    <!-- ═══ AMBASSADEUR ═══ -->
+    <a href="ambassadeur.html" class="amb-cta">
+      <i class="fas fa-crown crown"></i>
+      <div class="amb-cta-body">
+        <h3>Programme Ambassadeur ARVEXA</h3>
+        <p>Partage l'app, gagne 10 % sur chaque abonnement de tes filleuls.</p>
+      </div>
+      <i class="fas fa-chevron-right arrow"></i>
+    </a>
+
+  </div>
+
+  <p class="footer-note">
+    Paiement sécurisé via SasPay (Mobile Money — Niger). Les crédits sont ajoutés automatiquement
+    à ton compte dès la confirmation du paiement, même si tu fermes l'app. Achat unique, sans engagement.
+  </p>
+
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js"
+  }
+}
+</script>
+<script type="module">
+  import { initializeApp } from "firebase/app";
+  import {
+    getAuth, onAuthStateChanged
+  } from "firebase/auth";
+  import {
+    initializeFirestore, persistentLocalCache, persistentSingleTabManager,
+    collection, doc, getDoc, getDocs, query, where, orderBy, getFirestore
+  } from "firebase/firestore";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDHscOXw3rLuhV6z1Cny-bdYCumqpnG7QE",
+    authDomain: "arvexa-fbf10.firebaseapp.com",
+    projectId: "arvexa-fbf10",
+    storageBucket: "arvexa-fbf10.firebasestorage.app",
+    messagingSenderId: "920108330053",
+    appId: "1:920108330053:web:f532d71cbc2c824bc7472c"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
+  });
+
+  const $ = (id) => document.getElementById(id);
+
+  // ─── Bandeaux de retour de paiement ───
+  let paidReference = null;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('statut') === 'succes') {
+      $('bannerSuccess').classList.add('show');
+      paidReference = params.get('ref');
+      history.replaceState(null, '', window.location.pathname);
+    } else if (params.get('statut') === 'annule') {
+      $('bannerCancel').classList.add('show');
+      history.replaceState(null, '', window.location.pathname);
+    }
+  } catch (e) { /* no-op */ }
+
+  // ─── Rendu du solde ───
+  function renderBalance(data) {
+    const credits = Math.max(0, Number(data?.aiCredits || 0));
+    let expiryMs = 0;
+    if (data?.creditsExpiry?.toDate) expiryMs = data.creditsExpiry.toDate().getTime();
+    else if (data?.creditsExpiry?.seconds) expiryMs = data.creditsExpiry.seconds * 1000;
+    const expired = expiryMs && expiryMs < Date.now();
+
+    $('creditsChipValue').textContent = String(credits);
+    $('balanceValue').innerHTML = credits > 0
+      ? `${credits} <small>requête${credits > 1 ? 's' : ''}</small>`
+      : '0 <small>requête</small>';
+
+    if (credits > 0 && expiryMs && !expired) {
+      const d = new Date(expiryMs);
+      $('balanceExpiry').textContent = `Valables jusqu'au ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+    } else if (credits > 0 && expired) {
+      $('balanceExpiry').textContent = 'Ton pack a expiré — recharge-le pour réutiliser tes requêtes.';
+    } else {
+      $('balanceExpiry').textContent = 'Chaque jour : 10 messages ARV + 2 examens gratuits. Les crédits prennent le relais.';
+    }
+  }
+
+  // ─── Rendu des packs ───
+  function renderPacks(products) {
+    const grid = $('packsGrid');
+    grid.replaceChildren();
+    $('packsCount').textContent = products.length ? `${products.length} packs` : '';
+    if (!products.length) {
+      const empty = document.createElement('div');
+      empty.className = 'library-empty';
+      empty.innerHTML = '<i class="fas fa-box-open"></i>Aucun pack disponible pour le moment — reviens très vite !';
+      grid.appendChild(empty);
+      return;
+    }
+    products.forEach((p) => {
+      const featured = Number(p.credits) >= 100 ? ' featured' : '';
+      const badge = featured ? '<span class="pack-badge">Best-seller</span>' : '';
+      const validity = Number(p.validityDays) || 30;
+      const card = document.createElement('div');
+      card.className = 'pack-card' + featured;
+      card.innerHTML = `
+        ${badge}
+        <div class="pack-icon"><i class="fas fa-bolt"></i></div>
+        <div class="pack-name">${String(p.title || 'Pack').replace(/</g, '&lt;')}</div>
+        <div class="pack-credits">⚡ ${Number(p.credits)} requêtes IA</div>
+        <div class="pack-validity"><i class="fas fa-clock"></i> Valables ${validity} jours</div>
+        <div class="pack-price"><span class="amount">${Number(p.price).toLocaleString('fr-FR')}</span><span class="cur">FCFA</span></div>
+        <button class="pack-buy" data-product="${p.id}"><i class="fas fa-cart-plus"></i> Acheter maintenant</button>`;
+      card.querySelector('.pack-buy').addEventListener('click', () => buyPack(p.id, card.querySelector('.pack-buy')));
+      grid.appendChild(card);
+    });
+  }
+
+  async function loadPacks() {
+    try {
+      const q = query(
+        collection(db, 'products'),
+        where('type', '==', 'credits'),
+        where('status', '==', 'approved'),
+        orderBy('price', 'asc')
+      );
+      const snap = await getDocs(q);
+      const products = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderPacks(products);
+    } catch (e) {
+      console.error('Chargement packs :', e);
+      const grid = $('packsGrid');
+      grid.replaceChildren();
+      const empty = document.createElement('div');
+      empty.className = 'library-empty';
+      empty.innerHTML = '<i class="fas fa-wifi"></i>Boutique indisponible — vérifie ta connexion puis rafraîchis.';
+      grid.appendChild(empty);
+    }
+  }
+
+  // ─── Achat ───
+  async function buyPack(productId, btn) {
+    const user = auth.currentUser;
+    if (!user) {
+      try { sessionStorage.setItem('redirectAfterLogin', 'marketplace.html'); } catch (e) {}
+      window.location.href = 'login.html';
+      return;
+    }
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirection…';
+    try {
+      const userSnap = await getDoc(doc(db, 'users', user.uid));
+      const uData = userSnap.exists() ? userSnap.data() : {};
+      const res = await fetch('/api/creer-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: user.uid,
+          kind: 'credits',
+          productId,
+          customerEmail: user.email || 'eleve@arvexaschool.com',
+          customerName: uData.fullName || uData.firstName || 'Élève ARVEXA'
+        })
+      });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch (e) { throw new Error('Erreur serveur.'); }
+      if (!res.ok || !data.ok || !data.checkoutUrl) {
+        throw new Error(data.error || 'Paiement indisponible.');
+      }
+      window.location.href = data.checkoutUrl;
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false;
+      btn.innerHTML = original;
+      alert('Paiement indisponible : ' + (err.message || 'réessaie dans un instant.'));
+    }
+  }
+
+  // ─── Bibliothèque ───
+  function renderLibrary(items) {
+    const area = $('libraryArea');
+    area.replaceChildren();
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'library-empty';
+      empty.innerHTML = '<i class="fas fa-bookmark"></i>Tes achats apparaîtront ici — packs de crédits et abonnements.';
+      area.appendChild(empty);
+      return;
+    }
+    items.forEach((it) => {
+      const isSub = it.kind === 'subscription';
+      const item = document.createElement('div');
+      item.className = 'purchase-item';
+      const when = it.grantedAt?.toDate?.() || null;
+      const whenStr = when ? when.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+      item.innerHTML = `
+        <div class="purchase-icon${isSub ? ' sub' : ''}"><i class="fas ${isSub ? 'fa-crown' : 'fa-bolt'}"></i></div>
+        <div class="purchase-body">
+          <h4>${isSub ? `Abonnement ${it.plan === 'annual' ? 'annuel' : 'mensuel'}` : (it.title || 'Pack de crédits')}</h4>
+          <p>${it.kind === 'credits' ? `⚡ +${it.credits} requêtes · ` : ''}${whenStr}${it.amount ? ` · ${Number(it.amount).toLocaleString('fr-FR')} FCFA` : ''}</p>
+        </div>
+        <span class="purchase-ok"><i class="fas fa-check"></i></span>`;
+      area.appendChild(item);
+    });
+  }
+
+  async function loadLibrary(uid) {
+    try {
+      const snap = await getDocs(collection(db, 'users', uid, 'purchases'));
+      const items = snap.docs.map((d) => d.data()).sort((a, b) => {
+        const ta = a.grantedAt?.seconds || 0, tb = b.grantedAt?.seconds || 0;
+        return tb - ta;
+      });
+      renderLibrary(items);
+    } catch (e) {
+      console.error('Bibliothèque :', e);
+      renderLibrary([]);
+    }
+  }
+
+  // ─── Auth ───
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      $('creditsChipValue').textContent = '—';
+      $('balanceValue').textContent = '—';
+      $('balanceExpiry').textContent = 'Connecte-toi pour voir ton solde et acheter des crédits.';
+      renderLibrary([]);
+      return;
+    }
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      renderBalance(snap.exists() ? snap.data() : {});
+    } catch (e) {
+      renderBalance({});
+    }
+    loadLibrary(user.uid);
+  });
+
+  loadPacks();
+
+  // ⚡ Retour de paiement : recharger le solde après 8 s et 20 s
+  // (le webhook SasPay crédite le compte — délai réseau mobile)
+  if (paidReference) {
+    setTimeout(refreshBalance, 8000);
+    setTimeout(refreshBalance, 20000);
+    setTimeout(refreshBalance, 45000);
+  }
+  function refreshBalance() {
+    const user = auth.currentUser;
+    if (!user) return;
+    getDoc(doc(getFirestore(app), 'users', user.uid)).then((snap) => {
+      renderBalance(snap.exists() ? snap.data() : {});
+    }).catch(() => {});
+  }
+</script>
+<script src="register-sw.js" defer></script>
+<script src="install-banner.js" defer></script>
+</body>
+</html>

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="wake-lock.js"></script><script src="arvexa-i18n.js" defer></script>
   <meta name="description" content="ARV Assistant — Ton tuteur IA personnel">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.png" type="image/png">
@@ -1423,6 +1423,7 @@
       <a href="arv-progress.html"><i class="fas fa-graduation-cap"></i> Résumé</a>
       <a href="outils.html"><i class="fas fa-toolbox"></i> Outils</a>
       <a href="localisation.html"><i class="fas fa-location-dot"></i> À proximité</a>
+      <a href="marketplace.html"><i class="fas fa-store"></i> Marketplace</a>
       <a href="index.html?avis=1"><i class="fas fa-star"></i> Donner mon avis</a>
       <a href="#" id="navLogout"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
     </nav>
@@ -2365,7 +2366,22 @@ async function sendMessage() {
       state.remaining = 0;
       updateQuota();
       showPremiumModal();
-      statusText.textContent = 'Limite atteinte';
+      // ⚡ v8.56a — limite du jour : orienter vers les crédits Marketplace
+      const isCreditsEmpty = typeof payload.creditsRemaining === 'number' && payload.creditsRemaining <= 0;
+      statusText.textContent = isCreditsEmpty
+        ? 'Limite du jour — recharge des crédits ⚡'
+        : 'Limite atteinte';
+      if (!payload.premium && payload.code === 'ARV_LIMIT_REACHED' && payload.creditsRemaining <= 0) {
+        const shopLink = document.createElement('a');
+        shopLink.href = 'marketplace.html';
+        shopLink.className = 'suggestion';
+        shopLink.innerHTML = '<i class="fas fa-bolt"></i> Recharger mes requêtes IA ⚡ (Marketplace)';
+        try {
+          const list = document.querySelector('.suggestions, .suggestion-list, [class*=suggestion]');
+          if (list && list.parentElement) list.parentElement.insertBefore(shopLink, list);
+          else document.querySelector('.chat-messages')?.appendChild(shopLink);
+        } catch (e) { /* non bloquant */ }
+      }
       return;
     }
 

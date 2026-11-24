@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
 <script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-i18n.js" defer></script>
-  <meta name="description" content="ARVEXA School — Test moi BAC">
+  <meta name="description" content="ARVEXA School — Test moi : tests chronométrés adaptés à ton niveau, toutes matières, tous domaines.">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="apple-touch-icon" href="icon.png">
@@ -2248,7 +2248,7 @@
 
  <script type="module">
 // ═══════════════════════════════════════════════════════════════
-// EXAM — Test moi BAC v6.2
+// EXAM — Test moi (toutes matières, tous niveaux) v6.2
 // Corrections appliquées :
 //  - C1 : initializeFirestore avec persistentLocalCache (aligné sur index.html etc.)
 //  - C2 : gestion blocked/paused dans onUser
@@ -3038,6 +3038,8 @@ async function generateExam(event) {
     if (error.message === 'FREE_EXAM_LIMIT') {
       showView('configView');
       showPremiumPopup();
+      // ⚡ v8.56a — orienter aussi vers les crédits Marketplace
+      setStatus('configStatus', 'Limite du jour (2 examens gratuits). Recharge tes crédits ⚡ dans la Marketplace ou passe Premium.', 'error');
     } else if (error.message === 'AUTH_REQUIRED') {
       setStatus('configStatus', 'Connecte-toi pour générer un test.', 'error');
     } else if (error.message === 'RATE_LIMIT') {

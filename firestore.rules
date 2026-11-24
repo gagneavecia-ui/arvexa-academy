@@ -520,6 +520,14 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin();
       }
 
+      // ─── ⚡ v8.56a — Purchases : historique « Ma bibliothèque » (Marketplace) ──
+      // Écrit UNIQUEMENT par le webhook SasPay (SDK admin, bypass règles).
+      // Le client lit ses propres achats, jamais ne les crée.
+      match /purchases/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
       // ─── Toute autre sous-collection : accès refusé par défaut ──
       match /{otherSub=**} {
         allow read, write: if false;
@@ -595,6 +603,164 @@ service cloud.firestore {
     match /adminLogs/{docId} {
       allow read: if isAdmin();
       allow write: if false;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ⚡ v8.56a — MARKETPLACE + PROGRAMME AMBASSADEUR
+    // ══════════════════════════════════════════════════════════════
+
+    // ─── Products : catalogue boutique (écrit par SDK admin uniquement) ──
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ─── Candidatures ambassadeur : création/lecture par le candidat ──
+    match /ambassadorApplications/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // ─── Ambassadeurs : lecture par l'ambassadeur lui-même (écrit admin) ──
+    match /ambassadors/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // ─── Parrainages : création par le nouveau compte, lecture par les ──
+    // ─── deux parties concernées ; toute écriture de conversion est admin ──
+    // (get() sur un doc inexistant → erreur → accès refusé : un non-ambassadeur
+    //  ne peut lire que ses propres filleuls)
+    match /referrals/{referralId} {
+      allow read: if request.auth != null
+        && (
+          resource.data.newUid == request.auth.uid
+          || resource.data.code == get(/databases/$(database)/documents/ambassadors/$(request.auth.uid)).data.code
+        );
+      allow create: if request.auth != null
+        && request.resource.data.newUid == request.auth.uid
+        && request.resource.data.code is string
+        && request.resource.data.code.size() <= 40;
+      allow update, delete: if false;
+    }
+
+    // ─── Clics de liens parrainage : anonymes peuvent créer, ambassadeur ──
+    // ─── lit uniquement les clics portant SON code ──
+    match /refClicks/{clickId} {
+      allow create: if request.resource.data.code is string
+        && request.resource.data.code.size() <= 40
+        && request.resource.data.ts is number;
+      allow read: if request.auth != null
+        && resource.data.code == get(/databases/$(database)/documents/ambassadors/$(request.auth.uid)).data.code;
+      allow update, delete: if false;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ⚡ v8.57a — GÉRER MA PROMO (espaces de classe des ambassadeurs)
+    // ══════════════════════════════════════════════════════════════
+
+    // ─── Promos : lecture publique (jointure par code), création/édition ──
+    // ─── réservées au RESPONSABLE du document (ownerUid verrouillé) ──
+    match /promos/{promoId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.code is string
+        && request.resource.data.code.matches('^PROMO-[A-Z0-9]{6}$')
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 80
+        && (!('school' in request.resource.data)
+            || (request.resource.data.school is string
+                && request.resource.data.school.size() <= 120))
+        // ownerCode : le code ambassadeur du créateur (peut être null)
+        && (!('ownerCode' in request.resource.data)
+            || request.resource.data.ownerCode == null
+            || (request.resource.data.ownerCode is string
+                && request.resource.data.ownerCode.size() <= 40))
+        && request.resource.data.memberCount == 1
+        && request.resource.data.status == 'active'
+        && request.resource.data.ownerName is string
+        && request.resource.data.ownerName.size() >= 1
+        && request.resource.data.ownerName.size() <= 80;
+      allow update: if request.auth != null
+        && (
+          // ─── Responsable : édition libre sauf identité verrouillée ──
+          (resource.data.ownerUid == request.auth.uid
+            && !(request.resource.data.diff(resource.data).affectedKeys()
+                  .hasAny(['ownerUid', 'code', 'ownerCode']))
+            && request.resource.data.memberCount is number
+            && request.resource.data.memberCount >= 0
+            && request.resource.data.memberCount <= 5000)
+          // ─── Membre qui rejoint / quitte : SEUL le compteur bouge, ±1 ──
+          || (request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['memberCount'])
+              && request.resource.data.memberCount is number
+              && (request.resource.data.memberCount == resource.data.memberCount + 1
+                  || request.resource.data.memberCount == resource.data.memberCount - 1)
+              && request.resource.data.memberCount >= 0)
+        );
+      allow delete: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid;
+
+      // ─── Membres : chacun s'inscrit LUI-MÊME, retrait par le ──
+      // ─── responsable ou par soi-même ; champs bornés. get/list séparés ──
+      // ─── (une condition sur le wildcard memberUid est prouvable pour un
+      // ─── document précis mais JAMAIS pour une requête list entière) ──
+      match /members/{memberUid} {
+        allow get: if request.auth != null
+          && (request.auth.uid == memberUid
+              || request.auth.uid == get(/databases/$(database)/documents/promos/$(promoId)).data.ownerUid);
+        allow list: if request.auth != null
+          && request.auth.uid == get(/databases/$(database)/documents/promos/$(promoId)).data.ownerUid;
+        allow create: if request.auth != null
+          && request.auth.uid == memberUid
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.role in ['owner', 'member']
+          && request.resource.data.name is string
+          && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 80;
+        allow update: if false;
+        allow delete: if request.auth != null
+          && (request.auth.uid == memberUid
+              || request.auth.uid == get(/databases/$(database)/documents/promos/$(promoId)).data.ownerUid);
+      }
+
+      // ─── Publications du fil : écritures du RESPONSABLE uniquement ──
+      // ─── (messages + fichiers) ; lecture par les membres de la promo ──
+      match /posts/{postId} {
+        allow read: if request.auth != null
+          && (get(/databases/$(database)/documents/promos/$(promoId)).data.ownerUid == request.auth.uid
+              || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.promoId == promoId);
+        allow create: if request.auth != null
+          && get(/databases/$(database)/documents/promos/$(promoId)).data.ownerUid == request.auth.uid
+          && request.resource.data.type in ['message', 'fichier']
+          && request.resource.data.title is string
+          && request.resource.data.title.size() >= 1
+          && request.resource.data.title.size() <= 120
+          && (!('text' in request.resource.data)
+              || request.resource.data.text is string
+              && request.resource.data.text.size() <= 4000)
+          && (!('fileUrl' in request.resource.data)
+              || request.resource.data.fileUrl == ''
+              || (request.resource.data.fileUrl is string
+                  && request.resource.data.fileUrl.size() <= 2000))
+          && (!('fileName' in request.resource.data)
+              || request.resource.data.fileName == ''
+              || (request.resource.data.fileName is string
+                  && request.resource.data.fileName.size() <= 200))
+          && (!('fileSize' in request.resource.data)
+              || (request.resource.data.fileSize is number
+                  && request.resource.data.fileSize >= 0
+                  && request.resource.data.fileSize <= 10485760))
+          && request.resource.data.authorUid == request.auth.uid;
+        allow update: if false;
+        allow delete: if request.auth != null
+          && get(/databases/$(database)/documents/promos/$(promoId)).data.ownerUid == request.auth.uid;
+      }
     }
   }
 }

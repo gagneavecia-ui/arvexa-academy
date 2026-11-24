@@ -2972,6 +2972,18 @@
   // Série uniquement pour la Terminale (A | C | D)
   if (seriesValue) profileData.series = seriesValue;
 
+  // ⚡ v8.56a — attribution parrainage : code ?ref capturé (30 jours)
+  let refCode = null;
+  try {
+    const savedRef = JSON.parse(localStorage.getItem('arvexaRef') || 'null');
+    if (savedRef && savedRef.code
+        && /^[A-Z0-9][A-Z0-9_-]{2,23}$/.test(savedRef.code)
+        && (Date.now() - (savedRef.ts || 0)) < 30 * 24 * 60 * 60 * 1000) {
+      refCode = savedRef.code;
+    }
+  } catch (e) { /* no-op */ }
+  if (refCode) profileData.referredBy = refCode;
+
   // ⚡ Retry : si Firestore échoue, on réessaie 2 fois avant d'abandonner
   let profileSaved = false;
   let lastError = null;
@@ -2980,6 +2992,18 @@
     try {
       await setDoc(doc(db, 'users', user.uid), profileData);
       profileSaved = true;
+      // ⚡ v8.56a — trace parrainage : doc referrals pour le tableau de bord ambassadeur
+      if (refCode) {
+        try {
+          await addDoc(collection(db, 'referrals'), {
+            newUid: user.uid,
+            code: refCode,
+            status: 'registered',
+            createdAt: serverTimestamp()
+          });
+        } catch (refErr) { console.warn('Trace parrainage :', refErr.message); }
+        try { localStorage.removeItem('arvexaRef'); } catch (e) {}
+      }
       break;
     } catch (err) {
       lastError = err;

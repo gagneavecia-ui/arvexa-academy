@@ -42,6 +42,10 @@ const TOTAL_POINTS = 20;
 const FREE_EXAM_LIMIT = 2;
 const POOL_COLLECTION = 'examPool';
 
+// ⚡ v1.1 — CRÉDITS IA (packs Marketplace) : au-delà des 2 examens gratuits du
+// jour, chaque génération coûte 5 crédits, débités en transaction serveur.
+const { COSTS, consumeCredits } = require('./_credits');
+
 const MAX_TOKENS = {
   GENERATE: 8000, // ✅ Baissé de 16000 à 8000 pour éviter les timeouts
   CORRECT: 8000,
@@ -146,7 +150,7 @@ function jsonError(response, status, error, code) {
 
 function applyCors(request, response) {
   const ALLOWED_ORIGINS = new Set([
-    'https://arvexaschool.vercel.app',
+    'https://arvexa-academy.vercel.app',
     'https://admin-89.vercel.app',
     'http://localhost:3000',
     'http://localhost:5000'
@@ -2795,10 +2799,31 @@ module.exports = async function handler(request, response) {
     if (!reservation) return jsonError(response, 503, 'Vérification du quota indisponible.');
 
     if (reservation.limitReached) {
-      return response.status(429).json({
-        success: false, error: 'Limite gratuite atteinte.',
-        code: 'FREE_EXAM_LIMIT', used: reservation.used, limit: FREE_EXAM_LIMIT
-      });
+      // ⚡ v1.1 — QUOTA DU JOUR ÉPUISÉ (2/jour) → tentative de 5 crédits Marketplace
+      let creditUsed = false;
+      let creditRemaining = 0;
+      if (!reservation.premium) {
+        try {
+          const creditResult = await consumeCredits(getAdminServices().db, verifiedUser.uid, COSTS.exam);
+          if (creditResult.allowed) {
+            creditUsed = true;
+            creditRemaining = creditResult.remaining;
+          }
+        } catch (creditError) {
+          console.error('[EXAM] credits error:', creditError.message);
+          return jsonError(response, 503, 'Vérification des crédits temporairement indisponible.');
+        }
+      }
+      if (!creditUsed) {
+        return response.status(429).json({
+          success: false,
+          error: 'Limite du jour atteinte (2 examens gratuits). Recharge tes crédits ⚡ dans la Marketplace ou passe Premium.',
+          code: 'FREE_EXAM_LIMIT', used: reservation.used, limit: FREE_EXAM_LIMIT,
+          creditsRemaining: creditRemaining
+        });
+      }
+      reservation.creditMode = true;
+      reservation.creditRemaining = creditRemaining;
     }
 
     try {
@@ -2843,7 +2868,10 @@ module.exports = async function handler(request, response) {
       return response.status(200).json({
         success: true,
         exam,
-        meta: { provider: genResult.provider, fromNotebook: Boolean(notebookContext) }
+        meta: { provider: genResult.provider, fromNotebook: Boolean(notebookContext) },
+        // ⚡ v1.1 — info crédits (le quota gratuit n'a PAS été consommé en mode crédits)
+        creditMode: Boolean(reservation.creditMode),
+        creditsRemaining: reservation.creditMode ? reservation.creditRemaining : undefined
       });
     } catch (error) {
       console.error('Exam generation failed:', error.message);

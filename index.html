@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-i18n.js" defer></script>
 <script src="arvexa-sync.js" defer></script><!-- ✅ v8.0 sync Firebase des progressions (par compte) -->
   <meta name="description" content="ARVEXA School - Tableau de bord">
   <link rel="manifest" href="manifest.json">
@@ -322,6 +322,29 @@
       box-shadow: 0 8px 28px rgba(184, 134, 11, 0.4);
     }
     .avis-btn-inline:active { transform: translateY(0) scale(0.98); }
+
+    /* ✅ v8.55a — AMBASSADEUR ARVEXA : carte d'accueil luxueuse (bouton seul,
+       la page du programme sera conçue plus tard). Même langage visuel que
+       la carte avis : liseré doré, halo radial, bouton pilule doré. */
+    .amb-card { position: relative; overflow: hidden; }
+    .amb-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 85% 0%, rgba(224, 184, 74, 0.16), transparent 65%);
+      pointer-events: none;
+    }
+    .amb-head { display: flex; align-items: center; gap: 14px; }
+    .amb-ico {
+      width: 46px; height: 46px; flex: 0 0 46px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      color: var(--on-gold); font-size: 19px;
+      box-shadow: 0 6px 20px rgba(184, 134, 11, 0.35);
+    }
+    .amb-title { font-family: var(--font-serif); font-size: 1.12rem; font-weight: 700; color: var(--text-light); }
+    .amb-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+    .amb-text { margin-top: 12px; font-size: 13.5px; line-height: 1.65; color: var(--text-dim); }
+    .amb-text strong { color: var(--accent-bright); font-weight: 600; }
+    /* ✅ v8.58a — .amb-badge (badge « Nouveau ») retiré avec son élément HTML */
 
     .subscription-reminder { margin-top: 14px; }
     .sub-card {
@@ -1596,6 +1619,7 @@
       <a href="arv-progress.html"><i class="fas fa-graduation-cap"></i> Résumé</a>
       <a href="outils.html"><i class="fas fa-toolbox"></i> Outils</a>
       <a href="localisation.html"><i class="fas fa-location-dot"></i> À proximité</a>
+      <a href="marketplace.html"><i class="fas fa-store"></i> Marketplace</a>
       <div class="nav-divider"></div>
       <a href="#" class="avis-link" id="avisLinkSidebar">
         <i class="fas fa-star"></i> Donner mon avis
@@ -1744,6 +1768,35 @@
           <div class="badge-item" data-badge="hours5"><div class="badge-coin">💎</div><div class="badge-name">5 heures d'étude</div></div>
           <div class="badge-item" data-badge="streak3"><div class="badge-coin">🔥</div><div class="badge-name">Série de 3 jours</div></div>
           <div class="badge-item" data-badge="streak7"><div class="badge-coin">🚀</div><div class="badge-name">Série de 7 jours</div></div>
+        </div>
+
+        <!-- ============================================================
+             BLOC 5ter — AMBASSADEUR ARVEXA (✅ v8.55a)
+             Demande du propriétaire : bouton « Ambassadeur ARVEXA » sur
+             l'accueil, placé en flux naturel (après les réalisations, avant
+             l'avis), SANS casser l'apparence luxueuse. La page du programme
+             (gains sur les abonnements…) sera conçue plus tard : le bouton
+             affiche un toast « bientôt disponible » (arvexa-soon.js).
+             ============================================================ -->
+        <div class="section-title"><h3>🤝 Ambassadeur ARVEXA</h3></div>
+        <div class="next-card avis-card amb-card">
+          <div class="amb-head">
+            <div class="amb-ico"><i class="fas fa-handshake"></i></div>
+            <div>
+              <div class="amb-title">Deviens Ambassadeur ARVEXA</div>
+              <div class="amb-sub">Partage · accompagne · gagne</div>
+            </div>
+          </div>
+          <div class="amb-text">
+            Recommande ARVEXA autour de toi et <strong>gagne en fonction des abonnements</strong>
+            de tes camarades — commissions, avantages exclusifs et rang d'ambassadeur.
+          </div>
+          <a class="avis-btn-inline" href="ambassadeur.html"
+             style="text-decoration:none;display:inline-flex;align-items:center;gap:8px;color:inherit">
+            <i class="fas fa-crown"></i> Découvrir le programme
+          </a>
+          <!-- ✅ v8.58a — badge « Nouveau » retiré (demande du propriétaire :
+               « le badge nouveau sur la carte ambassadeur, tu enlèves ces badges ») -->
         </div>
 
         <!-- ============================================================
@@ -4041,5 +4094,17 @@
 <script src="parcours.js" defer></script>
 <script src="arvexa-vivant.js"></script>
 <script src="arvexa-modal.js" defer></script>
+<!-- ⚡ v8.56a — capture du code parrainage ?ref=CODE (30 jours, lue à l'inscription) -->
+<script>
+(function () {
+  try {
+    var raw = (new URLSearchParams(window.location.search).get('ref') || '').toUpperCase().trim();
+    if (/^[A-Z0-9][A-Z0-9_-]{2,23}$/.test(raw)) {
+      localStorage.setItem('arvexaRef', JSON.stringify({ code: raw, ts: Date.now() }));
+      history.replaceState(null, '', window.location.pathname);
+    }
+  } catch (e) { /* no-op */ }
+})();
+</script>
 </body>
 </html>

@@ -6,7 +6,7 @@
 <title>ARVEXA — Mon profil</title>
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-classes.js" defer></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-classes.js" defer></script><script src="arvexa-i18n.js" defer></script>
   <meta name="description" content="ARVEXA School - Mon profil">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.png">
@@ -24,7 +24,10 @@
     btn.addEventListener('click', function () {
       var st = window.ARVEXA_STREAK ? window.ARVEXA_STREAK.get() : { count: 0 };
       var n = Math.max(0, st.count || 0);
-      var txt = '🔥 ' + n + (n === 1 ? ' jour' : ' jours') + ' de série sur ARVEXA School — je prépare le BAC, rejoins-moi : https://arvexaschool.vercel.app';
+      // ✅ v8.55a — partage universel (fini « je prépare le BAC ») + le lien
+      // pointe vers le VRAI domaine vivant (l'ancien domaine de partage est
+      // mort depuis des mois — lien de partage cassé pour tout le monde).
+      var txt = '🔥 ' + n + (n === 1 ? ' jour' : ' jours') + ' de série sur ARVEXA School — je révise toutes mes matières, rejoins-moi : https://arvexa-academy.vercel.app';
       if (navigator.share) {
         navigator.share({ title: 'ARVEXA School', text: txt }).catch(function () { });
       } else {
@@ -1217,6 +1220,7 @@
       <a href="arv-progress.html"><i class="fas fa-graduation-cap"></i> Résumé</a>
       <a href="outils.html"><i class="fas fa-toolbox"></i> Outils</a>
       <a href="localisation.html"><i class="fas fa-location-dot"></i> À proximité</a>
+      <a href="marketplace.html"><i class="fas fa-store"></i> Marketplace</a>
       <div class="nav-divider"></div>
       <a href="index.html?avis=1" class="avis-link"><i class="fas fa-star"></i> Donner mon avis</a>
       <div class="nav-divider"></div>

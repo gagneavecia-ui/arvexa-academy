@@ -17,6 +17,10 @@ const PREMIUM_DAILY_LIMIT = 60;
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_HISTORY_MESSAGES = 10;
 
+// ⚡ v8.56a — CRÉDITS IA (packs Marketplace) : quand le quota du jour est épuisé,
+// le serveur consomme automatiquement 1 crédit au lieu de bloquer l'élève.
+const { COSTS, consumeCredits } = require('./_credits');
+
 /* ✅ v8.54a — VISION : images jointes au chat (« capable d'envoyer des
    images pour qu'il puisse analyser ces images »). Même cascade éprouvée
    que le kit ARVX (Gemini → OpenRouter manuscrit-first → Groq). */
@@ -732,16 +736,39 @@ module.exports = async function handler(request, response) {
   }
 
   if (reservation.limitReached) {
-    return response.status(429).json({
-      success: false,
-      error: reservation.premium
-        ? 'Limite quotidienne Premium atteinte.'
-        : 'Limite gratuite atteinte. Passe à Premium pour continuer.',
-      code: reservation.premium ? 'ARV_DAILY_LIMIT' : 'ARV_LIMIT_REACHED',
-      used: reservation.used,
-      limit: reservation.limit,
-      premium: reservation.premium
-    });
+    // ⚡ v8.56a — QUOTA DU JOUR ÉPUISÉ → tentative de consommation d'un crédit
+    if (!reservation.premium) {
+      try {
+        const creditResult = await consumeCredits(getAdminServices().db, uid, COSTS.chat);
+        if (creditResult.allowed) {
+          reservation.limitReached = false;
+          reservation.creditMode = true;
+          reservation.creditRemaining = creditResult.remaining;
+        }
+      } catch (creditError) {
+        console.error('ARV credits error:', creditError.message);
+        return jsonError(response, 503, 'Vérification des crédits temporairement indisponible.');
+      }
+    }
+    if (reservation.limitReached) {
+      const { readCreditsBalance } = require('./_credits');
+      let creditsRemaining = 0;
+      try {
+        const userSnap = await getAdminServices().db.collection('users').doc(uid).get();
+        creditsRemaining = readCreditsBalance(userSnap.data() || {}).credits;
+      } catch (_) {}
+      return response.status(429).json({
+        success: false,
+        error: reservation.premium
+          ? 'Limite quotidienne Premium atteinte.'
+          : 'Limite du jour atteinte. Recharge tes crédits ⚡ dans la Marketplace ou passe Premium.',
+        code: reservation.premium ? 'ARV_DAILY_LIMIT' : 'ARV_LIMIT_REACHED',
+        used: reservation.used,
+        limit: reservation.limit,
+        premium: reservation.premium,
+        creditsRemaining
+      });
+    }
   }
 
   try {
@@ -795,10 +822,12 @@ module.exports = async function handler(request, response) {
       success: true,
       reply,
       conversationId: finalConversationId,
-      remaining: reservation.remaining,
+      remaining: reservation.creditMode ? null : reservation.remaining,
       used: reservation.used,
       limit: reservation.limit,
-      premium: reservation.premium
+      premium: reservation.premium,
+      creditMode: !!reservation.creditMode,
+      creditsRemaining: reservation.creditMode ? reservation.creditRemaining : undefined
     });
 
   } catch (error) {
@@ -814,10 +843,11 @@ module.exports = async function handler(request, response) {
       success: true,
       reply: `⚠️ Je suis temporairement indisponible. Réessaie dans quelques instants.\n\n*Si le problème persiste, contacte le support sur WhatsApp.*`,
       conversationId: conversationId || null,
-      remaining: reservation?.remaining ?? 0,
+      remaining: reservation?.creditMode ? null : (reservation?.remaining ?? 0),
       used: reservation?.used ?? 0,
       limit: reservation?.limit ?? FREE_DAILY_LIMIT,
       premium: reservation?.premium ?? false,
+      creditMode: !!reservation?.creditMode,
       fallback: true
     });
   }

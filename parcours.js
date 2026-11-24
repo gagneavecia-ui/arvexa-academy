@@ -199,7 +199,7 @@
       + '<div class="pc-meta">'
       +   '<span><i class="fas fa-clock"></i> ~' + step.durationMin + ' min</span>'
       +   '<span><i class="fas fa-list-check"></i> ' + step.totalSections + ' sections</span>'
-      +   (d != null ? '<span><i class="fas fa-flag-checkered"></i> BAC dans ' + d + ' jours</span>' : '')
+      +   (d != null && hasExamSafe() ? '<span><i class="fas fa-flag-checkered"></i> ' + esc(goalTargetSafe()) + ' dans ' + d + ' j</span>' : '')
       + '</div>'
       + '<div class="pc-bar"><div class="pc-bar-fill" style="width:' + pct + '%"></div></div>'
       + '<div class="pc-stats"><span><strong>' + doneCount() + '</strong> / ' + M.steps.length + ' étapes</span>'
@@ -215,7 +215,11 @@
     return '<div class="pc-top"><span class="pc-badge"><i class="fas fa-trophy"></i> Parcours terminé</span></div>'
       + '<div class="pc-title">Les 57 chapitres sont maîtrisés !</div>'
       + classLineHtml()
-      + '<div class="pc-meta"><span><i class="fas fa-stopwatch"></i> Il reste ' + (daysToBac() || '—') + ' jours avant le BAC : passe dans Test moi.</span></div>'
+      + '<div class="pc-meta">'
+      +   (hasExamSafe() && daysToBac() != null
+      ?     '<span><i class="fas fa-stopwatch"></i> Il reste ' + daysToBac() + ' jours avant ' + esc(goalTargetSafe()) + ' : passe dans Test moi.</span>'
+      :     '<span><i class="fas fa-stopwatch"></i> Passe dans Test moi pour t\'entraîner sur toutes tes matières.</span>')
+      + '</div>'
       + '<div class="pc-actions"><a class="pc-btn pc-btn-main" href="exam.html"><i class="fas fa-stopwatch"></i> Test moi</a>'
       + '<a class="pc-btn pc-btn-ghost" href="progression.html"><i class="fas fa-chart-line"></i> Voir ma progression</a></div>';
   }
@@ -332,6 +336,19 @@
       if (CL && CL.goalTarget && (up.classId || up.customClass)) return CL.goalTarget(up.classId);
     } catch (e) {}
     return 'ton objectif';
+  }
+
+  /* ✅ v8.55a — garde « examen national » : TRUE seulement pour les
+     classes qui ont un vrai examen (BEPC/BAC) — même logique que la
+     carte intelligente (isLegacy + exam). Évite tout « BAC dans X jours »
+     pour une licence, une 6ᵉ ou une classe libre. */
+  function hasExamSafe() {
+    try {
+      var CLx = window.ARVEXA_CLASSES;
+      var uPx = window.ARVEXA_USER_PROFILE || {};
+      if (CLx && uPx.classId) return (CLx.isLegacy && CLx.isLegacy(uPx.classId)) ? true : !!CLx.exam(uPx.classId);
+    } catch (e) {}
+    return true;
   }
 
   function updateSmartCard(el, d) {
