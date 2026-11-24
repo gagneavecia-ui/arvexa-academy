@@ -1685,10 +1685,12 @@ async function openMateModal(uid) {
   }
 
   try {
-    const r = await fetch('/api/contact', {
+    /* ✅ v8.54a — le contact passe par le routeur unique /api/progress
+       (plan Hobby : 12 fonctions max — pas de fichier api/contact séparé). */
+    const r = await fetch('/api/progress', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (mateToken || '') },
-      body: JSON.stringify({ uid })
+      body: JSON.stringify({ action: 'getMateContact', uid })
     });
     const j = await r.json().catch(() => null);
     if (mateUid !== uid) return; // la fiche a été fermée/changée entre-temps

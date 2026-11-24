@@ -55,6 +55,7 @@ const RATE_LIMITS = {
   deleteSection: 10,
   deleteChapter: 10,
   getFullLesson: 15,
+  getMateContact: 20,      // ✅ v8.54a — numéro WhatsApp d'un camarade (À proximité)
   generateSectionExtras: 12, // ✅ v8.44a — IA à la demande (QCM court + carte mentale) — l'élève qui vérifie en basculant d'onglets ne doit pas se bloquer
   getSmartCard: 30,       // ✅ v8.43 — lecture légère (carte intelligente de l'accueil)
   trackStudyTime: 60      // léger, fréquent
@@ -4350,6 +4351,42 @@ async function completeSection(uid, body) {
   };
 }
 
+
+// ✅ v8.54a — FICHE CAMARADE (page « À proximité ») : numéro WhatsApp.
+// Demande du propriétaire : appui sur la carte d'un camarade → voir son
+// numéro → l'appeler ou lui écrire pour des exos / révisions.
+// SÉCURITÉ : RÉCIPROCITÉ stricte — le demandeur partage LUI-MÊME une
+// position fraîche (< 24 h) et le camarade aussi ; champs minimaux
+// (nom + whatsapp E.164), JAMAIS d'email, jamais d'adresse.
+// (Le endpoint dédié api/contact.js a été retiré : plan Hobby = 12
+// fonctions max — l'action vit dans ce routeur unique.)
+async function getMateContact(uid, body) {
+  const targetUid = String(body.uid || '').trim();
+  if (!targetUid || targetUid.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(targetUid)) {
+    throw { status: 400, message: 'Identifiant de camarade invalide.' };
+  }
+  if (targetUid === uid) throw { status: 400, message: 'C\'est toi :).' };
+
+  const { db } = getAdminServices();
+  const STALE_MS = 24 * 60 * 60 * 1000;
+  const fresh = (ts) => ts && typeof ts.toMillis === 'function' && (Date.now() - ts.toMillis()) < STALE_MS;
+
+  const myPosSnap = await db.collection('positions').doc(uid).get();
+  if (!myPosSnap.exists || !fresh(myPosSnap.data().updatedAt)) {
+    throw { status: 403, message: 'Active ton partage de localisation pour voir le contact d\'un camarade.', code: 'RECIPROCITY_REQUIRED' };
+  }
+  const posSnap = await db.collection('positions').doc(targetUid).get();
+  if (!posSnap.exists || !fresh(posSnap.data().updatedAt)) {
+    throw { status: 404, message: 'Ce camarade ne partage plus sa position.', code: 'NOT_SHARING' };
+  }
+  const userSnap = await db.collection('users').doc(targetUid).get();
+  if (!userSnap.exists) throw { status: 404, message: 'Camarade introuvable.' };
+  const u = userSnap.data() || {};
+  const name = String(u.fullName || [u.firstName, u.lastName].filter(Boolean).join(' ') || posSnap.data().name || 'Camarade').slice(0, 60);
+  const whatsapp = String(u.whatsapp || '').trim();
+  return { success: true, hasNumber: Boolean(whatsapp), name, whatsapp };
+}
+
 module.exports = async function handler(request, response) {
   applyCors(request, response);
 
@@ -4400,6 +4437,7 @@ module.exports = async function handler(request, response) {
       case 'deleteChapter':    return response.status(200).json(await deleteChapter(uid, body));
       case 'getFullLesson':    return response.status(200).json(await getFullLesson(uid, body));
       case 'trackStudyTime':   return response.status(200).json(await trackStudyTime(uid, body));
+      case 'getMateContact':   return response.status(200).json(await getMateContact(uid, body));
       default:
         return jsonError(response, 400, `Action inconnue : "${action}"`);
     }
