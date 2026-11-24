@@ -289,19 +289,56 @@
       max-width: 640px; margin: 30px auto 0; padding: 0 16px;
       font-size: 11px; color: var(--text-muted, #5A5A4A); text-align: center; line-height: 1.6;
     }
-  </style>
+
+    /* ═══════════════════════════════════════════════════════════════
+       ✅ v8.61a — MODE CLAIR COMPLET (demande du propriétaire : « les
+       nouvelles pages ne sont pas adaptées au mode clair »). Les couleurs
+       sombres codées en dur de la boutique sont redéfinies sur la palette
+       « papier & encre » quand html[data-theme="light"] est posé.
+       Les éléments pilotés par variables s'adaptent déjà via arvexa-ui.css.
+       ═══════════════════════════════════════════════════════════════ */
+    html[data-theme="light"] body { background: radial-gradient(ellipse at top, #FFFFFF 0%, #F5F1E8 58%); }
+    html[data-theme="light"] .page-header { background: rgba(255,255,255,.94); border-bottom: 1px solid rgba(184,134,11,.24); box-shadow: 0 4px 18px rgba(122,90,8,.08); }
+    html[data-theme="light"] .back-btn { background: rgba(184,134,11,.09); border: 1px solid rgba(184,134,11,.30); color: #5A4A10; }
+    html[data-theme="light"] .credits-chip { background: rgba(184,134,11,.10); border: 1px solid rgba(184,134,11,.32); color: #5A4A10; }
+    html[data-theme="light"] .status-banner.success { background: rgba(46,125,50,.10); border: 1px solid rgba(46,125,50,.38); color: #1B5E20; }
+    html[data-theme="light"] .status-banner.cancel { background: rgba(192,57,43,.08); border: 1px solid rgba(192,57,43,.32); color: #8C2318; }
+    html[data-theme="light"] .balance-card { background: linear-gradient(150deg, rgba(184,134,11,.12), rgba(255,255,255,.92)); border: 1px solid rgba(184,134,11,.30); box-shadow: 0 10px 30px rgba(122,90,8,.10); }
+    html[data-theme="light"] .balance-label { color: #5A4A10; }
+    html[data-theme="light"] .cost-pill { background: rgba(184,134,11,.08); border: 1px solid rgba(184,134,11,.24); color: #6E675A; }
+    html[data-theme="light"] .pack-card { background: rgba(255,255,255,.93); border: 1px solid rgba(184,134,11,.26); box-shadow: 0 4px 18px rgba(122,90,8,.08); }
+    html[data-theme="light"] .pack-card.featured { border-color: rgba(184,134,11,.55); box-shadow: 0 6px 24px rgba(184,134,11,.18); }
+    html[data-theme="light"] .pack-badge { background: linear-gradient(135deg, #9A7209, #B8860B); color: #FFF8E7; }
+    html[data-theme="light"] .pack-icon { background: rgba(184,134,11,.10); }
+    html[data-theme="light"] .pk-auto { color: #FFF8E7; background: linear-gradient(135deg, #B8860B, #9A7209); box-shadow: 0 3px 12px rgba(154,114,9,.30); }
+    html[data-theme="light"] .trust-chip { background: rgba(255,255,255,.88); border: 1px solid rgba(184,134,11,.26); color: #5A4A10; }
+    html[data-theme="light"] .teaser { background: rgba(255,255,255,.86); border: 1px solid rgba(184,134,11,.24); }
+    html[data-theme="light"] .teaser-icon { background: rgba(184,134,11,.10); color: #9A7209; }
+    html[data-theme="light"] .teaser-soon { background: rgba(184,134,11,.10); color: #9A7209; border: 1px solid rgba(184,134,11,.26); }
+    html[data-theme="light"] .library-empty { background: rgba(255,255,255,.85); border: 1px dashed rgba(184,134,11,.34); color: #6E675A; }
+    html[data-theme="light"] .purchase-item { background: rgba(255,255,255,.92); border: 1px solid rgba(184,134,11,.24); }
+    html[data-theme="light"] .purchase-icon { background: rgba(184,134,11,.10); color: #9A7209; }
+    html[data-theme="light"] .purchase-icon.sub { background: rgba(184,134,11,.16); }
+    html[data-theme="light"] .purchase-ok { color: #1B5E20; }
+    html[data-theme="light"] .amb-cta { background: linear-gradient(135deg, rgba(184,134,11,.12), rgba(255,255,255,.92)); border: 1px solid rgba(184,134,11,.32); }
+    html[data-theme="light"] .loading-block { color: #6E675A; }
+    </style>
 </head>
 <body>
 
 <!-- ⚡ v8.60a — cercle de chargement instantané (page jamais « coupée ») -->
 <style>
-  .boot-loader{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(ellipse at top,#101010 0%,#0A0A0A 60%);transition:opacity .3s ease,visibility .3s ease}
+  /* ✅ v8.61a — PETIT cercle en haut au centre (demande du propriétaire :
+     « pas le gros au milieu, celui qui est en haut au centre, simple »).
+     La page s'affiche INSTANTANÉMENT derrière : l'indicateur ne bloque
+     rien (pointer-events:none) et disparaît dès que le contenu est prêt. */
+  .boot-loader{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 10px);left:50%;transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:8px;background:rgba(10,10,10,.92);border:1px solid rgba(224,184,74,.35);border-radius:999px;padding:7px 14px;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4);transition:opacity .3s ease,visibility .3s ease}
   .boot-loader.gone{opacity:0;visibility:hidden;pointer-events:none}
-  .boot-spinner{width:46px;height:46px;border-radius:50%;border:3.5px solid rgba(224,184,74,.15);border-top-color:#E0B84A;animation:bootspin .8s linear infinite}
+  .boot-spinner{width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(224,184,74,.2);border-top-color:#E0B84A;animation:bootspin .8s linear infinite;flex-shrink:0}
   @keyframes bootspin{to{transform:rotate(360deg)}}
-  .boot-text{font-family:Inter,sans-serif;font-size:13px;color:#8A8A7A;letter-spacing:.6px}
-  html[data-theme="light"] .boot-loader{background:#F5F1E8}
-  html[data-theme="light"] .boot-text{color:#6B6B5A}
+  .boot-text{font-family:Inter,sans-serif;font-size:11.5px;font-weight:600;color:#E0B84A;letter-spacing:.4px;white-space:nowrap}
+  html[data-theme="light"] .boot-loader{background:rgba(255,255,255,.96);border-color:rgba(184,134,11,.45)}
+  html[data-theme="light"] .boot-text{color:#9A7209}
   @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.6s}}
 </style>
 <div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de la boutique">
@@ -462,7 +499,6 @@
     getAuth, onAuthStateChanged
   } from "firebase/auth";
   import {
-    initializeFirestore, persistentLocalCache, persistentSingleTabManager,
     collection, doc, getDoc, getDocs, query, where, getFirestore
   } from "firebase/firestore";
 
@@ -477,9 +513,7 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db = initializeFirestore(app, {
-    localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
-  });
+  const db = getFirestore(app);
 
   const $ = (id) => document.getElementById(id);
 

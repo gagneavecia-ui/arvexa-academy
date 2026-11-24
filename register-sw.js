@@ -1,6 +1,10 @@
 // ================================================================
 // REGISTER SERVICE WORKER — ARVEXA School
-// Version : OFFLINE v1.4 — Toast unique par version + préchargement fluide
+// ✅ v8.61a — MODE 100 % EN LIGNE : l'injection offline.js est retirée
+// (plus aucune couche hors ligne, plus aucune donnée d'un ancien
+// compte qui traîne) ; le SW neutre purge lui-même tous les caches.
+// Conservés : bannière d'installation PWA, analytics, préchargement
+// fluide des liens (réseau, jamais un cache périmé).
 // ================================================================
 
 (function () {
@@ -158,22 +162,6 @@
     } catch (e) {}
   }
 
-  // ═══ 2. INJECTION offline.js ═══
-  function injectOffline() {
-    if (document.getElementById('arvexaOfflineScript')) return;
-
-    const path = window.location.pathname.toLowerCase();
-    const SKIP = ['login','register','forgot-password','auth-choice','onboarding','conditions','confidentialite','offline','404'];
-    if (SKIP.some((p) => path.includes(p))) return;
-
-    const script = document.createElement('script');
-    script.id = 'arvexaOfflineScript';
-    script.src = 'offline.js';
-    script.defer = true;
-    script.onerror = () => console.warn('[Offline] Impossible de charger offline.js');
-    document.head.appendChild(script);
-  }
-
   // ═══ 2b. INJECTION barrière d'installation PWA (v5.6) ═══
   // Affiche « Installe ARVEXA sur ton écran d'accueil » tant que l'app est
   // consultée dans Chrome ; disparaît uniquement une fois installée.
@@ -266,7 +254,6 @@
 
   // ═══ 4. LANCEMENT ═══
   function boot() {
-    injectOffline();
     injectInstallBanner();
     injectAnalytics();
     injectPrefetch();

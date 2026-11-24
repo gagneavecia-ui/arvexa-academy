@@ -299,20 +299,31 @@
     }
     var top = subjects[0];
     var lac = d.lacune || null;
+    // ✅ v8.61a — PRÉCISION : quand la carte intelligente connaît la
+    // SECTION exacte à travailler (sectionId renvoyé par getSmartCard),
+    // la cta ouvre DIRECTEMENT cette section — plus de clics en trop,
+    // plus d'ambiguïté sur le choix matière/chapitre/section.
+    var lacHref = null;
+    if (lac && lac.subject && lac.id) {
+      lacHref = (lac.sectionId)
+        ? 'arv-progress.html#/section/' + lac.subject + '/' + lac.id + '/' + lac.sectionId
+        : 'arv-progress.html#/chapter/' + lac.subject + '/' + lac.id;
+    }
+    var lacCta = lac ? ('Reprendre ' + (lac.sectionTitle || lac.title)) : '';
     // ✅ v8.46a — phrases COURTES (carte plus petite, moins d\'éléments) :
     // l\'essentiel tient en 1-2 lignes, la cta porte l\'action précise.
     if (lac && lac.subject && lac.id) {
       if ((lac.studyMinutes || 0) < 5) {
         return {
           html: 'Ton temps va surtout à ' + esc(top.label) + ' — <em>' + esc(lac.title) + '</em> attend encore : c\'est ta lacune du moment.',
-          cta: 'Reprendre ' + lac.title,
-          href: 'arv-progress.html#/chapter/' + lac.subject + '/' + lac.id
+          cta: lacCta,
+          href: lacHref
         };
       }
       return {
         html: '<em>' + esc(lac.title) + '</em> en ' + esc(lac.subjectLabel) + ' est ta lacune — ' + esc(fmtMinLocal(lac.studyMinutes)) + ' pour ' + lac.sectionsCount + ' section' + (lac.sectionsCount > 1 ? 's' : '') + '. Un point à revoir.',
-        cta: 'Reprendre ' + lac.title,
-        href: 'arv-progress.html#/chapter/' + lac.subject + '/' + lac.id
+        cta: lacCta,
+        href: lacHref
       };
     }
     return { html: 'Temps bien réparti sur ' + subjects.length + ' matière' + (subjects.length > 1 ? 's' : '') + ' — chaque chapitre compte.', cta: 'Ouvrir le Résumé', href: 'arv-progress.html' };

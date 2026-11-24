@@ -2250,7 +2250,7 @@
 // ═══════════════════════════════════════════════════════════════
 // EXAM — Test moi (toutes matières, tous niveaux) v6.2
 // Corrections appliquées :
-//  - C1 : initializeFirestore avec persistentLocalCache (aligné sur index.html etc.)
+//  - C1 : cache Firestore MÉMOIRE (v8.61a — 100 % en ligne, plus de données d'un ancien compte)
 //  - C2 : gestion blocked/paused dans onUser
 //  - C3 : redirectAfterLogin posé avant redirection (onNoUser)
 //  - C4 : loadActiveSession gère updatedAt null (session fraîche)
@@ -2260,9 +2260,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, getIdToken, signOut } from 'firebase/auth';
 import {
-  initializeFirestore,
-  persistentLocalCache,
-  persistentSingleTabManager,
   doc, getDoc, setDoc, deleteDoc, serverTimestamp
 } from 'firebase/firestore';
 import { readCacheDoc, docSWR } from './arvexa-cache.js';
@@ -2288,11 +2285,7 @@ var app = initializeApp(firebaseConfig);
 var auth = getAuth(app);
 
 // ✅ C1 — aligné sur index.html, login.html, profil.html, arv-progress.html etc.
-var db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager()
-  })
-});
+var db = getFirestore(app);
 
 var EXAM_CONSTANTS = {
   REQUIRED_EXERCISES: 3,

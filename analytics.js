@@ -280,7 +280,16 @@
           sons: 'sons',
           diagnostic: 'diagnostic',
           onboarding: 'onboarding',
-          'auth-choice': 'auth_choice'
+          'auth-choice': 'auth_choice',
+          // ✅ v8.61a — pages manquantes de la carte complète (toutes les
+          // activités doivent être journalisées, sans exception)
+          marketplace: 'marketplace',
+          ambassadeur: 'ambassadeur',
+          localisation: 'localisation',
+          parcours: 'parcours',
+          'forgot-password': 'forgot_password',
+          register: 'register',
+          login: 'login'
         };
 
         const feature = featureMap[page];
@@ -663,9 +672,7 @@ async function startTracking(uid) {
         const getApp = appMod.getApp;
         const getAuth = authMod.getAuth;
         const onAuthStateChanged = authMod.onAuthStateChanged;
-        const initializeFirestore = fsMod.initializeFirestore;
-        const persistentLocalCache = fsMod.persistentLocalCache;
-        const persistentSingleTabManager = fsMod.persistentSingleTabManager;
+        // ✅ v8.61a — cache MÉMOIRE uniquement (100 % en ligne, zéro IndexedDB)
         const getFirestore = fsMod.getFirestore;
 
         // Réutiliser l'app existante si possible, sinon créer
@@ -676,16 +683,11 @@ async function startTracking(uid) {
         auth = getAuth(app);
 
         try {
-          db = initializeFirestore(app, {
-            localCache: persistentLocalCache({
-              tabManager: persistentSingleTabManager()
-            })
-          });
+          db = getFirestore(app);
         } catch (e) {
           // Si déjà initialisé → récupérer l'instance
           db = getFirestore(app);
         }
-
         // Écouter l'utilisateur Firebase
         onAuthStateChanged(auth, (user) => {
           try {

@@ -3119,6 +3119,30 @@ async function getSmartCard(uid) {
     delete lacune.score;
   }
 
+  // ✅ v8.61a — CARTE INTELLIGENTE PLUS PRÉCISE (demande du propriétaire :
+  // « faire en sorte que la carte intelligente soit un peu plus précise
+  // aussi au niveau des choix de matière et de section ») : pour le
+  // chapitre lacune, on identifie la SECTION exacte à (re)travailler —
+  // la première du chapitre (ordre chronologique) — et la carte ouvre
+  // directement cette section (parcours.js construit le lien #/section/).
+  if (lacune && lacune.sectionsCount > 0) {
+    try {
+      const secSnap = await db
+        .collection('users').doc(uid)
+        .collection('notebooks').doc(lacune.subject)
+        .collection('chapters').doc(lacune.id)
+        .collection('sections')
+        .orderBy('createdAt', 'asc')
+        .limit(20)
+        .get();
+      const first = secSnap.docs[0];
+      if (first) {
+        lacune.sectionId = first.id;
+        lacune.sectionTitle = first.data().title || 'Section';
+      }
+    } catch (e) { /* non bloquant : la carte reste au niveau chapitre */ }
+  }
+
   return {
     success: true,
     study: {

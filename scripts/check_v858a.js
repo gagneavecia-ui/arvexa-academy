@@ -22,13 +22,13 @@ console.log('[v8.58a] SW precache-first + purge cache HTML · arvexa-net supprim
 
 /* ── 1. SW : cause générale (stale HTML servi en navigation) ── */
 const sw = R('service-worker.js');
-T('SW : version v8.58a avec let', /let SW_VERSION = 'arvexa-offline-v8\.59a';/.test(sw) && !/const SW_VERSION/.test(sw));
-T('SW : handleHTML sert la copie precache d\'abord', /const staticCache = await caches\.open\(CACHE_STATIC\);\s*\n\s*const fresh = await staticCache\.match\(req, \{ ignoreSearch: true \}\);/.test(sw));
+T('SW : version arvexa-online v8.61a avec let', /let SW_VERSION = 'arvexa-online-v8\.61a';/.test(sw) && !/const SW_VERSION/.test(sw));
+T('SW : aucune interception fetch (100 % réseau)', !/addEventListener\('fetch'/.test(sw));
 T('SW : branche isSlowConnection→vieux cache supprimée de la navigation', !/cached && isSlowConnection\(\)/.test(sw));
-T('SW : purge du cache HTML à chaque version (__sw_epoch__)', sw.includes('purgeStaleHtmlCache') && sw.includes("'__sw_epoch__'") && /caches\.delete\(CACHE_HTML\)/.test(sw));
-T('SW : activate appelle purgeStaleHtmlCache', /\.then\(\(\) => purgeStaleHtmlCache\(\)\)/.test(sw));
+T('SW : activate supprime TOUS les caches existants', /caches\.keys\(\)/.test(sw) && /caches\.delete\(n\)/.test(sw));
+T('SW : skipWaiting + clients.claim (migration instantanée)', /skipWaiting\(\)/.test(sw) && /clients\.claim\(\)/.test(sw));
 T('SW : precache sans arvexa-net.js ni ma-promo.html', !sw.includes("'./arvexa-net.js',") && !sw.includes("'./ma-promo.html',"));
-T('SW : precache garde ambassadeur + marketplace', sw.includes("'./ambassadeur.html',") && sw.includes("'./marketplace.html',"));
+T('SW : aucun precache (plus de pages en cache, jamais)', !sw.includes('PRECACHE_LIST') && !/addAll\(/.test(sw));
 T('SW : syntaxe valide', nodeCheck('service-worker.js'));
 
 /* ── 2. arvexa-net.js supprimé partout ── */

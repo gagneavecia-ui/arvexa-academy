@@ -2973,13 +2973,17 @@ select:focus-visible,
      peint AVANT tout JS, disparaît dès que le cahier est affiché (cache
      local ou données fraîches), avec filet de sécurité à 10 s. -->
 <style>
-  .boot-loader{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(ellipse at top,#101010 0%,#0A0A0A 60%);transition:opacity .3s ease,visibility .3s ease}
+  /* ✅ v8.61a — PETIT cercle en haut au centre (demande du propriétaire :
+     « pas le gros au milieu, celui qui est en haut au centre, simple »).
+     La page s'affiche INSTANTANÉMENT derrière : l'indicateur ne bloque
+     rien (pointer-events:none) et disparaît dès que le contenu est prêt. */
+  .boot-loader{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 10px);left:50%;transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:8px;background:rgba(10,10,10,.92);border:1px solid rgba(224,184,74,.35);border-radius:999px;padding:7px 14px;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4);transition:opacity .3s ease,visibility .3s ease}
   .boot-loader.gone{opacity:0;visibility:hidden;pointer-events:none}
-  .boot-spinner{width:46px;height:46px;border-radius:50%;border:3.5px solid rgba(224,184,74,.15);border-top-color:#E0B84A;animation:bootspin .8s linear infinite}
+  .boot-spinner{width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(224,184,74,.2);border-top-color:#E0B84A;animation:bootspin .8s linear infinite;flex-shrink:0}
   @keyframes bootspin{to{transform:rotate(360deg)}}
-  .boot-text{font-family:Inter,sans-serif;font-size:13px;color:#8A8A7A;letter-spacing:.6px}
-  html[data-theme="light"] .boot-loader{background:#F5F1E8}
-  html[data-theme="light"] .boot-text{color:#6B6B5A}
+  .boot-text{font-family:Inter,sans-serif;font-size:11.5px;font-weight:600;color:#E0B84A;letter-spacing:.4px;white-space:nowrap}
+  html[data-theme="light"] .boot-loader{background:rgba(255,255,255,.96);border-color:rgba(184,134,11,.45)}
+  html[data-theme="light"] .boot-text{color:#9A7209}
   @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.6s}}
 </style>
 <div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de ton cahier">
@@ -4194,7 +4198,15 @@ async function renderChapterView(params) {
     });
 
   } catch (err) {
-    if (err.status === 404) showEmptyState(el, 'fa-book', 'Chapitre introuvable', 'Ce chapitre n\'existe plus.');
+    // ✅ v8.61a — même traitement que les sections : retentes + sortie
+    // propre, jamais d'impasse sur un chapitre momentanément introuvable.
+    if ((err.status === 404 || err.code === 'NETWORK_ERROR')
+        && !(params.__retry >= 1)) {
+      await new Promise((r) => setTimeout(r, 4000));
+      try { showLoadingState(el, 'Toujours en cours…'); } catch (e2) {}
+      return renderChapterView(Object.assign({}, params, { __retry: 1 }));
+    }
+    if (err.status === 404) showEmptyState(el, 'fa-book', 'Chapitre pas encore prêt', 'Ce chapitre arrive encore ou a été supprimé de ton cahier.');
     else showEmptyState(el, 'fa-exclamation-triangle', 'Erreur', err.message || 'Erreur réseau.');
   }
 }
@@ -5083,8 +5095,42 @@ async function renderSectionView(params) {
 
 
   } catch (err) {
-    if (err.status === 404) showEmptyState(el, 'fa-file', 'Section introuvable', 'Cette section n\'existe plus.');
-    else showEmptyState(el, 'fa-exclamation-triangle', 'Erreur', err.message || 'Erreur réseau.');
+    // ✅ v8.61a — PLUS D'IMPASSE « section indisponible » (demande du
+    // propriétaire : « des fois je rentre dans des sections et ça me dit
+    // section indisponible — essaie de régler ces éventuels problèmes »).
+    // Une section créée à l'instant (analyse IA en arrière-plan) peut
+    // arriver avec un léger retard : on retente SILENCIEUSEMENT (4 s puis
+    // 9 s) avant d'afficher quoi que ce soit ; si ça échoue encore, on
+    // propose « Réessayer » et un retour propre au cahier — jamais un
+    // écran bloqué.
+    if ((err.status === 404 || err.code === 'NETWORK_ERROR')
+        && !(params.__retry >= 2)) {
+      const attempt = (params.__retry || 0) + 1;
+      await new Promise((r) => setTimeout(r, attempt === 1 ? 4000 : 9000));
+      try { showLoadingState(el, 'Toujours en cours…'); } catch (e2) {}
+      return renderSectionView(Object.assign({}, params, { __retry: attempt }));
+    }
+    if (err.status === 404) {
+      showEmptyState(el, 'fa-file', 'Section pas encore prête',
+        'Cette section arrive encore (analyse IA en cours) ou n\'est plus disponible dans ton cahier.');
+      const retry = document.createElement('button');
+      retry.className = 'cta-card';
+      retry.innerHTML = '<i class="fas fa-rotate"></i><span>Réessayer</span>';
+      retry.style.marginTop = '12px';
+      retry.addEventListener('click', () => {
+        showLoadingState(el, 'Chargement...');
+        renderSectionView(Object.assign({}, params, { __retry: 0 }));
+      });
+      el.appendChild(retry);
+      const back = document.createElement('button');
+      back.className = 'cta-card';
+      back.innerHTML = '<i class="fas fa-book"></i><span>Retour à mon cahier</span>';
+      back.style.marginTop = '10px';
+      back.addEventListener('click', () => navigate('notebooks'));
+      el.appendChild(back);
+      return;
+    }
+    showEmptyState(el, 'fa-exclamation-triangle', 'Erreur', err.message || 'Erreur réseau.');
   }
 }
 

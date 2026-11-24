@@ -17,7 +17,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <script src="analytics.js"></script>
   <script src="register-sw.js" defer></script>
-  <script src="offline.js" defer></script>
 
   <link rel="stylesheet" href="arvexa-ui.css">
   <style>
@@ -830,12 +829,13 @@ import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.12
 import {
   getAuth, signOut, getIdToken
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-import {
-  initializeFirestore,
-  persistentLocalCache,
-  persistentSingleTabManager,
-  doc, setDoc, deleteDoc, collection, onSnapshot, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import {doc,
+    setDoc,
+    deleteDoc,
+    collection,
+    onSnapshot,
+    serverTimestamp,
+    getFirestore} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 // ---------------- Constantes ----------------
 const SHARE_KEY = 'arvexa-geo-sharing';      // préférence persistée
@@ -849,9 +849,10 @@ const BG_MIN_WRITE_MS = 4 * 60 * 1000;       // en arrière-plan : ≥ 4 min
 /* ✅ v8.54a — PRÉCISION (« quand je suis au lit chez moi, la carte me place
    au bout de la rue ») : seuils de qualité du fix GPS — en dessous de
    ACC_OK le point n'est ni affiché comme prêt ni écrit dans Firestore. */
-const ACC_GOOD = 60;                         // précision confortable (m)
-const ACC_OK = 150;                          // utilisable (m)
-const ACC_MAX = 400;                         // au-delà : on attend mieux
+const ACC_GOOD = 25;                         // ✅ v8.61a — précision exacte (m)
+const ACC_OK = 45;                           // ✅ v8.61a — utilisable (m) : on exige un VRAI fix GPS,
+                                             // plus aucune position réseau approximative (150 m) écrite
+const ACC_MAX = 100;                         // au-delà : on attend mieux
 const GEO_OPTS = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
 
 // ---------------- État ----------------
@@ -1387,6 +1388,15 @@ function startSharing() {
   kvMode.textContent = 'Site ouvert';
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
   watchId = navigator.geolocation.watchPosition(onFix, onGeoError, GEO_OPTS);
+  // ✅ v8.61a — PREMIER FIX FRAIS immédiat : watchPosition peut livrer d'abord
+  // un fix réseau approximatif ; on demande en parallèle une position GPS
+  // fraîche (enableHighAccuracy, maximumAge 0) pour caler la carte le plus
+  // précisément possible dès les premières secondes.
+  try {
+    navigator.geolocation.getCurrentPosition(onFix, () => {}, {
+      enableHighAccuracy: true, timeout: 15000, maximumAge: 0
+    });
+  } catch (e) {}
   startHeartbeat();
   watchPeople();
   render();
@@ -1799,9 +1809,7 @@ requireAuth({
 
     // App Firebase [DEFAULT] déjà créée par auth-guard.js — on la réutilise (leçon v8.12)
     const defaultApp = getApps().find((a) => a.name === '[DEFAULT]');
-    db = initializeFirestore(defaultApp, {
-      localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
-    });
+    db = getFirestore(app);
 
     $('skeletonLoading').style.display = 'none';
     $('dynamicContent').style.display = '';

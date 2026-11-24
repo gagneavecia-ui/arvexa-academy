@@ -39,15 +39,15 @@ console.log('\n═══ AUDIT v8.55a — ' + new Date().toISOString() + ' ═�
 
 /* ── T1 : SW version + let ── */
 const sw = read('service-worker.js');
-test('T1  SW_VERSION >= arvexa-offline-v8.60a avec let (ré-épinglé à chaque bump)',
-  /let SW_VERSION = 'arvexa-offline-v8\.6\da'/.test(sw) && !/const SW_VERSION/.test(sw));
+test('T1  SW_VERSION = arvexa-online-v8.61a avec let (100 % en ligne, ré-épinglé)',
+  /let SW_VERSION = 'arvexa-online-v8\.6\da'/.test(sw) && !/const SW_VERSION/.test(sw));
 
 /* ── T2 : précache des 2 nouveaux modules ── */
 // ✅ v8.58a — arvexa-net.js SUPPRIMÉ (adaptation réseau retirée) : arvexa-soon.js reste
 let arvNetFileExists = true;
 try { fs.readFileSync(path.join(__dirname, '..', 'arvexa-net.js'), 'utf8'); } catch (e) { arvNetFileExists = false; }
-test('T2  arvexa-net.js retiré du precache et du dépôt (v8.58a)',
-  !sw.includes("'./arvexa-net.js'") && sw.includes("'./arvexa-soon.js'") && !arvNetFileExists);
+test('T2  SW sans aucun precache ni interception (100 % en ligne v8.61a)',
+  !sw.includes("'./arvexa-net.js'") && !sw.includes('PRECACHE') && !/respondWith/.test(sw) && !arvNetFileExists);
 
 /* ── T3 : auth-choice 100 % universel ── */
 const ac = read('auth-choice.html');

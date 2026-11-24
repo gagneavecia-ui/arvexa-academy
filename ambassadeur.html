@@ -406,7 +406,25 @@
       width: 30px; height: 30px; border-radius: 10px; border: none; cursor: pointer; flex-shrink: 0;
       background: rgba(192,57,43,.12); color: #EF9A9A; font-size: 12px;
     }
-  </style>
+
+    /* ═══════════════════════════════════════════════════════════════
+       ✅ v8.61a — MODE CLAIR COMPLET (nouvelle page adaptée au thème
+       clair : surfaces papier, encre chaude, or foncé — même palette
+       que le reste du site via arvexa-ui.css).
+       ═══════════════════════════════════════════════════════════════ */
+    html[data-theme="light"] body { background: radial-gradient(ellipse at top, #FFFFFF 0%, #F5F1E8 58%); }
+    html[data-theme="light"] .page-header { background: rgba(255,255,255,.94); border-bottom: 1px solid rgba(184,134,11,.24); }
+    html[data-theme="light"] .back-btn { background: rgba(184,134,11,.09); border: 1px solid rgba(184,134,11,.30); color: #5A4A10; }
+    html[data-theme="light"] .hero { background: linear-gradient(160deg, rgba(184,134,11,.16), rgba(26,58,42,.06) 50%, rgba(255,255,255,.88)); border: 1px solid rgba(184,134,11,.32); }
+    html[data-theme="light"] .form-card { background: rgba(255,255,255,.94); border: 1px solid rgba(184,134,11,.26); box-shadow: 0 6px 24px rgba(122,90,8,.08); }
+    html[data-theme="light"] .criteria, html[data-theme="light"] .mission-card, html[data-theme="light"] .levels { background: rgba(255,255,255,.86); border-color: rgba(184,134,11,.30); }
+    html[data-theme="light"] .field input, html[data-theme="light"] .field textarea { background: #FFFFFF; border: 1px solid rgba(184,134,11,.32); color: #262019; }
+    html[data-theme="light"] .field input::placeholder, html[data-theme="light"] .field textarea::placeholder { color: #948D7C; }
+    html[data-theme="light"] .stat-card { background: rgba(255,255,255,.92); border: 1px solid rgba(184,134,11,.26); }
+    html[data-theme="light"] .stat-card.earnings, html[data-theme="light"] .stat-card.gold { background: linear-gradient(150deg, rgba(184,134,11,.14), rgba(255,255,255,.94)); border-color: rgba(184,134,11,.45); }
+    html[data-theme="light"] .share-btn.copy { background: rgba(184,134,11,.10); color: #5A4A10; border: 1px solid rgba(184,134,11,.32); }
+    html[data-theme="light"] .how-card, html[data-theme="light"] .step { background: rgba(255,255,255,.86); border-color: rgba(184,134,11,.26); }
+    </style>
 </head>
 <body>
 
@@ -436,7 +454,6 @@
   import { initializeApp } from "firebase/app";
   import { getAuth, onAuthStateChanged } from "firebase/auth";
   import {
-    initializeFirestore, persistentLocalCache, persistentSingleTabManager,
     collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, updateDoc,
     query, where, orderBy, limit, serverTimestamp, getFirestore, writeBatch, increment
   } from "firebase/firestore";
@@ -453,9 +470,7 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db = initializeFirestore(app, {
-    localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
-  });
+  const db = getFirestore(app);
 
   const $ = (id) => document.getElementById(id);
   const mainArea = $('mainArea');

@@ -1264,14 +1264,34 @@
     .credit-pack .cp-price { margin-top: 9px; }
     .credit-pack .cp-price .amount { font-size: 21px; font-weight: 900; font-family: 'Playfair Display', serif; }
     .credit-pack .cp-price .cur { font-size: 12px; font-weight: 700; color: var(--text-dim); margin-left: 3px; }
-    .credit-pack .cp-buy {
-      width: 100%; margin-top: 11px; padding: 11px; border-radius: 12px; border: none; cursor: pointer;
-      font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 800; color: var(--bg-dark);
-      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-      display: flex; align-items: center; justify-content: center; gap: 7px;
+    /* ✅ v8.61a — DEUX PETITS BOUTONS par carte (identiques à la marketplace)
+       : Auto = tunnel de paiement automatique · Manuel = WhatsApp prérempli. */
+    .credit-pack .pack-actions {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+      margin-top: 9px;
     }
-    .credit-pack .cp-buy:active { transform: scale(.97); }
-    .credit-pack .cp-buy[disabled] { filter: grayscale(.6); opacity: .6; cursor: wait; }
+    .credit-pack .pk-auto, .credit-pack .pk-manual {
+      padding: 8px 4px; border-radius: 9px; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      transition: filter .2s, transform .1s, background-color .2s, border-color .2s;
+      min-height: 33px; touch-action: manipulation;
+      text-decoration: none;
+    }
+    .credit-pack .pk-auto {
+      color: var(--bg-dark);
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+      box-shadow: 0 3px 12px rgba(224,184,74,.18);
+    }
+    .credit-pack .pk-auto:active { transform: scale(.96); }
+    .credit-pack .pk-auto[disabled] { filter: grayscale(.6); opacity: .6; cursor: wait; }
+    .credit-pack .pk-manual {
+      background: rgba(37,211,102,.08);
+      color: #25D366;
+      border: 1px solid rgba(37,211,102,.30);
+    }
+    .credit-pack .pk-manual:active { transform: scale(.96); background: rgba(37,211,102,.14); }
+    html[data-theme="light"] .credit-pack .pk-auto { color: #FFF8E7; background: linear-gradient(135deg, #B8860B, #9A7209); }
     .credits-note { font-size: 11px; color: var(--text-dim); margin-top: 12px; line-height: 1.6; }
     .credits-note i { color: var(--success-light); margin-right: 4px; }
 
@@ -1450,13 +1470,17 @@
 
 <!-- ⚡ v8.60a — cercle de chargement instantané (page jamais « coupée ») -->
 <style>
-  .boot-loader{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(ellipse at top,#101010 0%,#0A0A0A 60%);transition:opacity .3s ease,visibility .3s ease}
+  /* ✅ v8.61a — PETIT cercle en haut au centre (demande du propriétaire :
+     « pas le gros au milieu, celui qui est en haut au centre, simple »).
+     La page s'affiche INSTANTANÉMENT derrière : l'indicateur ne bloque
+     rien (pointer-events:none) et disparaît dès que le contenu est prêt. */
+  .boot-loader{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 10px);left:50%;transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:8px;background:rgba(10,10,10,.92);border:1px solid rgba(224,184,74,.35);border-radius:999px;padding:7px 14px;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4);transition:opacity .3s ease,visibility .3s ease}
   .boot-loader.gone{opacity:0;visibility:hidden;pointer-events:none}
-  .boot-spinner{width:46px;height:46px;border-radius:50%;border:3.5px solid rgba(224,184,74,.15);border-top-color:#E0B84A;animation:bootspin .8s linear infinite}
+  .boot-spinner{width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(224,184,74,.2);border-top-color:#E0B84A;animation:bootspin .8s linear infinite;flex-shrink:0}
   @keyframes bootspin{to{transform:rotate(360deg)}}
-  .boot-text{font-family:Inter,sans-serif;font-size:13px;color:#8A8A7A;letter-spacing:.6px}
-  html[data-theme="light"] .boot-loader{background:#F5F1E8}
-  html[data-theme="light"] .boot-text{color:#6B6B5A}
+  .boot-text{font-family:Inter,sans-serif;font-size:11.5px;font-weight:600;color:#E0B84A;letter-spacing:.4px;white-space:nowrap}
+  html[data-theme="light"] .boot-loader{background:rgba(255,255,255,.96);border-color:rgba(184,134,11,.45)}
+  html[data-theme="light"] .boot-text{color:#9A7209}
   @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.6s}}
 </style>
 <div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de la page abonnement">
@@ -1947,22 +1971,18 @@ import {
   browserLocalPersistence,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-import {
-  initializeFirestore,
-  persistentLocalCache,
-  persistentSingleTabManager,
-  doc,
-  getDoc,
-  updateDoc,
-  onSnapshot,
-  serverTimestamp,
-  collection,
-  addDoc,
-  // ⚡ v8.57a — recharges de requêtes (packs Marketplace)
+import {doc,
+    getDoc,
+    updateDoc,
+    onSnapshot,
+    serverTimestamp,
+    collection,
+    addDoc,
+    // ⚡ v8.57a — recharges de requêtes (packs Marketplace)
   getDocs,
-  query,
-  where
-} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+    query,
+    where,
+    getFirestore} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 // ================================================================
 // FIREBASE
@@ -1979,11 +1999,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager()
-  })
-});
+const db = getFirestore(app);
 
 try {
   await setPersistence(auth, browserLocalPersistence);
@@ -3096,8 +3112,11 @@ async function loadCreditsPacks() {
         <div class="cp-credits">${Number(p.credits)} requêtes IA</div>
         <div class="cp-validity">Valables ${validity} jours</div>
         <div class="cp-price"><span class="amount">${Number(p.price).toLocaleString('fr-FR')}</span><span class="cur">FCFA</span></div>
-        <button class="cp-buy"><i class="fas fa-bolt"></i> Acheter maintenant</button>`;
-      card.querySelector('.cp-buy').addEventListener('click', (e) => buyCreditsPack(p.id, e.currentTarget));
+        <div class="pack-actions">
+          <button class="pk-auto" title="Paiement automatique"><i class="fas fa-bolt"></i> Auto</button>
+          <a class="pk-manual" title="Paiement manuel" target="_blank" rel="noopener" href="${manualWhatsApp(String(p.title || 'Pack'), Number(p.price).toLocaleString('fr-FR'))}"><i class="fab fa-whatsapp"></i> Manuel</a>
+        </div>`;
+      card.querySelector('.pk-auto').addEventListener('click', (e) => buyCreditsPack(p.id, e.currentTarget));
       grid.appendChild(card);
     });
   } catch (e) {
@@ -3153,11 +3172,23 @@ async function buyCreditsPack(productId, btn) {
 
 loadCreditsPacks();
 
+// ✅ v8.61a — achat MANUEL par WhatsApp (identique à la marketplace) : le
+// numéro est la source unique arvexa-contact.js — jamais codé en dur ici.
+function manualWhatsApp(label, price) {
+  const phone = (window.ARVEXA_CONTACT && window.ARVEXA_CONTACT.phoneRaw) || '22774872082';
+  const user = currentUser;
+  const who = user && user.email ? user.email : '';
+  const txt = `Bonjour ARVEXA ! Je veux acheter : ${label} (${price} FCFA).`
+    + (who ? ` Mon compte : ${who}.` : '')
+    + ' Merci de me donner les instructions de paiement.';
+  return `https://wa.me/${phone}?text=${encodeURIComponent(txt)}`;
+}
 // ================================================================
 // AUTH ROBUSTE — Anti-flash
 // ================================================================
 let isAuthResolved = false;
 let graceTimer = null;
+let looseTimer = null; // ✅ v8.61a — observation des déconnexions passagères
 let maxTimer = null;
 
 function redirectToLogin() {
@@ -3171,6 +3202,9 @@ function redirectToLogin() {
 
 function initAuthGuard(onAuthenticated) {
   auth.onAuthStateChanged((user) => {
+    // ✅ v8.61a — DÉCONNEXIONS LÉGÈRES CORRIGÉES : un retour de session
+    // annule toute procédure de déconnexion en cours d'observation.
+    if (user && looseTimer) { clearTimeout(looseTimer); looseTimer = null; }
     if (isAuthResolved) {
       if (user && user.uid !== currentUid) {
         currentUid = user.uid;
@@ -3178,10 +3212,24 @@ function initAuthGuard(onAuthenticated) {
         saveSession(user);
         onAuthenticated(user);
       } else if (!user && currentUid) {
-        currentUid = null;
-        currentUser = null;
-        clearSession();
-        redirectToLogin();
+        // ✅ v8.61a — PLUS de déconnexion immédiate sur un null passager
+        // (rafraîchissement de token, micro-coupure réseau) : on observe
+        // 20 s ; si la session revient, tout continue normalement.
+        if (looseTimer) return;
+        looseTimer = setTimeout(() => {
+          looseTimer = null;
+          if (auth.currentUser) {
+            currentUid = auth.currentUser.uid;
+            currentUser = auth.currentUser;
+            saveSession(auth.currentUser);
+            return;
+          }
+          if (!navigator.onLine) return; // hors ligne : on attend le retour
+          currentUid = null;
+          currentUser = null;
+          clearSession();
+          redirectToLogin();
+        }, 20000);
       }
       return;
     }

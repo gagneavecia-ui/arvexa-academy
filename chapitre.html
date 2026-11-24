@@ -1005,14 +1005,7 @@
     setPersistence,
     browserLocalPersistence
   } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-  import {
-    initializeFirestore,
-    persistentLocalCache,
-    persistentSingleTabManager,
-    doc,
-    getDoc,
-    onSnapshot
-  } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+  import {doc, getDoc, onSnapshot, getFirestore} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
   // ================================================================
   // CONFIG FIREBASE
@@ -1029,11 +1022,7 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  const db = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentSingleTabManager()
-    })
-  });
+  const db = getFirestore(app);
 
   try {
     await setPersistence(auth, browserLocalPersistence);

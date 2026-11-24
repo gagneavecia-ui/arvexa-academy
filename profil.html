@@ -39,7 +39,6 @@
 </script>
   <script src="analytics.js"></script>
   <script src="register-sw.js" defer></script>
-  <script src="offline.js" defer></script>
 
   <link rel="stylesheet" href="arvexa-ui.css">
   <style>
@@ -1032,45 +1031,7 @@
       .profile-actions { padding: 0 16px 18px; gap: 8px; }
       .btn-profile { padding: 12px 18px; font-size: 13px; }
 
-      /* ✅ Bouton téléchargement hors ligne */
-      #downloadOfflineBtn {
-        position: relative;
-      }
-
-      #downloadOfflineBtn.loading {
-        pointer-events: none;
-        opacity: 0.7;
-      }
-
-      #downloadOfflineBtn.loading #downloadOfflineText {
-        display: none;
-      }
-
-      .download-spinner {
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(184, 134, 11, 0.2);
-        border-top-color: var(--accent-bright);
-        border-radius: 50%;
-        animation: downloadSpin 0.8s linear infinite;
-        display: inline-block;
-        margin-left: 8px;
-        vertical-align: middle;
-      }
-
-      @keyframes downloadSpin {
-        to { transform: rotate(360deg); }
-      }
-
-      #downloadOfflineBtn.done {
-        background: rgba(45, 125, 90, 0.15);
-        color: var(--success-light);
-        border-color: rgba(45, 125, 90, 0.3);
-      }
-
-      #downloadOfflineBtn.done i {
-        color: var(--success-light);
-      }
+      /* ✅ v8.61a — CSS du bouton hors ligne retiré (site 100 % en ligne) */
 
       .arvexa-confirm-modal { padding: 26px 22px 20px; max-width: 360px; }
       .arvexa-confirm-icon-box { width: 56px; height: 56px; font-size: 24px; }
@@ -1297,7 +1258,7 @@
           <div class="profile-stats">
             <div class="stat-item">
               <div class="stat-number" id="statChapters">0</div>
-              <div class="stat-label">📚 Chapitres lus</div>
+              <div class="stat-label">📚 Sections créées et lues</div>
             </div>
             <div class="stat-item">
               <div class="stat-number" id="statTime">0h</div>
@@ -1370,12 +1331,7 @@
     <i class="fas fa-crown"></i> Voir les offres Premium
   </a>
 
-  <!-- ✅ NOUVEAU : Bouton téléchargement hors ligne -->
-  <button class="btn-profile secondary" id="downloadOfflineBtn">
-    <i class="fas fa-cloud-arrow-down"></i>
-    <span id="downloadOfflineText">Télécharger tout hors ligne</span>
-    <span class="download-spinner" id="downloadSpinner" style="display:none"></span>
-  </button>
+  <!-- ✅ v8.61a — bouton « Télécharger tout hors ligne » SUPPRIMÉ : le site est 100 % en ligne (demande du propriétaire) -->
 
   <a href="index.html" class="btn-profile secondary">
     <i class="fas fa-home"></i> Retour à l'accueil
@@ -1449,15 +1405,11 @@
     signOut,
     getIdToken
   } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-  import {
-    initializeFirestore,
-    persistentLocalCache,
-    persistentSingleTabManager,
-    doc,
+  import {doc,
     onSnapshot,
     updateDoc,
-    serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+    serverTimestamp,
+    getFirestore} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
   // ================================================================
   // CONFIG
@@ -1474,11 +1426,7 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  const db = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentSingleTabManager()
-    })
-  });
+  const db = getFirestore(app);
 
   try {
     await setPersistence(auth, browserLocalPersistence);
@@ -1641,32 +1589,104 @@
   }
 
   function countChaptersRead() {
+    // ✅ v8.61a — OBSOLÈTE : les anciennes pages chapitre/lecture sont
+    // déconnectées du site. Conservé uniquement pour compat, plus utilisé :
+    // les stats du profil viennent du tableau de bord du Résumé.
+    return 0;
+  }
+
+  // ================================================================
+  // ✅ v8.61a — STATS PROFIL = STATS DU RÉSUMÉ (réalisations incluses)
+  // « toutes les évolutions de l'utilisateur » : mêmes chiffres que la
+  // page Résumé (sections créées, temps d'étude, série) et niveau calculé
+  // sur les MÊMES seuils que les 9 réalisations de l'accueil/Résumé.
+  // ================================================================
+  let lastUserDocData = null;
+
+  function resumeLevelFromStats(st) {
+    let unlocked = 0;
+    if (st.sections >= 1) unlocked++;
+    if (st.sections >= 5) unlocked++;
+    if (st.sections >= 15) unlocked++;
+    if (st.sections >= 30) unlocked++;
+    if (st.subjects >= 3) unlocked++;
+    if (st.minutes >= 60) unlocked++;
+    if (st.minutes >= 300) unlocked++;
+    if (st.streak >= 3) unlocked++;
+    if (st.streak >= 7) unlocked++;
+    const tiers = [
+      { max: 0, emoji: '🌱', text: 'Débutant' },
+      { max: 2, emoji: '📖', text: 'Apprenti' },
+      { max: 4, emoji: '⚡', text: 'En progression' },
+      { max: 6, emoji: '🔥', text: 'Enflammé' },
+      { max: 8, emoji: '⭐', text: 'Expert' },
+      { max: 9, emoji: '👑', text: 'Maître ARVEXA' }
+    ];
+    const t = tiers.find((x) => unlocked <= x.max) || tiers[tiers.length - 1];
+    return { emoji: t.emoji, text: t.text + ' — ' + unlocked + '/9 réalisations', unlocked };
+  }
+
+  function statsFromDash(dash) {
+    const summary = (dash && dash.summary) || {};
+    const studyTime = (dash && dash.studyTime) || {};
+    const streak = (dash && dash.streak && Number(dash.streak.current || 0)) || 0;
+    return {
+      sections: Number(summary.totalSections || 0) || 0,
+      subjects: Number(summary.subjectsCount || 0) || 0,
+      minutes: Number(studyTime.totalMinutes || 0) || 0,
+      streak
+    };
+  }
+
+  function paintResumeStats(dash) {
+    const st = statsFromDash(dash);
+    statChapters.textContent = String(st.sections);
+    statChapters.title = 'Sections créées dans ton cahier Résumé';
+    statTime.textContent = st.minutes >= 60
+      ? (Math.floor(st.minutes / 60) + ' h' + (st.minutes % 60 ? ' ' + (st.minutes % 60) + ' min' : ''))
+      : (st.minutes + ' min');
+    statTime.title = 'Temps d\'étude — identique à la page Résumé';
+    const lvl = resumeLevelFromStats(st);
+    statLevel.textContent = lvl.emoji;
+    statLevel.title = lvl.text;
+    renderBadges(st, isUserPremium(lastUserDocData));
+  }
+
+  async function updateResumeStatsLive() {
+    // 1. Germe INSTANTANÉE : cache du tableau de bord Résumé (même source
+    //    que le moteur de réalisations de l'accueil — arvexa_dash_cache_v1).
     try {
-      const readParts = JSON.parse(localStorage.getItem(READ_KEY) || '[]');
-      const chaptersSet = new Set();
-      readParts.forEach(key => {
-        const parts = key.split('_');
-        if (parts.length >= 2) {
-          chaptersSet.add(parts[0] + '_' + parts[1]);
-        }
+      const dash = JSON.parse(localStorage.getItem('arvexa_dash_cache_v1') || 'null');
+      if (dash) paintResumeStats(dash);
+    } catch (e) {}
+    // 2. Vérité SERVEUR : exactement le même getDashboard que la page Résumé
+    //    → les chiffres du profil et du Résumé ne peuvent plus diverger.
+    const user = auth.currentUser;
+    if (!user) return;
+    try {
+      const token = await getIdToken(user, false);
+      const res = await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ action: 'getDashboard' })
       });
-      return chaptersSet.size;
-    } catch (e) {
-      return 0;
-    }
+      const data = await res.json().catch(() => null);
+      if (data && data.success && data.summary) paintResumeStats(data);
+    } catch (e) { /* le germe reste affichée */ }
   }
 
   // ================================================================
   // BADGES
   // ================================================================
-  function renderBadges(chaptersRead, isPremium, totalTime) {
+  function renderBadges(st, isPremium) {
+    // ✅ v8.61a — mêmes seuils que les réalisations de l'accueil/Résumé
     const badges = [
-      { id: 'first', icon: 'fa-book', emoji: '📚', label: 'Premier', unlocked: chaptersRead >= 1 },
-      { id: 'studieux', icon: 'fa-bolt', emoji: '⚡', label: 'Studieux', unlocked: chaptersRead >= 5 },
-      { id: 'regulier', icon: 'fa-fire', emoji: '🔥', label: 'Régulier', unlocked: chaptersRead >= 15 },
-      { id: 'expert', icon: 'fa-trophy', emoji: '🏆', label: 'Expert', unlocked: chaptersRead >= 30 },
+      { id: 'first', icon: 'fa-book', emoji: '📚', label: 'Première section', unlocked: st.sections >= 1 },
+      { id: 'studieux', icon: 'fa-bolt', emoji: '⚡', label: '5 sections', unlocked: st.sections >= 5 },
+      { id: 'regulier', icon: 'fa-fire', emoji: '🔥', label: '15 sections', unlocked: st.sections >= 15 },
+      { id: 'expert', icon: 'fa-trophy', emoji: '🏆', label: '30 sections', unlocked: st.sections >= 30 },
       { id: 'premium', icon: 'fa-crown', emoji: '👑', label: 'Premium', unlocked: isPremium },
-      { id: 'actif', icon: 'fa-star', emoji: '⭐', label: 'Actif', unlocked: totalTime >= 3600 }
+      { id: 'actif', icon: 'fa-star', emoji: '⭐', label: '1 h d\'étude', unlocked: st.minutes >= 60 }
     ];
 
     badgesGrid.innerHTML = badges.map(b => `
@@ -1753,8 +1773,15 @@
     const createdAt = data.createdAt || null;
     const isPremium = isUserPremium(data);
     const isPending = data.subscriptionStatus === 'pending';
-    const chaptersRead = countChaptersRead();
-    const totalTime = data.totalStudyTime || 0;
+    // ✅ v8.61a — STATS CONNECTÉES AU RÉSUMÉ (demande du propriétaire :
+    // « au niveau du chapitre, remplacer ça par le nombre de sections créées
+    // et lues ; la durée, la même que celle affichée dans la page Résumé ;
+    // le niveau connecté au Résumé avec les réalisations »). Le profil
+    // lit le MÊME tableau de bord que la page Résumé (getDashboard via
+    // /api/progress) — plus aucun lien avec les anciennes pages
+    // chapitre/lecture (déconnectées du site).
+    lastUserDocData = data;
+    updateResumeStatsLive();
 
     // Avatar
     const profilePicture = data.profilePicture || null;
@@ -1823,15 +1850,9 @@
       userStatus.innerHTML = `<span class="status-badge free">🔓 Gratuit</span>`;
     }
 
-    // Stats
-    statChapters.textContent = chaptersRead;
-    statTime.textContent = formatTime(totalTime);
-    const level = getLevel(chaptersRead);
-    statLevel.textContent = level.emoji;
-    statLevel.title = level.text;
+    // Stats (remplies par updateResumeStatsLive — sources Résumé)
 
-    // Badges
-    renderBadges(chaptersRead, isPremium, totalTime);
+    // Badges (remplis par paintResumeStats — mêmes seuils que l'accueil)
 
     // Afficher
     skeletonLoading.style.display = 'none';
@@ -2168,74 +2189,9 @@
   });
 
     // ═══════════════════════════════════════════════════════════════
-// ✅ BOUTON TÉLÉCHARGEMENT HORS LIGNE
+// ✅ v8.61a — BOUTON TÉLÉCHARGEMENT HORS LIGNE SUPPRIMÉ : le site est
+// 100 % en ligne (demande du propriétaire), plus aucune couche hors ligne.
 // ═══════════════════════════════════════════════════════════════
-const downloadBtn = document.getElementById('downloadOfflineBtn');
-const downloadText = document.getElementById('downloadOfflineText');
-const downloadSpinner = document.getElementById('downloadSpinner');
-
-if (downloadBtn) {
-  // ✅ v6.2 — si le contenu est déjà prêt hors ligne (téléchargement
-  // précédent réussi), le bouton le montre : la 2e visite ne retélécharge
-  // RIEN (vérification instantanée côté cache).
-  try {
-    if (localStorage.getItem('arvexa_offline_ready') && downloadText) {
-      downloadText.textContent = 'Mettre à jour le contenu hors ligne';
-    }
-  } catch (e) {}
-
-  downloadBtn.addEventListener('click', async () => {
-    // Vérifier que offline.js est chargé
-    if (typeof window.arvexaOffline === 'undefined' || typeof window.arvexaOffline.downloadAll !== 'function') {
-      showToast('Le module hors ligne n\'est pas encore chargé. Recharge la page.', 'error');
-      return;
-    }
-
-    // Vérifier la connexion
-    if (!navigator.onLine) {
-      showToast('Connecte-toi à Internet pour télécharger le contenu', 'error');
-      return;
-    }
-
-    // Vérifier le Service Worker
-    if (!navigator.serviceWorker || !navigator.serviceWorker.controller) {
-      showToast('Service Worker en préparation. Attends 3 secondes et réessaie.', 'error');
-      return;
-    }
-
-    // Lancer le téléchargement
-    downloadBtn.classList.add('loading');
-    downloadBtn.disabled = true;
-    if (downloadSpinner) downloadSpinner.style.display = 'inline-block';
-
-    try {
-      await window.arvexaOffline.downloadAll();
-
-      // Le succès est géré par la modale de offline.js
-      // On remet le bouton à son état normal après un délai
-      setTimeout(() => {
-        downloadBtn.classList.remove('loading');
-        downloadBtn.classList.add('done');
-        downloadBtn.disabled = false;
-        if (downloadSpinner) downloadSpinner.style.display = 'none';
-        if (downloadText) downloadText.textContent = 'Contenu téléchargé ✅';
-
-        // Revenir à l'état initial après 5 secondes
-        setTimeout(() => {
-          downloadBtn.classList.remove('done');
-          if (downloadText) downloadText.textContent = 'Télécharger tout hors ligne';
-        }, 5000);
-      }, 1000);
-
-    } catch (error) {
-      console.error('[Download] Erreur:', error);
-      showToast('Erreur lors du téléchargement. Réessaie.', 'error');
-      downloadBtn.classList.remove('loading');
-      downloadBtn.disabled = false;
-      if (downloadSpinner) downloadSpinner.style.display = 'none';
-    }
-  });
-}
     
   // ================================================================
   // APPARENCE — bascule mode clair / sombre (persisté, sync multi-onglets)

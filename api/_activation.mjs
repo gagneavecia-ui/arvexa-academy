@@ -173,5 +173,38 @@ export async function activateCheckout(db, pendingRef, pending, paidAmount, meta
     console.warn('📢 Alerte paiement (non bloquant) :', tgError.message);
   }
 
+  // ⚡ v8.61a — SAUVEGARDE CRITIQUE (demande du propriétaire : « créer une
+  // autre base de données qui va nous permettre de stocker les données
+  // strictement importantes en cas de panne ») : chaque paiement confirmé
+  // est dupliqué dans la collection racine `criticalLog` (à l'écart des
+  // documents utilisateurs) AVEC des horodatages ISO lisibles même hors
+  // Firestore. Redondances en place :
+  //   1. users/{uid}/purchases/{ref}   (historique élève)
+  //   2. criticalLog/{kind}/{ref}      (miroir opérationnel)
+  //   3. saspayPendingCheckouts/{ref}  (état du canal de paiement)
+  //   4. Telegram (canal EXTERNE — survit à une panne Firebase totale)
+  try {
+    const u0 = userSnap.data() || {};
+    await db.collection('criticalLog').doc(pending.kind === 'credits' ? 'credits' : 'subscriptions')
+      .collection('events').doc(pendingRef.id).set({
+        reference: pendingRef.id,
+        kind: pending.kind || 'subscription',
+        uid: pending.uid,
+        userLabel: u0.fullName || u0.firstName || null,
+        email: u0.email || null,
+        plan: pending.plan || null,
+        productId: pending.productId || null,
+        productTitle: pending.productTitle || null,
+        credits: pending.credits || null,
+        amount: paidAmount,
+        isoDate: now.toISOString(),
+        processedVia: meta.processedVia || 'webhook',
+        transactionId: meta.transactionId || null,
+        backupWrittenAt: now.toISOString()
+      });
+  } catch (mirrorError) {
+    console.warn('💾 Miroir criticalLog (non bloquant) :', mirrorError.message);
+  }
+
   return { activated: true, kind: pending.kind };
 }

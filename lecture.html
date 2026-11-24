@@ -2157,17 +2157,13 @@ import {
   browserLocalPersistence,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-import {
-  initializeFirestore,
-  persistentLocalCache,
-  persistentSingleTabManager,
-  doc,
-  getDoc,
-  onSnapshot,
-  updateDoc,
-  increment,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import {doc,
+    getDoc,
+    onSnapshot,
+    updateDoc,
+    increment,
+    serverTimestamp,
+    getFirestore} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHscOXw3rLuhV6z1Cny-bdYCumqpnG7QE",
@@ -2181,11 +2177,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager()
-  })
-});
+const db = getFirestore(app);
 
 // ✅ C6 — Log explicite si persistance refusée
 try {

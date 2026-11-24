@@ -6,6 +6,12 @@
 //  - C4 : listener 'online' relance la résolution si session présente et finish différé
 //  - C5 : unsubscribe() systématique dans finish()
 //  - C6 : getApps().find('[DEFAULT]') au lieu de getApps()[0]
+//  - ✅ v8.61a C7 : STABILISATEUR DE SESSION — les déconnexions « légères »
+//    pendant l'utilisation sont corrigées : un null passager émis par Firebase
+//    (raté de rafraîchissement de token, micro-coupure réseau) ne déconnecte
+//    PLUS l'élève. On observe 20 s ; la session revient dans la quasi-totalité
+//    des cas (événement 'arvexa-session-restored' prévient la page) ; sinon on
+//    recharge la page, qui repart proprement — jamais d'éjection brutale.
 // ================================================================
 
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
@@ -77,15 +83,51 @@ export async function requireAuth({
       window.removeEventListener('online', onlineHandler);
       onlineHandler = null;
     }
-    if (unsubscribeFn) {
-      try { unsubscribeFn(); } catch (e) {}
-      unsubscribeFn = null;
-    }
+    // ✅ v8.61a C7 — l'écoute Firebase est maintenant CONSERVÉE après la
+    // résolution : c'est elle qui alimente le stabilisateur de session
+    // (déconnexions légères). Le désabonnement complet reste disponible
+    // via le unsubscribe() renvoyé à la page.
+  };
+
+  // ✅ v8.61a C7 — STABILISATEUR DE SESSION (déconnexions légères).
+  // N'entre en action qu'APRÈS la résolution initiale : si Firebase émet
+  // un null passager alors que l'élève utilisait la page, on ne fait
+  // RIEN de brutal — on sonde auth.currentUser chaque seconde pendant
+  // 20 s. Dans l'immense majorité des cas la session se réinstalle
+  // toute seule (token rafraîchi) → événement 'arvexa-session-restored'
+  // et l'élève continue sans rien voir. Si vraiment rien ne revient
+  // (et que le réseau est présent), on recharge la page : requireAuth
+  // repartira proprement (session restaurée ou renvoi à la connexion).
+  let lastKnownUid = null;
+  let looseTimer = null;
+  const stabilizeLooseSession = () => {
+    if (looseTimer) return;
+    let tries = 0;
+    looseTimer = setInterval(() => {
+      tries++;
+      if (auth.currentUser) {
+        clearInterval(looseTimer); looseTimer = null;
+        try {
+          window.dispatchEvent(new CustomEvent('arvexa-session-restored',
+            { detail: { uid: auth.currentUser.uid } }));
+        } catch (e) {}
+        return;
+      }
+      if (tries >= 20) {
+        clearInterval(looseTimer); looseTimer = null;
+        if (navigator.onLine) {
+          try { window.location.reload(); } catch (e) {}
+        }
+        return;
+      }
+    }, 1000);
+    if (looseTimer && typeof looseTimer.unref === 'function') looseTimer.unref();
   };
 
   const finish = (user) => {
     if (resolved) return;
     resolved = true;
+    if (user) lastKnownUid = user.uid;
     cleanup();  // ✅ C5 — unsubscribe systématique
 
     if (user) {
@@ -113,7 +155,24 @@ export async function requireAuth({
   };
 
   unsubscribeFn = onAuthStateChanged(auth, (user) => {
-    if (resolved) return;
+    // ✅ v8.61a C7 — après résolution : surveillance des déconnexions
+    // légères. Un null passager lance la stabilisation (20 s max) ; un
+    // retour utilisateur l'arrête et prévient la page.
+    if (resolved) {
+      if (user) {
+        if (looseTimer) { clearInterval(looseTimer); looseTimer = null; }
+        if (user.uid !== lastKnownUid) {
+          lastKnownUid = user.uid;
+          try {
+            window.dispatchEvent(new CustomEvent('arvexa-session-restored',
+              { detail: { uid: user.uid, changed: true } }));
+          } catch (e) {}
+        }
+      } else if (lastKnownUid) {
+        stabilizeLooseSession();
+      }
+      return;
+    }
 
     if (user) {
       finish(user);
@@ -209,7 +268,7 @@ export async function requireAuth({
     finish(null);
   }, 5000);
 
-  return { auth, app, unsubscribe: () => cleanup() };
+  return { auth, app, unsubscribe: () => { if (unsubscribeFn) { try { unsubscribeFn(); } catch (e) {} unsubscribeFn = null; } cleanup(); } };
 }
 
 export { auth, app };

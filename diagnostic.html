@@ -171,7 +171,7 @@
   render();
 
   // ═══ Test 5 : Réseau (async) ═══
-  const files = ['register-sw.js', 'offline.js', 'analytics.js'];
+  const files = ['register-sw.js', 'analytics.js']; // ✅ v8.61a — offline.js retiré (site 100 % en ligne)
   const networkResults = [];
 
   Promise.all(files.map(async (file) => {

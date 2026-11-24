@@ -1639,6 +1639,171 @@
     "Rechercher un pays…": "Search a country…",
     "Aucun pays trouvé": "No country found",
     "BAC en vue": "BAC ahead",
+
+    /* ── Marketplace (v8.61a — page traduite à la demande du propriétaire) ── */
+    "Marketplace": "Marketplace",
+    "Recharge tes requêtes IA ⚡": "Recharge your AI requests ⚡",
+    "ARVEXA School - Marketplace : packs de requêtes IA et contenus premium": "ARVEXA School - Marketplace: AI request packs and premium content",
+    "Ouverture de la boutique…": "Opening the shop…",
+    "⚡ Tes requêtes IA": "⚡ Your AI requests",
+    "Tes requêtes IA": "Your AI requests",
+    "Paiement réussi ! Tes crédits sont déjà crédités.": "Payment successful! Your credits are already added.",
+    "Paiement annulé — aucun montant n'a été débité.": "Payment cancelled — no amount was charged.",
+    "Chaque jour : 10 messages ARV + 2 examens gratuits. Les crédits prennent le relais.": "Every day: 10 ARV messages + 2 free exams. Credits take over.",
+    "💬 Message ARV 1": "💬 ARV message 1",
+    "📝 Examen 5": "📝 Exam 5",
+    "🗓️ Plan d'études 5": "🗓️ Study plan 5",
+    "Message ARV": "ARV message",
+    "Examen": "Exam",
+    "Plan d'études": "Study plan",
+    "Activation instantanée": "Instant activation",
+    "Paiement sécurisé": "Secure payment",
+    "Sans engagement": "No commitment",
+    "Packs de requêtes": "Request packs",
+    "packs": "packs",
+    "Chargement des packs…": "Loading packs…",
+    "Aucun pack disponible pour le moment — reviens très vite !": "No pack available right now — come back very soon!",
+    "Boutique indisponible — vérifie ta connexion puis rafraîchis.": "Shop unavailable — check your connection then refresh.",
+    "Abonnements Premium": "Premium subscriptions",
+    "IA illimitée": "Unlimited AI",
+    "Premium Mensuel": "Monthly Premium",
+    "Premium Annuel": "Annual Premium",
+    "♾️ Tout illimité · 1 mois": "♾️ All unlimited · 1 month",
+    "♾️ Tout illimité · 12 mois": "♾️ All unlimited · 12 months",
+    "Chat, examens, plans d'études": "Chat, exams, study plans",
+    "2 mois offerts vs mensuel": "2 free months vs monthly",
+    "Meilleur prix": "Best price",
+    "FCFA / mois": "FCFA / month",
+    "FCFA / an": "FCFA / year",
+    "Auto": "Auto",
+    "Manuel": "Manual",
+    "Paiement automatique": "Automatic payment",
+    "Paiement manuel": "Manual payment",
+    "Bientôt dans la boutique": "Coming soon to the shop",
+    "Packs d'annales corrigées": "Past-exam packs with solutions",
+    "Sujets d'examens des années passées + corrections détaillées, par matière.": "Past exam papers + detailed solutions, by subject.",
+    "Fiches de révision premium": "Premium revision sheets",
+    "Fiches condensées par chapitre, imprimables, hors-ligne.": "Condensed sheets per chapter, printable, offline.",
+    "Formations & masterclass": "Courses & masterclasses",
+    "Réussir son examen : méthodologie, gestion du temps, pièges classiques.": "Pass your exam: methodology, time management, classic traps.",
+    "Ma bibliothèque": "My library",
+    "tes achats": "your purchases",
+    "Tes achats apparaîtront ici — packs de crédits et abonnements.": "Your purchases will appear here — credit packs and subscriptions.",
+    "Programme Ambassadeur ARVEXA": "ARVEXA Ambassador program",
+    "Partage l'app, gagne 10 % sur chaque abonnement de tes filleuls.": "Share the app, earn 10% on every subscription from your referrals.",
+    "Paiement 100 % sécurisé (Mobile Money). Tes requêtes et abonnements s'activent automatiquement dès la confirmation du paiement — même si tu fermes l'app. Achat unique, sans engagement.": "100% secure payment (Mobile Money). Your requests and subscriptions activate automatically as soon as the payment is confirmed — even if you close the app. One-time purchase, no commitment.",
+    "Connecte-toi pour voir ton solde et acheter des crédits.": "Log in to see your balance and buy credits.",
+    "Ton pack a expiré — recharge-le pour réutiliser tes requêtes.": "Your pack has expired — recharge it to use your requests again.",
+    "Best-seller": "Best-seller",
+    "Pack": "Pack",
+    "requêtes IA": "AI requests",
+    "Valables": "Valid for",
+    "jours": "days",
+
+    /* ── Ambassadeur (v8.61a — page traduite) ── */
+    "ARVEXA — Ambassadeur": "ARVEXA — Ambassador",
+    "Ambassadeur ARVEXA": "ARVEXA Ambassador",
+    "Deviens Ambassadeur": "Become an Ambassador",
+    "Le programme des élèves qui font grandir l'école": "The program for students who grow the school",
+    "Qui peut devenir ambassadeur ?": "Who can become an ambassador?",
+    "Un élève inscrit sur ARVEXA, actif sur le site": "A student registered on ARVEXA, active on the site",
+    "Une promo réelle (ta classe, ton lycée, ton quartier) que tu veux fédérer": "A real group (your class, your high school, your neighborhood) you want to bring together",
+    "Aucun diplôme requis — juste l'envie de faire réviser tes camarades": "No diploma required — just the will to help your classmates study",
+    "En attendant, prépare ton terrain": "Meanwhile, prepare your ground",
+    "Liste 10 camarades à qui tu veux présenter ARVEXA": "List 10 classmates you want to introduce ARVEXA to",
+    "Note les groupes WhatsApp de ta classe où partager ton futur lien": "Note your class WhatsApp groups where you will share your future link",
+    "Prépare une démo : montre la Question du jour et le Chat ARV": "Prepare a demo: show the Daily question and the ARV chat",
+    "Partage ton lien dans les groupes de classe le vendredi soir": "Share your link in the class groups on Friday evening",
+    "Ma candidature": "My application",
+    "Titre *": "Title *",
+    "Établissement": "School",
+    "Ta promo (classe / série)": "Your group (class / stream)",
+    "Combien d'élèves compte ta promo ?": "How many students are in your group?",
+    "Combien d'élèves peux-tu inviter sur ARVEXA ?": "How many students can you invite to ARVEXA?",
+    "Numéro de téléphone (WhatsApp de préférence)": "Phone number (WhatsApp preferred)",
+    "Pourquoi veux-tu devenir ambassadeur ?": "Why do you want to become an ambassador?",
+    "Envoyer ma candidature": "Send my application",
+    "Choisis ton pays": "Choose your country",
+    "Pays": "Country",
+    "Missions qui rapportent": "Rewarding missions",
+    "Aide un filleul à payer son premier abonnement : ta commission part de là": "Help a referral pay their first subscription: your commission starts there",
+    "Rangs": "Ranks",
+    "🥉 Bronze": "🥉 Bronze",
+    "🥈 Argent": "🥈 Silver",
+    "🥇 Or": "🥇 Gold",
+    "👑 Platine": "👑 Platinum",
+    "Bronze": "Bronze",
+    "Argent": "Silver",
+    "Or": "Gold",
+    "Platine": "Platinum",
+    "Tes rangs": "Your ranks",
+    "Tes gains": "Your earnings",
+    "10 % de commission": "10% commission",
+    "de commission": "commission",
+    "sur chaque abonnement": "on every subscription",
+    "abonnements convertis": "subscriptions converted",
+    "élèves inscrits": "students registered",
+    "membres": "members",
+    "publications": "posts",
+    "visites de ton lien": "link visits",
+    "personnel 30 j": "last 30 days",
+    "suivis en haut de cette page — retraits mobile money bientôt disponibles": "tracked at the top of this page — mobile money withdrawals coming soon",
+    "Salut, Ambassadeur 👑": "Hi, Ambassador 👑",
+    "Ton code personnel et ton lien d'invitation :": "Your personal code and invitation link:",
+    "Copier": "Copy",
+    "Partager sur WhatsApp": "Share on WhatsApp",
+    "Voir la Marketplace": "See the Marketplace",
+    "Packs de requêtes IA et contenus premium.": "AI request packs and premium content.",
+    "Gérer ma promo": "Manage my group",
+    "Créer ma promo": "Create my group",
+    "Rejoindre une promo": "Join a group",
+    "Rejoindre avec le code": "Join with the code",
+    "Code de la promo": "Group code",
+    "Demande le code au responsable de ta classe (format PROMO-XXXXXX).": "Ask your class leader for the code (format PROMO-XXXXXX).",
+    "Rejoindre": "Join",
+    "Nom de la promo *": "Group name *",
+    "Créer l'espace": "Create the space",
+    "Espace de ta promo": "Your group space",
+    "Espace de promo": "Group space",
+    "Espace responsable": "Leader space",
+    "Espace indisponible": "Space unavailable",
+    "Espace introuvable": "Space not found",
+    "Promo introuvable": "Group not found",
+    "Aucune promo avec le code ": "No group with the code ",
+    "Elle a peut-être été supprimée. Reviens à l'accueil puis rouvre cette page.": "It may have been deleted. Go back to the home page then reopen this page.",
+    "Chargement de ton espace…": "Loading your space…",
+    "Chargement du programme…": "Loading the program…",
+    "Chargement du fil…": "Loading the feed…",
+    "Fil de la promo": "Group feed",
+    "Fil indisponible": "Feed unavailable",
+    "Liste indisponible": "List unavailable",
+    "Publier": "Post",
+    "Publier dans la promo": "Post in the group",
+    "Message": "Message",
+    "PDF / Exercice": "PDF / Exercise",
+    "Choisir un PDF ou une photo": "Choose a PDF or a photo",
+    "…ou colle un lien (Google Drive, WhatsApp…) ": "…or paste a link (Google Drive, WhatsApp…) ",
+    "Partager l'espace sur WhatsApp": "Share the space on WhatsApp",
+    "Membres (": "Members (",
+    "Invite tes camarades": "Invite your classmates",
+    "? Rejoins l'espace de ta classe.": "? Join your class space.",
+    "Connecte-toi pour rejoindre l'espace de ta promo et lire son fil.": "Log in to join your group space and read its feed.",
+    "Se connecter / Créer un compte": "Log in / Create an account",
+    "En rejoignant, tu recevras toutes les publications de ta promo directement ici.": "By joining, you will receive all your group's posts right here.",
+    "En rejoignant l'espace, tu recevras toutes les publications de ta promo directement ici.": "By joining the space, you will receive all your group's posts right here.",
+    "Dissoudre cette promo": "Dissolve this group",
+    "Quitter cette promo": "Leave this group",
+    "Tu deviens le responsable : tu publies les messages, les PDF et les exercices.": "You become the leader: you post the messages, PDFs and exercises.",
+    "Une annonce, un exercice scanné, une fiche PDF — tout arrive dans le fil de ta promo.": "An announcement, a scanned exercise, a PDF sheet — everything lands in your group feed.",
+    "Montre la ": "Show the ",
+    "Question du jour": "Daily question",
+    "à 3 camarades aujourd'hui — c'est la fonction la plus accrocheuse": "to 3 classmates today — it's the most catchy feature",
+    "Tu as un code ": "You have a code ",
+    "— vérifie le lien auprès du responsable.": "— check the link with the leader.",
+    "Vérifie ta connexion puis rafraîchis la page.": "Check your connection then refresh the page.",
+    "Chargement…": "Loading…",
+    "Argent": "Silver",
+    "Aucun diplôme requis — juste l'envie de faire réviser tes camarades": "No diploma required — just the will to help your classmates study"
   };
 
   /* ── Normalisation + expansion des variantes ── */
@@ -1729,6 +1894,43 @@ out = out.replace(/\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/gi,
       .replace(/\bAnalyste\b/g, 'Analyst').replace(/\bG\u00e9om\u00e8tre\b/g, 'Geometer')
       .replace(/\bMath\u00e9maticien\b/g, 'Mathematician').replace(/\bL\u00e9gende\b/g, 'Legend');
     out = out.replace(/\u00c9ch\u00e9ance\s*:\s*/g, 'Deadline: ');
+    /* ── ✅ v8.61a — Marketplace / Ambassadeur : contenus dynamiques ── */
+    out = out.replace(/\b(\d+)\s*requ\u00eates?\s+IA\b/g, function (m, n) {
+      return n + ' AI request' + (Number(n) === 1 ? '' : 's');
+    });
+    out = out.replace(/\b\+\s*(\d+)\s*requ\u00eates?\b/g, function (m, n) {
+      return '+ ' + n + ' request' + (Number(n) === 1 ? '' : 's');
+    });
+    out = out.replace(/\b(\d+)\s*requ\u00eate(s)?\s*restante(s)?\b/g, function (m, n) {
+      return n + ' request' + (Number(n) === 1 ? '' : 's') + ' left';
+    });
+    out = out.replace(/\bValables?\s+(\d+)\s+jours?\b/g, function (m, n) {
+      return 'Valid for ' + n + ' day' + (Number(n) === 1 ? '' : 's');
+    });
+    out = out.replace(/^Valables jusqu'au\s+(.+)$/i, 'Valid until $1');
+    out = out.replace(/\b(\d+)\s+packs?\b/g, function (m, n) { return n + ' pack' + (Number(n) === 1 ? '' : 's'); });
+    out = out.replace(/^Reprendre\s+(.+)$/i, 'Resume $1');
+    out = out.replace(/\b(\d+)\s+section(s)?\b$/g, function (m, n, s) { return n + ' section' + (Number(n) === 1 ? '' : 's'); });
+    out = out.replace(/\b(\d+)\s+section(s)?\s+\u00b7\s+(\d+)\s+\u00e9tudi\u00e9e(s)?\b/g, function (m, n, s1, e) {
+      return n + ' sections · ' + e + ' studied';
+    });
+    out = out.replace(/\b(\d+)\s+\u00e9tudi\u00e9e(s)?\b/g, function (m, n) {
+      return n + ' studied';
+    });
+    out = out.replace(/\b(\d+)\s+Q\/R\b/g, function (m, n) { return n + ' Q&A'; });
+    out = out.replace(/\brequ\u00eates?\s+restantes?\s+\u00b7\s+valables jusqu'au\s+(.+)$/i, 'requests left · valid until $1');
+    out = out.replace(/\brequ\u00eate restante \u00b7 recharge ci-dessous ou passe Premium\b/i, 'request left · recharge below or go Premium');
+    out = out.replace(/\bRequ\u00eates IA disponibles\b/g, 'AI requests available');
+    out = out.replace(/\bRequ\u00eates IA illimit\u00e9es avec ton abonnement Premium\b/i, 'Unlimited AI requests with your Premium subscription');
+    out = out.replace(/\bPack expir\u00e9 \u2014 recharge-le pour retrouver tes requ\u00eates\.\b/i, 'Pack expired — recharge it to get your requests back.');
+    out = out.replace(/\bUn point \u00e0 revoir\.\b/g, 'A point to review.');
+    out = out.replace(/\bton temps va surtout \u00e0\b/i, 'your time mainly goes to');
+    out = out.replace(/\battend encore : c'est ta lacune du moment\.\b/i, 'is still waiting: it is your current weak spot.');
+    out = out.replace(/\best ta lacune \u2014\b/i, 'is your weak spot —');
+    out = out.replace(/\bTemps bien r\u00e9parti sur\b/i, 'Time well spread across');
+    out = out.replace(/\bchaque chapitre compte\.\b/i, 'every chapter counts.');
+    out = out.replace(/\bAjoute ton premier cours dans\b/i, 'Add your first lesson in');
+    out = out.replace(/\b\u2014 l'IA le classe pour toi\.\b/i, '— the AI sorts it for you.');
     return out;
   }
 
