@@ -140,54 +140,89 @@
     .section-title i { color: var(--accent-bright); font-size: 15px; }
     .section-title span { color: var(--text-dim); font-size: 12.5px; font-weight: 600; }
 
-    /* ===== PACKS ===== */
-    .packs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
-    @media (max-width: 420px) { .packs-grid { grid-template-columns: 1fr; } }
+    /* ===== PACKS — v8.60a cartes compactes premium (demande propriétaire :
+       « des cartes assez jolies simple et magnifique qui font premium » avec
+       DEUX petits boutons côte à côte comme la page abonnement) ===== */
+    .packs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+    @media (max-width: 420px) { .packs-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }
     .pack-card {
       position: relative; overflow: hidden;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 20px; padding: 18px 16px;
-      display: flex; flex-direction: column; gap: 8px;
-      transition: transform .18s, border-color .18s;
+      border-radius: 16px; padding: 14px 13px 13px;
+      display: flex; flex-direction: column; gap: 5px;
+      transition: transform .18s, border-color .18s, box-shadow .18s;
     }
     .pack-card:active { transform: scale(.985); }
-    .pack-card.featured { border-color: rgba(224,184,74,.5); }
+    .pack-card.featured {
+      border-color: rgba(224,184,74,.5);
+      box-shadow: 0 8px 26px rgba(224,184,74,.10);
+    }
     .pack-badge {
-      position: absolute; top: 12px; right: 12px;
-      font-size: 10px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase;
+      position: absolute; top: 9px; right: 9px;
+      font-size: 8.5px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase;
       color: var(--bg-dark); background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-      padding: 4px 9px; border-radius: 999px;
+      padding: 3px 7px; border-radius: 999px;
     }
     .pack-icon {
-      width: 44px; height: 44px; border-radius: 14px;
+      width: 36px; height: 36px; border-radius: 11px;
       display: flex; align-items: center; justify-content: center;
       background: linear-gradient(135deg, rgba(184,134,11,.25), rgba(184,134,11,.08));
       border: 1px solid rgba(224,184,74,.3);
-      color: var(--accent-bright); font-size: 19px;
+      color: var(--accent-bright); font-size: 15px;
     }
-    .pack-name { font-size: 15.5px; font-weight: 800; margin-top: 2px; }
-    .pack-credits { font-size: 13px; color: var(--accent-bright); font-weight: 700; }
-    .pack-validity { font-size: 11.5px; color: var(--text-dim); }
+    .pack-name { font-size: 13.5px; font-weight: 800; margin-top: 1px; letter-spacing: .2px; }
+    .pack-credits { font-size: 11.5px; color: var(--accent-bright); font-weight: 700; }
+    .pack-validity { font-size: 10.5px; color: var(--text-dim); }
     .pack-price {
-      margin-top: auto; padding-top: 10px;
-      display: flex; align-items: baseline; gap: 4px;
+      margin-top: auto; padding-top: 7px;
+      display: flex; align-items: baseline; gap: 3px;
     }
     .pack-price .amount {
       font-family: 'Playfair Display', serif;
-      font-size: 26px; font-weight: 800; color: var(--text-light);
+      font-size: 20px; font-weight: 800; color: var(--text-light);
     }
-    .pack-price .cur { font-size: 12px; font-weight: 700; color: var(--text-dim); }
-    .pack-buy {
-      margin-top: 10px; width: 100%;
-      padding: 12px; border-radius: 13px; border: none; cursor: pointer;
-      font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 800;
+    .pack-price .cur { font-size: 10.5px; font-weight: 700; color: var(--text-dim); }
+    /* Deux petits boutons côte à côte (même modèle que la page abonnement) */
+    .pack-actions {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+      margin-top: 9px;
+    }
+    .pk-auto, .pk-manual {
+      padding: 8px 4px; border-radius: 9px; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      transition: filter .2s, transform .1s, background-color .2s, border-color .2s;
+      min-height: 33px; touch-action: manipulation;
+      text-decoration: none;
+    }
+    .pk-auto {
       color: var(--bg-dark);
       background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-      transition: filter .2s, transform .1s;
+      box-shadow: 0 3px 12px rgba(224,184,74,.18);
     }
-    .pack-buy:active { transform: scale(.97); }
-    .pack-buy[disabled] { filter: grayscale(.6); opacity: .6; cursor: wait; }
+    .pk-auto:active { transform: scale(.96); }
+    .pk-auto[disabled] { filter: grayscale(.6); opacity: .6; cursor: wait; }
+    .pk-manual {
+      background: rgba(37,211,102,.08);
+      color: #25D366;
+      border: 1px solid rgba(37,211,102,.30);
+    }
+    .pk-manual:active { transform: scale(.96); background: rgba(37,211,102,.14); }
+
+    /* ===== BANDEAU DE CONFIANCE (page accueillante qui pousse à acheter) ===== */
+    .trust-row {
+      display: flex; gap: 7px; margin: 0 0 4px; flex-wrap: wrap;
+    }
+    .trust-chip {
+      flex: 1; min-width: 96px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 10px; border-radius: 12px;
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+      font-size: 10.5px; font-weight: 700; color: var(--text-dim);
+      text-align: center;
+    }
+    .trust-chip i { color: var(--accent-bright); font-size: 11px; }
 
     /* ===== TEASERS ===== */
     .teaser {
@@ -258,6 +293,36 @@
 </head>
 <body>
 
+<!-- ⚡ v8.60a — cercle de chargement instantané (page jamais « coupée ») -->
+<style>
+  .boot-loader{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(ellipse at top,#101010 0%,#0A0A0A 60%);transition:opacity .3s ease,visibility .3s ease}
+  .boot-loader.gone{opacity:0;visibility:hidden;pointer-events:none}
+  .boot-spinner{width:46px;height:46px;border-radius:50%;border:3.5px solid rgba(224,184,74,.15);border-top-color:#E0B84A;animation:bootspin .8s linear infinite}
+  @keyframes bootspin{to{transform:rotate(360deg)}}
+  .boot-text{font-family:Inter,sans-serif;font-size:13px;color:#8A8A7A;letter-spacing:.6px}
+  html[data-theme="light"] .boot-loader{background:#F5F1E8}
+  html[data-theme="light"] .boot-text{color:#6B6B5A}
+  @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.6s}}
+</style>
+<div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de la boutique">
+  <div class="boot-spinner"></div>
+  <div class="boot-text">Ouverture de la boutique…</div>
+</div>
+<script>
+(function(){
+  function hideBoot(){
+    var el = document.getElementById('bootLoader');
+    if (!el || el.dataset.gone === '1') return;
+    el.dataset.gone = '1';
+    el.classList.add('gone');
+    setTimeout(function(){ try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 380);
+  }
+  window.__arvexaBootHide = hideBoot;
+  setTimeout(hideBoot, 10000);
+  window.addEventListener('pageshow', function(ev){ if (ev && ev.persisted) hideBoot(); });
+})();
+</script>
+
   <header class="page-header">
     <a href="index.html" class="back-btn" aria-label="Retour"><i class="fas fa-arrow-left"></i></a>
     <div class="page-title">
@@ -290,13 +355,20 @@
       </div>
     </div>
 
+    <!-- ═══ CONFIANCE (page accueillante qui pousse à acheter) ═══ -->
+    <div class="trust-row">
+      <span class="trust-chip"><i class="fas fa-zap"></i> Activation instantanée</span>
+      <span class="trust-chip"><i class="fas fa-lock"></i> Paiement sécurisé</span>
+      <span class="trust-chip"><i class="fas fa-rotate-left"></i> Sans engagement</span>
+    </div>
+
     <!-- ═══ PACKS ═══ -->
     <div class="section-title"><i class="fas fa-bolt"></i> Packs de requêtes <span id="packsCount"></span></div>
     <div class="packs-grid" id="packsGrid">
       <div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement des packs…</div>
     </div>
 
-    <!-- ═══ ABONNEMENTS PREMIUM (⚡ v8.59a — cartes connectées au paiement automatique SasPay) ═══ -->
+    <!-- ═══ ABONNEMENTS PREMIUM (⚡ v8.60a — paiement automatique OU manuel sur chaque carte) ═══ -->
     <div class="section-title"><i class="fas fa-crown"></i> Abonnements Premium <span>IA illimitée</span></div>
     <div class="packs-grid">
       <div class="pack-card" id="subMonthlyCard">
@@ -305,7 +377,10 @@
         <div class="pack-credits">♾️ Tout illimité · 1 mois</div>
         <div class="pack-validity"><i class="fas fa-infinity"></i> Chat, examens, plans d'études</div>
         <div class="pack-price"><span class="amount">3&nbsp;000</span><span class="cur">FCFA / mois</span></div>
-        <button class="pack-buy" id="buyMonthly"><i class="fas fa-crown"></i> Devenir Premium</button>
+        <div class="pack-actions">
+          <button class="pk-auto" id="buyMonthly"><i class="fas fa-bolt"></i> Auto</button>
+          <a class="pk-manual" id="manualMonthly" href="#" rel="noopener"><i class="fab fa-whatsapp"></i> Manuel</a>
+        </div>
       </div>
       <div class="pack-card featured" id="subAnnualCard">
         <span class="pack-badge">Meilleur prix</span>
@@ -314,7 +389,10 @@
         <div class="pack-credits">♾️ Tout illimité · 12 mois</div>
         <div class="pack-validity"><i class="fas fa-gift"></i> 2 mois offerts vs mensuel</div>
         <div class="pack-price"><span class="amount">18&nbsp;000</span><span class="cur">FCFA / an</span></div>
-        <button class="pack-buy" id="buyAnnual"><i class="fas fa-gem"></i> Devenir Premium</button>
+        <div class="pack-actions">
+          <button class="pk-auto" id="buyAnnual"><i class="fas fa-bolt"></i> Auto</button>
+          <a class="pk-manual" id="manualAnnual" href="#" rel="noopener"><i class="fab fa-whatsapp"></i> Manuel</a>
+        </div>
       </div>
     </div>
 
@@ -364,8 +442,9 @@
   </div>
 
   <p class="footer-note">
-    Paiement sécurisé via SasPay (Mobile Money — Niger). Les crédits sont ajoutés automatiquement
-    à ton compte dès la confirmation du paiement, même si tu fermes l'app. Achat unique, sans engagement.
+    Paiement 100&nbsp;% sécurisé (Mobile Money). Tes requêtes et abonnements s'activent
+    automatiquement dès la confirmation du paiement — même si tu fermes l'app.
+    Achat unique, sans engagement.
   </p>
 
 <script type="importmap">
@@ -457,17 +536,22 @@
       const featured = Number(p.credits) >= 100 ? ' featured' : '';
       const badge = featured ? '<span class="pack-badge">Best-seller</span>' : '';
       const validity = Number(p.validityDays) || 30;
+      const title = String(p.title || 'Pack').replace(/</g, '&lt;');
+      const price = Number(p.price).toLocaleString('fr-FR');
       const card = document.createElement('div');
       card.className = 'pack-card' + featured;
       card.innerHTML = `
         ${badge}
         <div class="pack-icon"><i class="fas fa-bolt"></i></div>
-        <div class="pack-name">${String(p.title || 'Pack').replace(/</g, '&lt;')}</div>
+        <div class="pack-name">${title}</div>
         <div class="pack-credits">⚡ ${Number(p.credits)} requêtes IA</div>
         <div class="pack-validity"><i class="fas fa-clock"></i> Valables ${validity} jours</div>
-        <div class="pack-price"><span class="amount">${Number(p.price).toLocaleString('fr-FR')}</span><span class="cur">FCFA</span></div>
-        <button class="pack-buy" data-product="${p.id}"><i class="fas fa-cart-plus"></i> Acheter maintenant</button>`;
-      card.querySelector('.pack-buy').addEventListener('click', () => buyPack(p.id, card.querySelector('.pack-buy')));
+        <div class="pack-price"><span class="amount">${price}</span><span class="cur">FCFA</span></div>
+        <div class="pack-actions">
+          <button class="pk-auto" title="Paiement automatique"><i class="fas fa-bolt"></i> Auto</button>
+          <a class="pk-manual" title="Paiement manuel" target="_blank" rel="noopener" href="${manualWhatsApp(title, price)}"><i class="fab fa-whatsapp"></i> Manuel</a>
+        </div>`;
+      card.querySelector('.pk-auto').addEventListener('click', (e) => buyPack(p.id, e.currentTarget));
       grid.appendChild(card);
     });
   }
@@ -495,10 +579,26 @@
       empty.className = 'library-empty';
       empty.innerHTML = '<i class="fas fa-wifi"></i>Boutique indisponible — vérifie ta connexion puis rafraîchis.';
       grid.appendChild(empty);
+    } finally {
+      // ⚡ v8.60a — la boutique est affichée (packs ou message) → loader retiré.
+      try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {}
     }
   }
 
   // ─── Achat ───
+  // ⚡ v8.60a — achat MANUEL : ouvre WhatsApp avec un message prérempli
+  // (même logique que le « Paiement manuel » de la page abonnement). Le
+  // numéro est la source unique arvexa-contact.js — jamais codé en dur ici.
+  function manualWhatsApp(label, price) {
+    const phone = (window.ARVEXA_CONTACT && window.ARVEXA_CONTACT.phoneRaw) || '22774872082';
+    const user = auth.currentUser;
+    const who = user && user.email ? user.email : '';
+    const txt = `Bonjour ARVEXA ! Je veux acheter : ${label} (${price} FCFA).`
+      + (who ? ` Mon compte : ${who}.` : '')
+      + ' Merci de me donner les instructions de paiement.';
+    return `https://wa.me/${phone}?text=${encodeURIComponent(txt)}`;
+  }
+
   async function startCheckout(body, btn) {
     const user = auth.currentUser;
     if (!user) {
@@ -538,11 +638,19 @@
 
   function buyPack(productId, btn) { startCheckout({ kind: 'credits', productId }, btn); }
 
-  // ⚡ v8.59a — abonnements Premium depuis la Marketplace (prix relu côté serveur)
+  // ⚡ v8.60a — abonnements Premium depuis la Marketplace (prix relu côté serveur)
   const buyMonthlyBtn = document.getElementById('buyMonthly');
   const buyAnnualBtn = document.getElementById('buyAnnual');
   if (buyMonthlyBtn) buyMonthlyBtn.addEventListener('click', () => startCheckout({ kind: 'subscription', plan: 'monthly' }, buyMonthlyBtn));
   if (buyAnnualBtn) buyAnnualBtn.addEventListener('click', () => startCheckout({ kind: 'subscription', plan: 'annual' }, buyAnnualBtn));
+  // Liens manuels WhatsApp des abonnements (mis à jour avec l'email dès la connexion)
+  const manualMonthly = document.getElementById('manualMonthly');
+  const manualAnnual = document.getElementById('manualAnnual');
+  function refreshManualLinks() {
+    if (manualMonthly) manualMonthly.href = manualWhatsApp('Abonnement Premium Mensuel', '3 000');
+    if (manualAnnual) manualAnnual.href = manualWhatsApp('Abonnement Premium Annuel', '18 000');
+  }
+  refreshManualLinks();
 
   // ─── Bibliothèque ───
   function renderLibrary(items) {
@@ -588,6 +696,10 @@
 
   // ─── Auth ───
   onAuthStateChanged(auth, async (user) => {
+    // ⚡ v8.60a — dès que l'état d'auth est connu, on retire le loader :
+    // la page statique (packs, premium, teasers) est déjà affichée.
+    try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {}
+    refreshManualLinks();
     if (!user) {
       $('creditsChipValue').textContent = '—';
       $('balanceValue').textContent = '—';

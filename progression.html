@@ -6,7 +6,7 @@
   <title>ARVEXA — Ma progression</title>
   <meta name="theme-color" content="#0A0A0A">
   <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-  <script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-classes.js" defer></script><script src="arvexa-i18n.js" defer></script><script src="bac-date.js" defer></script>
+  <script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-classes.js" defer></script><script src="arvexa-i18n.js" defer></script><script src="bac-date.js" defer></script><script src="arvexa-menu.js" defer></script><!-- ⚡ v8.60a — menu instantané, n'attend jamais Firebase -->
   <meta name="description" content="ARVEXA School - Ma progression : courbes, statistiques et tendances calculées sur tes données réelles">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.png">
@@ -456,17 +456,8 @@
      UI — menu, déconnexion, toast (classique, identique aux pages)
      ================================================================ */
   (function () {
-    var toggle = document.getElementById('menuToggle');
-    var sidebar = document.getElementById('sidebar');
-    var overlay = document.getElementById('sidebarOverlay');
-    function close() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
-    if (toggle && sidebar && overlay) {
-      toggle.addEventListener('click', function () {
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('active', sidebar.classList.contains('open'));
-      });
-      overlay.addEventListener('click', close);
-    }
+    // ⚡ v8.60a — le menu latéral est désormais piloté par arvexa-menu.js
+    // (script classique : s'ouvre dès le clic, sans attendre Firebase).
     var logout = document.getElementById('logoutBtn');
     if (logout) {
       logout.addEventListener('click', function (e) {

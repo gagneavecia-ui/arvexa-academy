@@ -1,3 +1,11 @@
+// api/telegram.js
+// ═══════════════════════════════════════════════════════════════════
+// ⚡ v8.60a — DEUX TYPES DE NOTIFICATIONS VERS LE PROPRIÉTAIRE :
+//   1. kind « avis » (défaut, rétrocompatible)      → avis / suggestions
+//   2. kind « ambassadeur »                          → dépôt de candidature
+// Le token et le chat vivent dans les variables d'environnement Vercel.
+// ═══════════════════════════════════════════════════════════════════
+
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_NAME_LENGTH = 120;
 const ALLOWED_CATEGORIES = new Set(['general', 'bug', 'suggestion', 'contenu', 'autre']);
@@ -23,33 +31,9 @@ function escapeMarkdown(text) {
   return String(text || '').replace(/[_*\[\]()~`>#+\-=|{}.!]/g, '\\$&');
 }
 
-function sendTelegramMessage(text) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) {
-    throw new Error('Telegram non configuré sur le serveur.');
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
-  return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: 'MarkdownV2',
-      disable_web_page_preview: true
-    }),
-    signal: controller.signal
-  }).then(async (response) => {
-    const data = await response.json().catch(() => null);
-    if (!response.ok || !data?.ok) {
-      throw new Error(data?.description || `Telegram HTTP ${response.status}`);
-    }
-    return data;
-  }).finally(() => clearTimeout(timeout));
+async function sendTelegramMessage(text) {
+  const { sendTelegramMessage: send } = await import('./_telegram.mjs');
+  return send(text);
 }
 
 module.exports = async function handler(request, response) {
@@ -69,6 +53,51 @@ module.exports = async function handler(request, response) {
   }
 
   const body = request.body && typeof request.body === 'object' ? request.body : {};
+  const kind = String(body.kind || 'avis').trim();
+
+  // ═══ CANDIDATURE AMBASSADEUR ═══
+  if (kind === 'ambassadeur') {
+    const userName = String(body.userName || '').trim().slice(0, MAX_NAME_LENGTH);
+    const userEmail = String(body.userEmail || '').trim();
+    const phone = String(body.phone || '').trim().slice(0, 20);
+    const country = String(body.country || '').trim().slice(0, 40);
+    const establishment = String(body.establishment || '').trim().slice(0, 80);
+    const promoName = String(body.promoName || '').trim().slice(0, 80);
+    const promoSize = parseInt(body.promoSize, 10);
+    const inviteCount = parseInt(body.inviteCount, 10);
+    const motivation = String(body.motivation || '').trim().slice(0, 500);
+
+    if (!userEmail || userEmail.length > 254 || !/^\S+@\S+\.\S+$/.test(userEmail)) {
+      return response.status(400).json({ error: 'Adresse e-mail invalide.' });
+    }
+    if (!phone) {
+      return response.status(400).json({ error: 'Téléphone invalide.' });
+    }
+
+    const text = [
+      '👑 *NOUVELLE CANDIDATURE AMBASSADEUR*',
+      '',
+      `👤 *Candidat :* ${escapeMarkdown(userName || 'Élève ARVEXA')}`,
+      `📧 *Email :* ${escapeMarkdown(userEmail)}`,
+      `📱 *Téléphone :* ${escapeMarkdown(phone)}`,
+      country ? `🌍 *Pays :* ${escapeMarkdown(country)}` : '',
+      establishment ? `🏫 *Établissement :* ${escapeMarkdown(establishment)}` : '',
+      promoName ? `🎓 *Promo :* ${escapeMarkdown(promoName)}` : '',
+      Number.isInteger(promoSize) ? `👥 *Élèves dans sa promo :* ${promoSize}` : '',
+      Number.isInteger(inviteCount) ? `📣 *Peut inviter :* ${inviteCount} élèves` : '',
+      motivation ? `\n💬 *Motivation :*\n${escapeMarkdown(motivation)}` : ''
+    ].filter(Boolean).join('\n');
+
+    try {
+      await sendTelegramMessage(text);
+      return response.status(200).json({ ok: true });
+    } catch (error) {
+      console.error('Telegram notification failed:', error.message);
+      return response.status(502).json({ error: 'Candidature enregistrée, mais notification Telegram indisponible.' });
+    }
+  }
+
+  // ═══ AVIS (flux historique) ═══
   const userName = String(body.userName || '').trim();
   const userEmail = String(body.userEmail || '').trim();
   const message = String(body.message || '').trim();

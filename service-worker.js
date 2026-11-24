@@ -58,7 +58,48 @@
 // reprise « Continue là où tu t'es arrêté. », getGreeting()/getFirstName()
 // retirées (code mort). Précachés changent : marketplace.html, abonnement.html,
 // arv-progress.html, service-worker.js. SW arvexa-offline-v8.59a.
-let SW_VERSION = 'arvexa-offline-v8.59a'; // ⚡ v8.59a — marketplace + abonnement réparés (index composite), boutique complète connectée au paiement automatique SasPay, salutation Résumé supprimée :
+let SW_VERSION = 'arvexa-offline-v8.60a'; // ⚡ v8.60a — retouches de finition (demandes du propriétaire après la v8.59a) :
+// (1) RÉSUMÉ — la phrase « Continue là où tu t'es arrêté. » (bandeau du haut, restée en place
+//     dans v8.59a) est SUPPRIMÉE : l'accueil salue déjà l'élève, pas de double salutation.
+// (2) CERCLE DE CHARGEMENT INSTANTANÉ (demande : « le temps de chargement des pages est très
+//     long surtout la page résumé → afficher le cercle de chargement qu'on avait avant pour
+//     montrer que la page se charge mais pas coupé, et un changement de page rapide ») :
+//     loader HTML+CSS PUR peint AVANT tout JS (spinner doré + texte, zéro dépendance) sur
+//     arv-progress.html (Résumé), marketplace.html et abonnement.html ; disparition dès que
+//     la page affiche son contenu (cache local ou données fraîches, auth résolue) ; filet de
+//     sécurité 10 s ; variante thème clair ; bfcache géré.
+// (3) MENU INSTANTANÉ (demande : « même si je recharge et que j'appuie directement sur le
+//     bouton menu il doit s'ouvrir sans bug, pareil pour toute autre page ») : NOUVEAU
+//     arvexa-menu.js (script CLASSIQUE, jamais dans un module Firebase) = unique pilote du
+//     menu latéral sur index/abonnement/notifications/profil/localisation/progression :
+//     s'ouvre dès le clic même juste après un rafraîchissement, Échap ferme, aria-expanded,
+//     fermeture au clic d'un lien ; les anciens écouteurs des modules des 6 pages sont
+//     retirés (double-basculement impossible).
+// (4) MARKETPLACE REDÉSIGNÉE (demande : « cartes assez jolies, simples et magnifiques qui
+//     font premium, pas trop grandes, avec DEUX PETITS BOUTONS côte à côte comme la page
+//     abonnement pour payer automatiquement ou manuellement, page bien rangée, propre et
+//     accueillante qui pousse à prendre l'abonnement ou acheter des requêtes ») : cartes
+//     compactes premium (radii 16, icones 36 px, prix 20 px, badges réduits), chaque carte
+//     (packs DE Firestore ET abonnements Premium) porte DEUX petits boutons côte à côte :
+//     « Auto » (or, tunnel de paiement automatique existant) + « Manuel » (WhatsApp vert,
+//     message prérempli via arvexa-contact.js source unique du numéro) ; bandeau de
+//     confiance Activation instantanée / Paiement sécurisé / Sans engagement ; équilibre
+//     des colonnes conservé sur petits écrans.
+// (5) CONFIDENTIALITÉ FOURNISSEUR DE PAIEMENT (demande : « la dernière phrase citait le nom
+//     du fournisseur d'API de paiement, supprime-le — l'utilisateur ne doit pas savoir ce
+//     qu'on utilise ») : marketplace.html footer-note genericisé (« Paiement 100 % sécurisé
+//     (Mobile Money) ») + abonnement.html credits-note sans nom ; aucune mention visible
+//     du tunnel dans l'UI.
+// (6) TELEGRAM DU PROPRIÉTAIRE — api/_telegram.mjs partagé (token/chat UNIQUEMENT en
+//     variables d'environnement Vercel) :  a) avis → déjà branchés sur /api/telegram,
+//     désormais réellement livrés (TELEGRAM_BOT_TOKEN manquait sur Vercel) ;  b) dépôt de
+//     CANDIDATURE AMBASSADEUR → ambassadeur.html notifie /api/telegram kind:'ambassadeur'
+//     (nom, email, téléphone+pays, établissement, promo, effectifs, motivation) après le
+//     setDoc Firestore, strictement non bloquant ;  c) chaque PAIEMENT confirmé (webhook
+//     OU verifier-paiement via _activation.mjs) → alerte instantanée article/montant/
+//     référence/utilisateur/canal. Précachés changent : arvexa-menu.js +, index,
+//     abonnement, notifications, profil, localisation, progression, arv-progress,
+//     marketplace, ambassadeur. SW arvexa-offline-v8.60a. Original arvexa. INTACT e0d5211.
 // (1) CAUSE GÉNÉRALE RÉPARÉE — handleHTML servait la navigation depuis le cache RUNTIME (arvexa-html) jamais purgé à chaque déploiement ; sur connexion classée « lente » (économie de données activée = courant sur mobile) le VIEUX HTML partait immédiatement → l'élève restait sur l'ancienne version malgré un réseau sain : mélange vieux HTML + nouveaux JS du precache = « problème de connexion », nom absent, cartes déplacées, éléments manquants. NOUVELLE STRATÉGIE precache-first : la copie PRECACHE (re-téléchargée FRAÎCHE à chaque install) est servie instantanément, rafraîchie en arrière-plan ; pages non précachées → réseau 2,5 s puis cache runtime puis offline.html ; branche « isSlowConnection → vieux cache » supprimée de la navigation. ACTIVATE : purge automatique de arvexa-html quand la version change (marqueur __sw_epoch__ dans arvexa-data — téléchargements de l'élève conservés). (2) ADAPTATION RÉSEAU SUPPRIMÉE (demande : « tu le remets comme avant ») — arvexa-net.js retiré des 20 pages + du precache + du dépôt : sur connexions mal classées « slow » elle coupait TOUTES les animations/transitions (spinner figé → « ça ne marche pas ») et son CSS global écrasait les styles des cartes. (3) ACCUEIL — badge « Nouveau » retiré de la carte Ambassadeur (demande : « tu enlèves ces badges »). (4) GÉRER MA PROMO DÉMÉNAGÉE (demande : « pas dans la page du menu, dans la page ambassadeur, qui apparaît une fois qu'on valide son titre ») — ma-promo.html SUPPRIMÉE, toute la gestion (créer l'espace, composer message/PDF/exercice avec upload Storage + repli lien, fil avec suppression, membres avec retrait, dissolution confirmée, vue membre ?promo=CODE en lecture seule avec quitter) vit DANS ambassadeur.html : section inline du dashboard validé, vue membre accessible via ambassadeur.html?promo=CODE ; les 7 liens de menu « Ma promo » (index, arv, profil, abonnement, notifications, progression, localisation) retirés ; lien de partage des promos → ambassadeur.html?promo=CODE. (5) AUDIT COMPLET — 4 CAUSES CACHÉES TROUVÉES ET RÉPARÉES : a) publishPost référençait « mode » déclaré dans le composant du dashboard → ReferenceError silencieux, la publication ne partait JAMAIS (bug hérité de ma-promo.html v8.57a) → promoMode au niveau module ; b) renderDashboard appelait loadPromoSection(user) sans que user existe dans sa portée → la page retombait sur le formulaire public au lieu du dashboard → renderDashboard(amb, uid) ; c) login.html sanitizeRedirect STRIPPAIT la query → le ?promo=PROMO-XXXXXX (et ?ref=) perdu après connexion, le membre tombait sur la page générique → query+hash préservés (liste blanche sur le chemin uniquement) ; d) login.html ALLOWED_REDIRECTS sans ambassadeur/marketplace/localisation → redirection vers index.html systématique depuis ces pages. Testé de bout en bout sur comptes sondes : candidature, dashboard, création promo, publication message, fil, membres, lien ?promo, adhésion membre + rattachement parrainage referredBy=ownerCode, quitter. (6) CARTES/CSS : carte Ambassadeur de l'accueil réalignée après retrait du badge, balises vérifiées équilibrées sur les 9 pages touchées. Précachés changent : ambassadeur.html réécrit, login.html, arvexa-net.js −, ma-promo.html −, 7 pages de menus, service-worker.js. SW arvexa-offline-v8.58a. Original arvexa. INTACT e0d5211.
 // ✅ v8.57a — BUGS SIGNALEMENTS RÉPARÉS + GÉRER MA PROMO + RECHARGES DE REQUÊTES SUR LA PAGE ABONNEMENT (demandes du propriétaire) :
 // (1) FAUX « PROBLÈME DE CONNEXION » RÉPARÉ — cause racine : fetch keepalive:true + corps > 64 Ko → TypeError INSTANTANÉE affichée comme erreur réseau alors que la connexion est stable (typiquement à l'ajout d'un long cours dans le Résumé). arv-progress.html : le keepalive n'est plus posé que sous 60 Ko + UNE retente silencieuse sans keepalive (bascule WiFi↔data, DNS lent). (2) NOM DE L'ÉLÈVE INSTANTANÉ SUR LA PAGE RÉSUMÉ — arv-progress ne lisait le prénom QUE dans Firestore (lent à froid → « Élève » affiché) : semage immédiat depuis arvexa_user_data puis arvexa_session (uid vérifié, zéro réseau) + re-cache local à chaque snapshot Firestore. (3) AMBASSADEUR — candidature complète (demande : « quelques formulaires obligatoires pour bien choisir le profil ») : sélecteur de PAYS 100 % custom à gauche du téléphone (54 pays, modale dorée avec recherche, indicatif intelligent — même modèle que register.html v8.32), numéro prérempli depuis l'inscription (users/{uid}.whatsapp → pays + national), + champs promo (nom de la promo, nb d'élèves de la promo, nb d'élèves qu'il peut inviter) ; CSS .amb-cta enfin défini (bug latent v8.56a). (4) MA-PROMO.HTML — NOUVELLE PAGE « GÉRER MA PROMO » : vue landing (non connecté), choix Créer/Rejoindre (code PROMO-XXXXXX lisible sans I/O/0/1), dashboard responsable (code + partage WhatsApp/copier, stats membres/publications/gains, composer Message ou PDF/Exercice avec upload Firebase Storage promo-files/ 8 Mo, fil avec suppression, liste membres avec retrait, dissolution confirmée) et vue membre (fil en lecture seule + partage + quitter) ; rattachement parrainage automatique : les membres d'une promo d'ambassadeur héritent son ownerCode dans referredBy s'ils n'ont pas de parrain → 10 % de commission au responsable sur chaque abonnement de sa promo ; auto-détachement d'un membre retiré (vérification d'appartenance à l'ouverture) ; doublons « Marketplace » des 4 sidebars supprimés (bug v8.56a) + lien « Ma promo » dans les 7 sidebars. (5) ABONNEMENT — section « RECHARGES DE REQUÊTES » : carte de solde (aiCredits + expiration, ∞ Premium) + grille des packs chargés depuis products (type:credits, prix relu côté serveur via creer-checkout kind:credits, SasPay, retour d'activation avec garde sur le solde) — la page vend désormais les abonnements ET les requêtes. (6) RÈGLES — firestore.rules v7 : promos (read public, create/update/delete verrouillés au responsable, memberCount ±1 borné pour l'adhésion), promos/{id}/members (auto-inscription, retrait owner|soi), promos/{id}/posts (écritures du responsable, lecture membres) ; storage.rules : chemin promo-files/{promoId}/ ouvert (lecture connectés, écriture responsable cross-service 8 Mo PDF/image). SW arvexa-offline-v8.57a (bump INDISPENSABLE : ma-promo.html précaché + index/abonnement/notifications/profil/progression/arv/localisation/ambassadeur/arv-progress changent). Original arvexa. INTACT e0d5211.
@@ -136,6 +177,7 @@ const PRECACHE = [
   // propriétaire : sur les connexions mal classées « lentes » elle figeait les
   // animations — spinners arrêtés — et participait à la perception de panne).
   './arvexa-soon.js', // ✅ v8.55a — toasts « bientôt disponible » (Marketplace, Ambassadeur)
+  './arvexa-menu.js', // ⚡ v8.60a — menu latéral instantané (jamais dans les modules Firebase)
   // ⚡ v8.56a — MARKETPLACE (packs de crédits IA) + AMBASSADEUR (programme parrainage) : pages réelles
   './marketplace.html',
   './ambassadeur.html',

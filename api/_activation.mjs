@@ -11,6 +11,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { notifyTelegramBestEffort, escapeMarkdown } from './_telegram.mjs';
 
 // ⚡ COMMISSION PARRAINAGE : 10 % du montant payé crédité à l'ambassadeur
 const REFERRAL_COMMISSION_RATE = 0.10;
@@ -146,6 +147,30 @@ export async function activateCheckout(db, pendingRef, pending, paidAmount, meta
     }
   } catch (refError) {
     console.warn('👑 Parrainage (non bloquant) :', refError.message);
+  }
+
+  // ⚡ v8.60a — AVIS PROPRIÉTAIRE : alerte Telegram instantanée à chaque
+  // paiement confirmé (canal webhook OU vérification serveur). Strictement
+  // non bloquant : une panne Telegram n'affecte jamais l'activation.
+  try {
+    const u = userSnap.data() || {};
+    const nom = escapeMarkdown(u.fullName || u.firstName || 'Élève ARVEXA');
+    const email = u.email ? escapeMarkdown(u.email) : '';
+    const detail = pending.kind === 'credits'
+      ? `Pack de crédits \(+${Math.max(1, Math.floor(Number(pending.credits) || 0))} requêtes\)`
+      : `Abonnement ${pending.plan === 'annual' ? 'annuel' : 'mensuel'}`;
+    const texte = [
+      '💰 *NOUVEAU PAIEMENT ARVEXA*',
+      '',
+      `📦 *Article :* ${detail}`,
+      `💵 *Montant :* ${Math.round(paidAmount).toLocaleString('fr\-FR')} FCFA`,
+      `🧾 *Référence :* \`${pendingRef.id}\``,
+      `👤 *Utilisateur :* ${nom}${email ? ` \(${email}\)` : ''}`,
+      `📡 *Canal :* ${escapeMarkdown(meta.processedVia || 'webhook')}`
+    ].join('\n');
+    await notifyTelegramBestEffort(texte);
+  } catch (tgError) {
+    console.warn('📢 Alerte paiement (non bloquant) :', tgError.message);
   }
 
   return { activated: true, kind: pending.kind };

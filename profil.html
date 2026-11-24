@@ -6,7 +6,7 @@
 <title>ARVEXA — Mon profil</title>
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-classes.js" defer></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-classes.js" defer></script><script src="arvexa-i18n.js" defer></script><script src="arvexa-menu.js" defer></script><!-- ⚡ v8.60a — menu instantané, n'attend jamais Firebase -->
   <meta name="description" content="ARVEXA School - Mon profil">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.png">
@@ -2159,15 +2159,9 @@
     handleLogout();
   });
 
-  document.getElementById('menuToggle').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('sidebarOverlay').classList.toggle('active');
-  });
-
-  document.getElementById('sidebarOverlay').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sidebarOverlay').classList.remove('active');
-  });
+  // ⚡ v8.60a — le menu latéral est désormais piloté par arvexa-menu.js
+  // (script classique : s'ouvre dès le clic, même juste après un
+  // rafraîchissement, sans attendre Firebase ni les données).
 
   document.getElementById('notifBtn').addEventListener('click', () => {
     window.location.href = 'notifications.html';

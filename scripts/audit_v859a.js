@@ -110,7 +110,7 @@ if (precacheBlock) {
 } else {
   check('Bloc PRECACHE trouvé', false);
 }
-check('SW_VERSION = v8.59a', /SW_VERSION = 'arvexa-offline-v8\.59a'/.test(sw));
+check('SW_VERSION >= v8.59a (bump v8.60a ou plus récent)', /SW_VERSION = 'arvexa-offline-v8\.(59a|6\da)'/.test(sw));
 
 // ═══ 6. CORRECTIFS SPÉCIFIQUES V8.59A ═══
 console.log('\n═══ 6. CORRECTIFS V8.59A ═══');
@@ -129,7 +129,7 @@ check('abonnement : requête sans orderBy', !/orderBy\('price'/.test(abo));
 check('abonnement : tri client présent', abo.includes(".sort((a, b) => (Number(a.price) || 0)"));
 check('abonnement : verifier-paiement appelé', abo.includes('/api/verifier-paiement'));
 check('arv-progress : salutation supprimée', !prog.includes('getGreeting') && !prog.includes('Bonjour'));
-check('arv-progress : fil de reprise conservé', prog.includes('Continue là où tu t'));
+check('arv-progress : fil de reprise retiré (v8.60a, demande propriétaire)', !prog.includes('Continue là où tu t'));
 check('webhook : module partagé _activation', read('api/saspay-webhook.mjs').includes("from './_activation.mjs'"));
 check('verifier-paiement : fail-closed (référence inconnue refusée)', read('api/verifier-paiement.mjs').includes("reason: 'unknown_reference'"));
 check('verifier-paiement : montant relu chez SasPay', read('api/verifier-paiement.mjs').includes('checkout-sessions/'));

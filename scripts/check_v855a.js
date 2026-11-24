@@ -39,8 +39,8 @@ console.log('\n═══ AUDIT v8.55a — ' + new Date().toISOString() + ' ═�
 
 /* ── T1 : SW version + let ── */
 const sw = read('service-worker.js');
-test('T1  SW_VERSION = arvexa-offline-v8.59a avec let',
-  /let SW_VERSION = 'arvexa-offline-v8\.59a'/.test(sw) && !/const SW_VERSION/.test(sw));
+test('T1  SW_VERSION >= arvexa-offline-v8.60a avec let (ré-épinglé à chaque bump)',
+  /let SW_VERSION = 'arvexa-offline-v8\.6\da'/.test(sw) && !/const SW_VERSION/.test(sw));
 
 /* ── T2 : précache des 2 nouveaux modules ── */
 // ✅ v8.58a — arvexa-net.js SUPPRIMÉ (adaptation réseau retirée) : arvexa-soon.js reste

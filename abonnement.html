@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-contact.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-contact.js"></script><script src="arvexa-i18n.js" defer></script><script src="arvexa-menu.js" defer></script><!-- ⚡ v8.60a — menu instantané, n'attend jamais Firebase -->
   <meta name="description" content="ARVEXA School - Abonnement Premium">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1448,6 +1448,36 @@
 </head>
 <body>
 
+<!-- ⚡ v8.60a — cercle de chargement instantané (page jamais « coupée ») -->
+<style>
+  .boot-loader{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(ellipse at top,#101010 0%,#0A0A0A 60%);transition:opacity .3s ease,visibility .3s ease}
+  .boot-loader.gone{opacity:0;visibility:hidden;pointer-events:none}
+  .boot-spinner{width:46px;height:46px;border-radius:50%;border:3.5px solid rgba(224,184,74,.15);border-top-color:#E0B84A;animation:bootspin .8s linear infinite}
+  @keyframes bootspin{to{transform:rotate(360deg)}}
+  .boot-text{font-family:Inter,sans-serif;font-size:13px;color:#8A8A7A;letter-spacing:.6px}
+  html[data-theme="light"] .boot-loader{background:#F5F1E8}
+  html[data-theme="light"] .boot-text{color:#6B6B5A}
+  @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.6s}}
+</style>
+<div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de la page abonnement">
+  <div class="boot-spinner"></div>
+  <div class="boot-text">Préparation de ton abonnement…</div>
+</div>
+<script>
+(function(){
+  function hideBoot(){
+    var el = document.getElementById('bootLoader');
+    if (!el || el.dataset.gone === '1') return;
+    el.dataset.gone = '1';
+    el.classList.add('gone');
+    setTimeout(function(){ try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 380);
+  }
+  window.__arvexaBootHide = hideBoot;
+  setTimeout(hideBoot, 10000);
+  window.addEventListener('pageshow', function(ev){ if (ev && ev.persisted) hideBoot(); });
+})();
+</script>
+
 <!-- ===== BACKGROUND ===== -->
 <div class="gradient-bg"></div>
 <div class="glow glow-1"></div>
@@ -1657,7 +1687,7 @@
           <div class="credits-loading"><i class="fas fa-circle-notch fa-spin"></i> Chargement des packs…</div>
         </div>
         <p class="credits-note">
-          <i class="fas fa-shield-halved"></i> Paiement sécurisé SasPay — requêtes ajoutées automatiquement
+          <i class="fas fa-shield-halved"></i> Paiement sécurisé — requêtes ajoutées automatiquement
           à ton compte dès la confirmation, même si tu fermes l'app.
         </p>
       </div>
@@ -2939,15 +2969,9 @@ document.getElementById('logoutBtn').addEventListener('click', (e) => {
   performLogout(); // filet de sécurité si le module n'est pas chargé
 });
 
-document.getElementById('menuToggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('active');
-});
-
-document.getElementById('sidebarOverlay').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarOverlay').classList.remove('active');
-});
+// ⚡ v8.60a — le menu latéral est désormais piloté par arvexa-menu.js
+// (script classique : s'ouvre dès le clic, même juste après un
+// rafraîchissement, sans attendre Firebase ni les données).
 
 document.getElementById('notifBtn').addEventListener('click', () => {
   window.location.href = 'notifications.html';
@@ -3199,6 +3223,8 @@ function initAuthGuard(onAuthenticated) {
     currentUid = user.uid;
     currentUser = user;
     saveSession(user);
+    // ⚡ v8.60a — auth résolue, page affichée → loader retiré.
+    try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {}
     onAuthenticated(user);
   });
 
@@ -3209,8 +3235,10 @@ function initAuthGuard(onAuthenticated) {
       currentUid = auth.currentUser.uid;
       currentUser = auth.currentUser;
       saveSession(auth.currentUser);
+      try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {} // ⚡ v8.60a
       onAuthenticated(auth.currentUser);
     } else {
+      try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {} // ⚡ v8.60a
       redirectToLogin();
     }
   }, 5000);

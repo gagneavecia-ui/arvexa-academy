@@ -2967,6 +2967,42 @@ select:focus-visible,
 
 <body>
 
+<!-- ⚡ v8.60a — CERCLE DE CHARGEMENT INSTANTANÉ (demande propriétaire :
+     « il faut afficher le cercle de chargement qu'on avait avant pour montrer
+     à l'utilisateur que la page se charge mais pas coupé »). HTML+CSS purs :
+     peint AVANT tout JS, disparaît dès que le cahier est affiché (cache
+     local ou données fraîches), avec filet de sécurité à 10 s. -->
+<style>
+  .boot-loader{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(ellipse at top,#101010 0%,#0A0A0A 60%);transition:opacity .3s ease,visibility .3s ease}
+  .boot-loader.gone{opacity:0;visibility:hidden;pointer-events:none}
+  .boot-spinner{width:46px;height:46px;border-radius:50%;border:3.5px solid rgba(224,184,74,.15);border-top-color:#E0B84A;animation:bootspin .8s linear infinite}
+  @keyframes bootspin{to{transform:rotate(360deg)}}
+  .boot-text{font-family:Inter,sans-serif;font-size:13px;color:#8A8A7A;letter-spacing:.6px}
+  html[data-theme="light"] .boot-loader{background:#F5F1E8}
+  html[data-theme="light"] .boot-text{color:#6B6B5A}
+  @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.6s}}
+</style>
+<div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de ton cahier">
+  <div class="boot-spinner"></div>
+  <div class="boot-text">Préparation de ton cahier…</div>
+</div>
+<script>
+(function(){
+  function hideBoot(){
+    var el = document.getElementById('bootLoader');
+    if (!el || el.dataset.gone === '1') return;
+    el.dataset.gone = '1';
+    el.classList.add('gone');
+    setTimeout(function(){ try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 380);
+  }
+  window.__arvexaBootHide = hideBoot;
+  // Filet de sécurité : jamais plus de 10 s, même si un module échoue.
+  setTimeout(hideBoot, 10000);
+  // Retour bfcache : la page est déjà prête.
+  window.addEventListener('pageshow', function(ev){ if (ev && ev.persisted) hideBoot(); });
+})();
+</script>
+
 <header class="header">
   <div class="header-left">
     <button class="back-btn hidden" id="backBtn" aria-label="Retour">
@@ -3823,7 +3859,6 @@ function paintDashboard(data) {
 
   const safeSubjectsList = safeArray(data.subjects);
     const safeActivityList = safeArray(data.recentActivity);
-    const totalSections = data.summary?.totalSections || 0;
 
     // ✅ v8.39 — CARTES MATIÈRES DYNAMIQUES (demande propriétaire) : un nouvel
     // élève ne voit AUCUNE carte fixe — les cartes apparaissent au fur et à
@@ -3874,10 +3909,6 @@ function paintDashboard(data) {
     ` : '';
 
     el.innerHTML = `
-      <div class="greeting">
-        <p>${totalSections > 0 ? 'Continue là où tu t\'es arrêté.' : 'Commence ton premier cahier.'}</p>
-      </div>
-
       ${renderStatsCard(data)}
 
       <button class="add-course-btn" id="addCourseBtn" aria-label="Ajouter un cours">
@@ -3895,6 +3926,9 @@ function paintDashboard(data) {
        (exactement UNE actualisation animée par chargement) ; les peintures
        suivantes — données réellement changées — remplacent la courbe sans
        ré-animer. */
+    // ⚡ v8.60a — le cahier est affiché (cache local ou données fraîches)
+    // → on retire le cercle de chargement instantané.
+    if (__first && window.__arvexaBootHide) { try { window.__arvexaBootHide(); } catch (e) {} }
     if (__first) { try { animateStatCharts(el); } catch (e) {} }
 
     el.querySelectorAll('[data-subject]').forEach((btn) => {
@@ -7469,9 +7503,12 @@ requireAuth({
   onStale: () => {
     try { __authReadyResolve(); } catch (e) {}
     try { applyRoute(routeFromHash()); } catch (e) {}
+    // ⚡ v8.60a — contenu en cache affiché → loader retiré.
+    try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {}
   },
   onNoUser: () => {
     try { __authReadyResolve(); } catch (e) {} // ✅ v8.40
+    try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {} // ⚡ v8.60a
     window.location.replace('auth-choice.html');
   }
 });

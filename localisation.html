@@ -6,7 +6,7 @@
 <title>ARVEXA — À proximité</title>
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-i18n.js" defer></script><script src="arvexa-menu.js" defer></script><!-- ⚡ v8.60a — menu instantané, n'attend jamais Firebase -->
   <meta name="description" content="ARVEXA School - Trouve des camarades à proximité pour traiter des exercices ensemble">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.png">
@@ -1742,12 +1742,9 @@ setInterval(() => {
 }, 60000);
 
 // ---------------- UI fixe ----------------
-$('menuToggle').addEventListener('click', () => {
-  $('sidebar').classList.add('open'); $('sidebarOverlay').classList.add('active');
-});
-$('sidebarOverlay').addEventListener('click', () => {
-  $('sidebar').classList.remove('open'); $('sidebarOverlay').classList.remove('active');
-});
+// ⚡ v8.60a — le menu latéral est désormais piloté par arvexa-menu.js
+// (script classique : s'ouvre dès le clic, même juste après un
+// rafraîchissement, sans attendre Firebase ni les données).
 $('refreshBtn').addEventListener('click', () => window.location.reload());
 shareBtn.addEventListener('click', () => {
   if (shareOn) stopSharing();

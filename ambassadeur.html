@@ -825,6 +825,36 @@
         status: 'pending',
         submittedAt: serverTimestamp()
       }, { merge: true });
+      // ⚡ v8.60a — dépôt de candidature → notification Telegram au
+      // propriétaire. Strictement non bloquant : la candidature est déjà
+      // enregistrée dans Firestore, l'élève voit son écran de confirmation
+      // même si la notification échoue.
+      try {
+        let nom = 'Élève ARVEXA';
+        try {
+          const uSnap = await getDoc(doc(db, 'users', user.uid));
+          if (uSnap.exists()) {
+            const u = uSnap.data() || {};
+            nom = u.fullName || [u.firstName, u.lastName].filter(Boolean).join(' ') || nom;
+          }
+        } catch (e) { /* nom par défaut */ }
+        fetch('/api/telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kind: 'ambassadeur',
+            userName: nom,
+            userEmail: user.email || '',
+            phone: e164,
+            country: COUNTRY.fr || COUNTRY.iso || '',
+            establishment,
+            promoName,
+            promoSize,
+            inviteCount,
+            motivation
+          })
+        }).catch(() => {});
+      } catch (e) { /* notification jamais bloquante */ }
       renderPending();
     } catch (e) {
       console.error(e);
