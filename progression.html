@@ -89,12 +89,16 @@
     }
     .sidebar-overlay.active { display: block; opacity: 1; }
     .sidebar {
-      position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-width);
+      position: fixed; left: -280px; top: 0; bottom: 0; width: var(--sidebar-width);
       background: rgba(15, 15, 15, 0.98); border-right: 1px solid rgba(184, 134, 11, 0.08);
-      padding: 20px 16px; z-index: 99; transform: translateX(-100%); left: -100%;
+      padding: 20px 16px; z-index: 99;
       transition: left 0.3s cubic-bezier(0.25, 1, 0.5, 1);
       display: flex; flex-direction: column;
     }
+    /* ✅ v8.54a — FIX MENU : l'ancien transform: translateX(-100%) n'était
+       JAMAIS levé par .open (qui ne changeait que left) → la sidebar restait
+       hors écran sur mobile et le menu ne s'ouvrait pas. Modèle standard des
+       autres pages : left négatif + .open { left: 0 }, aucun transform. */
     .sidebar.open { left: 0; }
     .sidebar .logo {
       font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700;

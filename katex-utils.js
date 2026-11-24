@@ -1,7 +1,13 @@
 // ================================================================
-// KATEX UTILS v5.1 — ARVEXA School
+// KATEX UTILS v6.0 — ARVEXA School
 // Rendu mathématique robuste, global, auto-injecté
 // ✅ OPTIMISÉ : cache regex + une seule passe Unicode
+// ✅ v6.0 (v8.54a) — « renforce le KaTeX au maximum » : macros pour toutes
+//    les commandes manquantes (\sgn \sech \Var \pgcd…), sanitisation
+//    profonde par formule (entités HTML, %/# nus, \rm \bf hérités,
+//    accolades/\left\right équilibrés, environnements fermés), RÉPARATION
+//    POST-RENDU (.katex-error re-rendu puis aplati en Unicode lisible —
+//    plus AUCUNE source rouge brute à l'écran).
 // ================================================================
 
 (function () {
@@ -60,7 +66,33 @@
     "\\phi": "\\varphi",
     "\\dt": "\\Delta t",
     "\\dx": "\\Delta x",
-    "\\dv": "\\Delta v"
+    "\\dv": "\\Delta v",
+    /* ✅ v6.0 — commandes demandées par les IA mais absentes de KaTeX :
+       chaque entrée ci-dessous supprime une classe entière de
+       « Undefined control sequence » (formules mal rendues). */
+    "\\sgn": "\\operatorname{sgn}",
+    "\\sech": "\\operatorname{sech}",
+    "\\csch": "\\operatorname{csch}",
+    "\\Arg": "\\operatorname{Arg}",
+    "\\Var": "\\operatorname{Var}",
+    "\\Cov": "\\operatorname{Cov}",
+    "\\Corr": "\\operatorname{Corr}",
+    "\\erf": "\\operatorname{erf}",
+    "\\erfc": "\\operatorname{erfc}",
+    "\\Arcsin": "\\operatorname{Arcsin}",
+    "\\Arccos": "\\operatorname{Arccos}",
+    "\\Arctan": "\\operatorname{Arctan}",
+    "\\Proj": "\\operatorname{Proj}",
+    "\\Id": "\\mathbb{I}",
+    "\\lcm": "\\operatorname{lcm}",
+    "\\pgcd": "\\operatorname{pgcd}",
+    "\\ppcm": "\\operatorname{ppcm}",
+    "\\ds": "\\displaystyle",
+    "\\dsum": "\\displaystyle\\sum",
+    "\\dint": "\\displaystyle\\int",
+    "\\E": "\\mathbb{E}",
+    "\\degree": "^{\\circ}",
+    "\\degc": "^{\\circ}\\text{C}"
   };
 
   // ═══════════════════════════════════════════════════════════════
@@ -703,6 +735,10 @@
     inner = fixCdotSpacing(inner);
     inner = inner.replace(/^\$+/, '').replace(/\$+$/, '');
 
+    /* ✅ v6.0 — sanitisation profonde : entités HTML, %/# nus, commandes
+       héritées, accolades et \left\right équilibrés, environnements fermés */
+    inner = sanitizeFormulaTex(inner);
+
     return open + inner + close;
   }
 
@@ -811,6 +847,265 @@
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // 9-ter. ✅ v6.0 — SANITISATION PROFONDE D'UNE FORMULE + RÉPARATION
+  // POST-RENDU + REPLI UNICODE (« il y a toujours des formules mal
+  // écrites » — le renforcement au maximum, sans exception visible).
+  // ═══════════════════════════════════════════════════════════════
+
+  /* Entités HTML qui fuient dans les réponses IA → caractères réels */
+  function decodeHtmlEntities(s) {
+    return String(s)
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+      .replace(/&#0?39;/g, "'").replace(/&apos;/g, "'")
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+  }
+
+  /* ½ ⅓ ¼ ¾ ⅔ … → \frac{p}{q} (les fractions Unicode cassent le rendu) */
+  const VULGAR_FRACTIONS = {
+    '½': '\\frac{1}{2}', '⅓': '\\frac{1}{3}', '⅔': '\\frac{2}{3}',
+    '¼': '\\frac{1}{4}', '¾': '\\frac{3}{4}', '⅕': '\\frac{1}{5}',
+    '⅖': '\\frac{2}{5}', '⅗': '\\frac{3}{5}', '⅘': '\\frac{4}{5}',
+    '⅙': '\\frac{1}{6}', '⅚': '\\frac{5}{6}', '⅐': '\\frac{1}{7}',
+    '⅛': '\\frac{1}{8}', '⅜': '\\frac{3}{8}', '⅝': '\\frac{5}{8}',
+    '⅞': '\\frac{7}{8}', '⅑': '\\frac{1}{9}'
+  };
+
+  /* Commandes héritées de LaTeX 2.09 que KaTeX ne connaît pas */
+  const LEGACY_CMD_MAP = [
+    [/\B\\rm\s*\{([^{}]*)\}/g, '\\mathrm{$1}'],
+    [/\B\\rm\s+([a-zA-Z]+)/g, '\\mathrm{$1}'],
+    [/\B\\bf\s*\{([^{}]*)\}/g, '\\mathbf{$1}'],
+    [/\B\\bf\s+([a-zA-Z]+)/g, '\\mathbf{$1}'],
+    [/\B\\it\s*\{([^{}]*)\}/g, '\\mathit{$1}'],
+    [/\B\\it\s+([a-zA-Z]+)/g, '\\mathit{$1}'],
+    [/\B\\cal\s*\{([^{}]*)\}/g, '\\mathcal{$1}'],
+    [/\B\\cal\s+([a-zA-Z]+)/g, '\\mathcal{$1}'],
+    [/\B\\sf\s+([a-zA-Z]+)/g, '\\mathsf{$1}'],
+    [/\B\\tt\s+([a-zA-Z]+)/g, '\\mathtt{$1}'],
+    [/\B\\Bbb\s+([a-zA-Z])/g, '\\mathbb{$1}'],
+    [/\B\\mbox\s*\{?/g, '\\text{'],
+    [/\B\\eqalign\s*\{/g, '\\begin{aligned}'],
+    [/\B\\displaylines\s*\{/g, '\\begin{gathered}'],
+    [/\B\\pmatrix\s*\{/g, '\\begin{pmatrix}'],
+    [/\B\\bmatrix\s*\{/g, '\\begin{bmatrix}'],
+    [/\B\\cases\s*\{/g, '\\begin{cases}'],
+    [/\B\\matrix\s*\{/g, '\\begin{matrix}'],
+    [/\B\\nonumber\b/g, ''],
+    [/\B\\notag\b/g, ''],
+    [/\B\\label\s*\{[^{}]*\}/g, ''],
+    [/\B\\ref\s*\{[^{}]*\}/g, ''],
+    [/\B\\dsum\b/g, '\\displaystyle\\sum'],
+    [/\B\\dint\b/g, '\\displaystyle\\int']
+  ];
+
+  /* Équilibre { … } en ignorant les accolades échappées \{ \} */
+  function balanceBraces(s) {
+    let depth = 0, fixed = s;
+    for (let pass = 0; pass < 6; pass++) {
+      depth = 0;
+      for (let i = 0; i < fixed.length; i++) {
+        const c = fixed[i];
+        if (c === '\\' && i + 1 < fixed.length) { i++; continue; } // \{ \} \\ …
+        if (c === '{') depth++;
+        else if (c === '}') depth--;
+        if (depth < 0) { /* } en trop → retirée */
+          fixed = fixed.slice(0, i) + fixed.slice(i + 1);
+          i--; depth = 0;
+        }
+      }
+      if (depth > 0) fixed += '}'.repeat(depth);
+      if (depth <= 0) break;
+    }
+    return fixed;
+  }
+
+  /* Équilibre \left … \right (sans \right ⇒ tout le rendu casse) */
+  function balanceLeftRight(s) {
+    let r = s;
+    const count = (re) => (r.match(re) || []).length;
+    let open = count(/\\left(?![a-zA-Z])/g) - count(/\\left[.(|[]/g);
+    let close = count(/\\right(?![a-zA-Z])/g) - count(/\\right[.)|]/g);
+    /* compte simple : \left* vs \right* */
+    const l = count(/\\left(?=[^\s])/g), rr = count(/\\right(?=[^\s])/g);
+    if (l > rr) r += ' \\right.'.repeat(l - rr);
+    else if (rr > l) r = '\\left. '.repeat(rr - l) + r;
+    return r;
+  }
+
+  /* Ferme les \begin{env} restés ouverts */
+  function balanceEnvironments(s) {
+    const opens = [];
+    const re = /\\(begin|end)\s*\{\s*([a-zA-Z*]+)\s*\}/g;
+    let m;
+    while ((m = re.exec(s)) !== null) {
+      if (m[1] === 'begin') opens.push(m[2]);
+      else {
+        const i = opens.lastIndexOf(m[2]);
+        if (i !== -1) opens.splice(i, 1);
+      }
+    }
+    let r = s;
+    for (const env of opens) r += '\n\\end{' + env + '}';
+    return r;
+  }
+
+  /* ═══ SANITISATION D'UNE FORMULE (contenu déjà délimité $…$ / $$…$$) ═══ */
+  function sanitizeFormulaTex(tex) {
+    if (!tex || typeof tex !== 'string') return tex;
+    let r = tex;
+
+    r = decodeHtmlEntities(r);
+
+    /* % et # nus : % mange la fin de la ligne, # casse le rendu */
+    r = r.replace(/(?<!\\)%/g, '\\%');
+    r = r.replace(/(?<!\\)#/g, '\\#');
+    /* & nu SANS environnement d'alignement → échappé */
+    if (!/\\begin\s*\{/.test(r)) r = r.replace(/(?<!\\)&/g, '\\&');
+
+    for (const [re, rep] of LEGACY_CMD_MAP) r = r.replace(re, rep);
+
+    for (const [glyph, lat] of Object.entries(VULGAR_FRACTIONS)) {
+      r = r.split(glyph).join(lat);
+    }
+
+    /* √ (…) → \sqrt{…} (le √ mappe vers \sqrt mais les parenthèses restent) */
+    for (let pass = 0; pass < 3; pass++) {
+      const before = r;
+      r = r.replace(/\\sqrt\s*\(([^()]*)\)/g, '\\sqrt{$1}');
+      if (r === before) break;
+    }
+
+    /* Astérisques Markdown qui fuient : **a** → \mathbf{a}, restes → × */
+    r = r.replace(/\*\*([^*]+)\*\*/g, '\\mathbf{$1}');
+    r = r.replace(/\*\*/g, '');
+    r = r.replace(/(?<!\\)\*/g, '\\times ');
+
+    r = balanceEnvironments(r);
+    r = balanceLeftRight(r);
+    r = balanceBraces(r);
+
+    /* barre inverse orpheline en fin de formule */
+    r = r.replace(/\\+$/, '');
+
+    return r;
+  }
+
+  /* ═══ DERNIER FILET : TeX illisible → texte Unicode lisible ═══
+     (jamais de source rouge brute à l'écran — le pire cas est une
+     formule « à plat » parfaitement lisible par l'élève) */
+  const FLAT_MAP = {
+    times: '×', cdot: '·', div: '÷', pm: '±', mp: '∓', leq: '≤', le: '≤',
+    geq: '≥', ge: '≥', neq: '≠', ne: '≠', approx: '≈', equiv: '≡',
+    sim: '∼', simeq: '≃', propto: '∝', infty: '∞', to: '→', gets: '←',
+    rightarrow: '→', leftarrow: '←', Rightarrow: '⇒', Leftarrow: '⇐',
+    Leftrightarrow: '⇔', leftrightarrow: '↔', mapsto: '↦', implies: '⇒',
+    iff: '⇔', in: '∈', notin: '∉', ni: '∋', subset: '⊂', supset: '⊃',
+    subseteq: '⊆', supseteq: '⊇', cup: '∪', cap: '∩', emptyset: '∅',
+    varnothing: '∅', forall: '∀', exists: '∃', neg: '¬', land: '∧',
+    lor: '∨', sum: '∑', prod: '∏', int: '∫', iint: '∬', iiint: '∭',
+    oint: '∮', partial: '∂', nabla: '∇', aleph: 'ℵ', ell: 'ℓ',
+    hbar: 'ℏ', degree: '°', prime: '′', langle: '⟨', rangle: '⟩',
+    lbrace: '{', rbrace: '}', lbrack: '[', rbrack: ']', quad: ' ',
+    qquad: '  ', cdots: '⋯', ldots: '…', vdots: '⋮', ddots: '⋱',
+    perp: '⊥', parallel: '∥', angle: '∠', triangle: '△', square: '□',
+    checkmark: '✓', dagger: '†', star: '⋆', circ: '∘', bullet: '•',
+    ast: '∗', oplus: '⊕', otimes: '⊗', ominus: '⊖', equiv: '≡',
+    alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε',
+    varepsilon: 'ε', zeta: 'ζ', eta: 'η', theta: 'θ', vartheta: 'ϑ',
+    iota: 'ι', kappa: 'κ', lambda: 'λ', mu: 'μ', nu: 'ν', xi: 'ξ',
+    pi: 'π', varpi: 'ϖ', rho: 'ρ', varrho: 'ϱ', sigma: 'σ',
+    varsigma: 'ς', tau: 'τ', upsilon: 'υ', phi: 'φ', varphi: 'ϕ',
+    chi: 'χ', psi: 'ψ', omega: 'ω', Gamma: 'Γ', Delta: 'Δ', Theta: 'Θ',
+    Lambda: 'Λ', Xi: 'Ξ', Pi: 'Π', Sigma: 'Σ', Upsilon: 'Υ', Phi: 'Φ',
+    Psi: 'Ψ', Omega: 'Ω'
+  };
+  const SUPER_FLAT = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '+': '⁺', '-': '⁻', '=': '⁼', '(': '⁽', ')': '⁾', n: 'ⁿ', i: 'ⁱ' };
+  const SUB_FLAT = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉', '+': '₊', '-': '₋', '=': '₌', '(': '₍', ')': '₎', i: 'ᵢ', j: 'ⱼ' };
+
+  function flatScript(conv, body) {
+    const chars = [];
+    for (const ch of body) chars.push(conv[ch] || ch);
+    return chars.join('');
+  }
+
+  function flattenTexToUnicode(tex) {
+    if (!tex || typeof tex !== 'string') return '';
+    let r = String(tex);
+    const MAX_PASSES = 24;
+    let pass = 0;
+    /* \frac{a}{b} → (a)/(b) ; \sqrt{a} → √(a) ; indices/exposants Unicode */
+    while (pass++ < MAX_PASSES) {
+      const before = r;
+      r = r.replace(/\\(?:d?frac|tfrac|cfrac)\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, (m, a, b) => {
+        const needP = (s) => (/^[a-zA-Z0-9]+$/.test(s) ? s : '(' + s + ')');
+        return needP(a) + '/' + needP(b);
+      });
+      r = r.replace(/\\sqrt\s*\{([^{}]*)\}/g, '√($1)');
+      r = r.replace(/\\(?:mathbb|mathbf|mathrm|mathcal|mathfrak|mathsf|mathtt|text|textrm|textsf|texttt|operatorname|boldsymbol)\s*\{([^{}]*)\}/g, '$1');
+      r = r.replace(/\\(?:overline|underline|vec|hat|bar|widetilde|widehat|boxed)\s*\{([^{}]*)\}/g, '$1');
+      r = r.replace(/\^\s*\{([^{}]*)\}/g, (m, b) => flatScript(SUPER_FLAT, b));
+      r = r.replace(/_\s*\{([^{}]*)\}/g, (m, b) => flatScript(SUB_FLAT, b));
+      r = r.replace(/\^\s*([a-zA-Z0-9])/g, (m, b) => flatScript(SUPER_FLAT, b));
+      r = r.replace(/_\s*([a-zA-Z0-9])/g, (m, b) => flatScript(SUB_FLAT, b));
+      r = r.replace(/\\left|\\right|\\!|\\,|\\;|\\:|\\ /g, '');
+      r = r.replace(/\\displaystyle|\\limits|\\nolimits|\\big[lr]?|\\Big[lr]?|\\bigg[lr]?|\\Bigg[lr]?/g, '');
+      r = r.replace(/\\([a-zA-Z]+)/g, (m, cmd) => {
+        if (FLAT_MAP[cmd] !== undefined) return FLAT_MAP[cmd];
+        if (cmd === 'begin' || cmd === 'end') return '';
+        return '';
+      });
+      r = r.replace(/[{}]/g, '');
+      if (r === before) break;
+    }
+    return r.replace(/\s+/g, ' ').trim();
+  }
+
+  /* ═══ RÉPARATION POST-RENDU : aucune source rouge brute ne reste à l'écran ═══
+     KaTeX (throwOnError:false) remplace la formule cassée par
+     <span class="katex-error" title="…">source</span> → on retente avec la
+     formule SANITISÉE ; si ça casse encore, on écrit la version Unicode à plat. */
+  function repairKatexErrors(root) {
+    if (typeof katex === 'undefined') return;
+    let errs;
+    try { errs = (root || document.body).querySelectorAll('.katex-error'); } catch (e) { return; }
+    if (!errs || !errs.length) return;
+
+    errs.forEach(function (el) {
+      if (el.__arvexaRepaired) return;
+      el.__arvexaRepaired = true;
+
+      const src = el.getAttribute('data-original') || el.textContent || '';
+      if (!src.trim()) return;
+      const displayMode = /\\begin\s*\{(align|align\*|gather|gather\*|equation|equation\*|split|multline|cases|array|matrix)/.test(src)
+        || /\\\\/.test(src)
+        || (el.parentElement && el.parentElement.classList && el.parentElement.classList.contains('katex-display'));
+
+      const repaired = sanitizeFormulaTex(src);
+      let done = false;
+      try {
+        katex.render(repaired, el, { displayMode, throwOnError: true, strict: false, trust: false, macros: MACROS });
+        done = true;
+      } catch (e1) {
+        try {
+          katex.render(repaired, el, { displayMode, throwOnError: false, strict: false, trust: false, macros: MACROS });
+          done = !el.querySelector('.katex-error');
+        } catch (e2) { done = false; }
+      }
+
+      if (done) {
+        el.classList.remove('katex-error');
+        el.style.removeProperty('color');
+        el.removeAttribute('title');
+      } else {
+        el.textContent = flattenTexToUnicode(src);
+        el.classList.add('arvexa-latex-raw');
+        el.classList.remove('katex-error');
+        el.removeAttribute('title');
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // 10. RENDU KATEX
   // ═══════════════════════════════════════════════════════════════
   function renderKaTeXInternal(root, options) {
@@ -832,7 +1127,7 @@
         strict: false,
         trust: false,
         maxSize: 50,
-        maxExpand: 1000,
+        maxExpand: 2000,
         macros: { ...MACROS, ...(options && options.macros ? options.macros : {}) },
         ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'kbd', 'samp', 'option'],
         ignoredClasses: ['no-katex', 'katex-ignore', 'katex'],
@@ -841,6 +1136,12 @@
     } catch (error) {
       console.warn('[KaTeX] render error:', error && error.message);
     }
+
+    /* ✅ v6.0 — AUCUNE source rouge brute ne reste à l'écran : chaque
+       .katex-error est re-rendu avec la formule sanitised, sinon aplati
+       en Unicode lisible. C'est la couche qui rend les formules « mal
+       écrites » visuellement impossibles. */
+    try { repairKatexErrors(element); } catch (e) { /* silencieux */ }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -921,6 +1222,14 @@
         if (/\\text\{/.test(fixed)) {
           fixed = fixTextInternals(fixed);
         }
+
+        /* ✅ v6.0 — sanitisation profonde de chaque segment délimité avant
+           le premier rendu (accolades équilibrées, % nus, commandes legacy…) */
+        const parts6 = fixed.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]+\$)/g);
+        for (let p = 1; p < parts6.length; p += 2) {
+          parts6[p] = sanitizeFormulaTex(parts6[p]);
+        }
+        fixed = parts6.join('');
 
         if (fixed !== original) n.textContent = fixed;
       });
@@ -1065,6 +1374,10 @@
     hasUnicodeMath,
     fixOrphanArrows,
 
+    sanitizeFormulaTex,
+    flattenTexToUnicode,
+    repairKatexErrors,
+
     MACROS,
     DELIMITERS,
     KNOWN_LATEX_COMMANDS
@@ -1081,6 +1394,6 @@
     initAutoRender();
   }
 
-  console.log('📐 KaTeXUtils v5.1 chargé (fix flèches orphelines)');
+  console.log('📐 KaTeXUtils v6.0 chargé (sanitisation + réparation post-rendu)');
 
 })();

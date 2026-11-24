@@ -149,8 +149,8 @@ T('onboarding.html : réussite (sans BAC)', ob.includes('ton parcours vers la r�
 const av = read('arv.html');
 T('arv.html : programme/niveau/examens', av.includes('ton programme, ton niveau ou tes examens'));
 T('quotidien : appel IA /api/arv', qdj.includes("fetch('/api/arv'"));
-T('quotidien : cours du Résumé dans le prompt (getDashboard)', qdj.includes("action: 'getDashboard'") && qdj.includes('COURS SUIVIS'));
-T('quotidien : repli banque statique', qdj.includes('chargerBanque') && qdj.includes('./quotidien.json'));
+T('quotidien : leçons RÉELLES dans le prompt (getDashboard + getFullLesson + source exclusive)', qdj.includes("action: 'getDashboard'") && qdj.includes("action: 'getFullLesson'") && qdj.includes('SEULE source autorisée')); // ✅ v8.54a — extraits réels du cours fourni
+T('quotidien : banque statique SUPPRIMÉE + écran sans leçon (v8.54a)', !qdj.includes('chargerBanque') && qdj.includes('noCourseView'));
 T('quotidien : cache 1×/jour (KEY_IA + dayKey)', qdj.includes('arvexa-quotidien-ia-v1') && qdj.includes("v.date === dayKey()"));
 T('quotidien : partage adaptatif (goalTarget)', qdj.includes('goalTarget') && qdj.includes('arvexa-academy.vercel.app'));
 T('quotidien : plus de partage « je prépare le BAC » figé', !qdj.includes('je prépare le BAC, rejoins-moi'));
@@ -160,8 +160,8 @@ T('quotidien : importmap Firebase présent', qdj.includes('firebasejs/12.12.1/fi
 /* ── 6. SW ── */
 console.log('\n[6] Service worker');
 const sw = read('service-worker.js');
-T('SW_VERSION = arvexa-offline-v8.53b (let)', /let SW_VERSION = 'arvexa-offline-v8.53b';/.test(sw));
-T('changelog v8.53a sur la ligne du bump', /let SW_VERSION = 'arvexa-offline-v8.53b'; \/\/ ✅ v8.53b/.test(sw));
+T('SW_VERSION = arvexa-offline-v8.54a (let)', /let SW_VERSION = 'arvexa-offline-v8.54a';/.test(sw));
+T('changelog v8.54a sur la ligne du bump', /let SW_VERSION = 'arvexa-offline-v8.54a'; \/\/ ✅ v8.54a/.test(sw));
 T('précache : quotidien.html conservé', sw.includes("'./quotidien.html'"));
 T('précache : parcours.js conservé', sw.includes("'./parcours.js'"));
 

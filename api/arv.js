@@ -17,6 +17,150 @@ const PREMIUM_DAILY_LIMIT = 60;
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_HISTORY_MESSAGES = 10;
 
+/* ✅ v8.54a — VISION : images jointes au chat (« capable d'envoyer des
+   images pour qu'il puisse analyser ces images »). Même cascade éprouvée
+   que le kit ARVX (Gemini → OpenRouter manuscrit-first → Groq). */
+const CHAT_MAX_IMAGES = 2;
+const CHAT_MAX_IMAGE_B64 = 1.2 * 1024 * 1024;
+const CHAT_IMAGE_RE = /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/;
+const OR_VISION_MODELS = [
+  'qwen/qwen2.5-vl-72b-instruct:free',
+  'google/gemma-3-27b-it:free',
+  'meta-llama/llama-4-maverick:free',
+  'nvidia/nemotron-3.5-super-vl:free',
+  'mistralai/mistral-small-3.1-24b-instruct:free',
+  'moonshotai/kimi-vl-a3b-thinking:free'
+];
+const GROQ_VISION_MODELS = [
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+  'meta-llama/llama-4-maverick-17b-128e-instruct'
+];
+const GEMINI_VISION_MODELS = ['gemini-flash-latest', 'gemini-2.0-flash'];
+
+function visionLooksUseless(text) {
+  const t = String(text || '').trim();
+  if (t.length < 12) return true;
+  if (/^(je ne peux|je ne suis pas|impossible de|désolé|sorry|i can'?t|i cannot|i am unable|as an ai)/i.test(t)) return true;
+  return false;
+}
+
+function validateChatImages(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((u) => typeof u === 'string' && CHAT_IMAGE_RE.test(u) && u.length <= 4 + CHAT_MAX_IMAGE_B64 * 1.4)
+    .slice(0, CHAT_MAX_IMAGES);
+}
+
+async function fetchJsonPost(url, body, headers, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    const data = await res.json().catch(() => null);
+    return { ok: res.ok, status: res.status, data };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* Cascade vision complète — renvoie la réponse texte ou jette. */
+async function generateVisionReply(messages, images) {
+  const started = Date.now();
+  const left = () => 50000 - (Date.now() - started);
+  const systemText = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
+  const history = messages.filter((m) => m.role !== 'system');
+  const lastUser = history.length && history[history.length - 1].role === 'user'
+    ? String(history[history.length - 1].content || '')
+    : 'Analyse cette image pour moi.';
+  const prior = history.slice(0, -1);
+
+  const parts = [
+    { type: 'text', text: lastUser || 'Que montre cette image ? Analyse-la en lien avec les cours.' },
+    ...images.map((u) => ({ type: 'image_url', image_url: { url: u } }))
+  ];
+
+  /* 1) Gemini — inline_data (le meilleur lecteur d'écriture manuscrite) */
+  if (process.env.GEMINI_API_KEY && left() > 6000) {
+    const contents = [{
+      role: 'user',
+      parts: parts.map((p) => (p.type === 'text'
+        ? { text: p.text }
+        : { inline_data: { mime_type: 'image/jpeg', data: p.image_url.url.replace(/^data:image\/[a-z]+;base64,/, '') } }))
+    }];
+    const body = {
+      system_instruction: systemText ? { parts: [{ text: systemText }] } : undefined,
+      contents,
+      generationConfig: { temperature: 0.5, maxOutputTokens: 1600 }
+    };
+    for (const model of GEMINI_VISION_MODELS) {
+      if (left() < 4000) break;
+      for (const auth of [
+        { 'x-goog-api-key': process.env.GEMINI_API_KEY },
+        { Authorization: 'Bearer ' + process.env.GEMINI_API_KEY }
+      ]) {
+        try {
+          const r = await fetchJsonPost(
+            'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent',
+            body, auth, Math.min(17000, left()));
+          const p0 = r?.data?.candidates?.[0]?.content?.parts || [];
+          const text = p0.map((x) => x.text || '').join('').trim();
+          if (r.ok && text && !visionLooksUseless(text)) return text;
+          if (r.ok && text) break;
+        } catch (e) { /* modèle suivant */ }
+      }
+    }
+  }
+
+  /* 2) OpenRouter — modèles vision gratuits manuscrit-first */
+  if (process.env.OPENROUTER_API_KEY) {
+    for (const model of OR_VISION_MODELS) {
+      if (left() < 4000) break;
+      try {
+        const r = await fetchJsonPost('https://openrouter.ai/api/v1/chat/completions', {
+          model,
+          max_tokens: 1600,
+          temperature: 0.5,
+          messages: [
+            ...(systemText ? [{ role: 'system', content: systemText }] : []),
+            ...prior,
+            { role: 'user', content: parts }
+          ]
+        }, { Authorization: 'Bearer ' + process.env.OPENROUTER_API_KEY }, Math.min(17000, left()));
+        const text = String(r?.data?.choices?.[0]?.message?.content || '').trim();
+        if (r.ok && text && !visionLooksUseless(text)) return text;
+      } catch (e) { /* modèle suivant */ }
+    }
+  }
+
+  /* 3) Groq — modèles vision Llama-4 */
+  if (process.env.GROQ_API_KEY) {
+    for (const model of GROQ_VISION_MODELS) {
+      if (left() < 4000) break;
+      try {
+        const r = await fetchJsonPost('https://api.groq.com/openai/v1/chat/completions', {
+          model,
+          max_tokens: 1600,
+          temperature: 0.5,
+          messages: [
+            ...(systemText ? [{ role: 'system', content: systemText }] : []),
+            ...prior,
+            { role: 'user', content: parts }
+          ]
+        }, { Authorization: 'Bearer ' + process.env.GROQ_API_KEY }, Math.min(17000, left()));
+        const text = String(r?.data?.choices?.[0]?.message?.content || '').trim();
+        if (r.ok && text && !visionLooksUseless(text)) return text;
+      } catch (e) { /* modèle suivant */ }
+    }
+  }
+
+  throw new Error('all_vision_failed');
+}
+
 
 let adminServices;
 
@@ -566,6 +710,8 @@ module.exports = async function handler(request, response) {
   const body = request.body && typeof request.body === 'object' ? request.body : {};
   const userMessage = String(body.message || '').trim();
   const conversationId = body.conversationId || null;
+  /* ✅ v8.54a — images jointes (vision) : dataURL validés, 2 max */
+  const images = validateChatImages(body.images);
 
   if (!userMessage) {
     return jsonError(response, 400, 'Message vide.');
@@ -616,7 +762,21 @@ module.exports = async function handler(request, response) {
     messages.push({ role: 'user', content: userMessage });
 
     // ═══ Appel IA ═══
-    const { reply } = await generateWithFallback(messages);
+    /* ✅ v8.54a — avec images : cascade vision (Gemini → OpenRouter →
+       Groq) ; repli texte seul si toutes les IA vision échouent. */
+    let reply;
+    if (images.length) {
+      try {
+        reply = await generateVisionReply(messages, images);
+      } catch (visionError) {
+        console.warn('ARV vision failed, repli texte :', visionError.message);
+        const textOnly = await generateWithFallback(messages);
+        reply = textOnly.reply;
+      }
+    } else {
+      const result = await generateWithFallback(messages);
+      reply = result.reply;
+    }
 
     // ═══ Persistance ═══
     let finalConversationId = conversationId;
@@ -624,7 +784,7 @@ module.exports = async function handler(request, response) {
       const conv = await getOrCreateConversation(uid, conversationId, userMessage);
       finalConversationId = conv.id;
 
-      await saveMessage(uid, finalConversationId, 'user', userMessage);
+      await saveMessage(uid, finalConversationId, 'user', images.length ? userMessage + ' [image jointe]' : userMessage);
       await saveMessage(uid, finalConversationId, 'assistant', reply);
     } catch (saveError) {
       console.error('ARV save failed:', saveError.message);

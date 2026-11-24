@@ -560,81 +560,92 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
-       QUOTA BAR
+       QUOTA PASTILLE — ✅ v8.54a : la longue barre des limites est
+       remplacée par une petite pastille discrète alignée à droite.
        ═══════════════════════════════════════════════════════════ */
-    .quota-bar {
+    .quota-wrap {
       flex-shrink: 0;
       display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 16px;
-      background: var(--bg-elevated);
-      border-bottom: 1px solid var(--line);
-      min-height: var(--quota-h);
-      font-size: 12px;
+      justify-content: flex-end;
+      padding: 7px 16px 0;
     }
-
-    .quota-label {
-      display: flex;
+    .quota-pill {
+      display: inline-flex;
       align-items: center;
       gap: 6px;
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
       color: var(--text-muted);
-      font-weight: 500;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .quota-label i { color: var(--accent-bright); font-size: 11px; }
-
-    .quota-track {
-      flex: 1;
-      height: 4px;
-      border-radius: 8px;
-      background: rgba(var(--rgb-soft), 0.05);
-      overflow: hidden;
-      min-width: 60px;
-    }
-    .quota-fill {
-      height: 100%;
-      border-radius: 8px;
-      background: linear-gradient(90deg, var(--accent-bright), var(--accent));
-      transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-      width: 100%;
-    }
-    .quota-fill.warning { background: linear-gradient(90deg, #D4A017, #E67E22); }
-    .quota-fill.danger  { background: linear-gradient(90deg, #E67E22, #E74C3C); }
-
-    .quota-value {
-      font-size: 11.5px;
-      font-weight: 700;
-      color: var(--text);
-      white-space: nowrap;
-      flex-shrink: 0;
+      background: rgba(var(--rgb-soft), 0.04);
+      border: 1px solid rgba(224, 184, 74, 0.14);
       font-variant-numeric: tabular-nums;
     }
-
-    .quota-upgrade {
+    .quota-pill > i { color: var(--accent-bright); font-size: 10px; }
+    .quota-pill.low { color: #E67E22; border-color: rgba(230, 126, 34, 0.35); }
+    .quota-pill.danger { color: #E74C3C; border-color: rgba(231, 76, 60, 0.4); }
+    .quota-pill .quota-upgrade {
       display: none;
       align-items: center;
-      gap: 5px;
-      padding: 5px 11px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-      color: var(--on-gold);
+      gap: 4px;
+      margin-left: 2px;
+      color: var(--accent-bright);
+      text-decoration: none;
       font-weight: 700;
       font-size: 10.5px;
-      text-decoration: none;
-      letter-spacing: 0.02em;
-      transition: var(--transition);
+    }
+    .quota-pill.show-upgrade .quota-upgrade { display: inline-flex; }
+
+    /* ═══════════════════════════════════════════════════════════
+       IMAGES JOINTES — ✅ v8.54a : bouton trombone + vignettes
+       ═══════════════════════════════════════════════════════════ */
+    .attach-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--text-faint);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
       flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(184, 134, 11, 0.2);
+      margin-bottom: 3px;
+      transition: var(--transition);
     }
-    .quota-upgrade.show { display: inline-flex; }
-    .quota-upgrade:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3);
+    .attach-btn:hover { color: var(--accent-bright); background: rgba(184, 134, 11, 0.08); }
+    .attach-btn:active { transform: scale(0.94); }
+    .img-preview {
+      max-width: 860px;
+      margin: 0 auto 8px;
+      display: none;
+      gap: 8px;
+      flex-wrap: wrap;
     }
-    .quota-upgrade:active { transform: scale(0.97); }
-    .quota-upgrade i { font-size: 10px; }
+    .img-preview.show { display: flex; }
+    .img-chip {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(184, 134, 11, 0.25);
+    }
+    .img-chip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .img-chip button {
+      position: absolute; top: 2px; right: 2px;
+      width: 18px; height: 18px; border-radius: 50%; border: none;
+      background: rgba(0, 0, 0, 0.65); color: #fff;
+      font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .msg-imgs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .msg-imgs img {
+      max-width: 180px; max-height: 140px; border-radius: 10px;
+      border: 1px solid rgba(184, 134, 11, 0.2); display: block;
+    }
 
     /* ═══════════════════════════════════════════════════════════
        CHAT CONTAINER
@@ -1170,13 +1181,13 @@
       .input-zone { padding: 9px 11px; padding-bottom: calc(9px + var(--safe-bottom)); }
       .welcome-mark { width: 54px; height: 54px; font-size: 24px; border-radius: 16px; }
       .welcome h2 { font-size: 20px; }
-      .quota-bar { padding: 6px 12px; font-size: 11px; }
+      .quota-wrap { padding: 5px 11px 0; }
       .sidebar-new-btn { font-size: 12.5px; padding: 10px 14px; }
     }
 
     @media (max-width: 380px) {
       .chat-container { padding: 14px 10px 10px; }
-      .quota-label span { display: none; }
+      .quota-pill { font-size: 10px; padding: 3px 9px; }
       .message-bubble { font-size: 13.5px; padding: 11px 13px; }
     }
 
@@ -1184,7 +1195,7 @@
       .chat-container { padding: 12px 9px 9px; gap: 12px; }
       .message-bubble { font-size: 13px; padding: 10px 12px; }
       .message-avatar { width: 26px; height: 26px; font-size: 10px; }
-      .quota-label span { display: none; }
+      .quota-pill { font-size: 10px; }
       .quota-value { font-size: 10.5px; }
       .welcome h2 { font-size: 18px; }
       .welcome p { font-size: 13px; }
@@ -1456,20 +1467,15 @@
       </div>
     </header>
 
-    <!-- QUOTA BAR -->
-    <div class="quota-bar" id="quotaBar">
-      <span class="quota-label">
+    <!-- ✅ v8.54a — QUOTA SIMPLIFIÉ : petite pastille discrète (fini la longue barre) -->
+    <div class="quota-wrap">
+      <span class="quota-pill" id="quotaBar" title="Questions du jour">
         <i class="fas fa-bolt"></i>
-        <span>Questions</span>
+        <span class="quota-value" id="quotaValue">-- / --</span>
+        <a href="abonnement.html" class="quota-upgrade" id="quotaUpgrade">
+          <i class="fas fa-crown"></i> Premium
+        </a>
       </span>
-      <div class="quota-track">
-        <div class="quota-fill" id="quotaFill" style="width: 100%"></div>
-      </div>
-      <span class="quota-value" id="quotaValue">-- / --</span>
-      <a href="abonnement.html" class="quota-upgrade" id="quotaUpgrade">
-        <i class="fas fa-crown"></i>
-        Premium
-      </a>
     </div>
 
     <!-- CHAT CONTAINER -->
@@ -1479,7 +1485,13 @@
 
     <!-- INPUT ZONE -->
     <div class="input-zone">
+      <!-- ✅ v8.54a — vignettes des images jointes -->
+      <div class="img-preview" id="imgPreview"></div>
       <div class="input-wrapper">
+        <button class="attach-btn" id="attachBtn" type="button" aria-label="Joindre une image" title="Joindre une image">
+          <i class="fas fa-paperclip"></i>
+        </button>
+        <input type="file" id="imgInput" accept="image/png,image/jpeg,image/webp" multiple hidden>
         <textarea
           class="chat-input"
           id="chatInput"
@@ -1491,7 +1503,7 @@
         </button>
       </div>
       <div class="input-hint">
-        <kbd>Entrée</kbd> pour envoyer · <kbd>Maj+Entrée</kbd> pour un saut de ligne
+        <kbd>Entrée</kbd> pour envoyer · <kbd>Maj+Entrée</kbd> pour un saut de ligne · <i class="fas fa-paperclip" style="font-size:10px"></i> pour joindre une image
       </div>
     </div>
 
@@ -1637,7 +1649,8 @@ const state = {
   sending: false,
   remaining: 0,
   limit: 10,
-  conversations: []
+  conversations: [],
+  images: []   /* ✅ v8.54a — images jointes (dataURL, max 2) */
 };
 
 // ✅ C7 — Handlers online/offline stockés pour cleanup
@@ -1666,9 +1679,13 @@ const chatInput = $('chatInput');
 const sendBtn = $('sendBtn');
 
 const quotaBar = $('quotaBar');
-const quotaFill = $('quotaFill');
 const quotaValue = $('quotaValue');
 const quotaUpgrade = $('quotaUpgrade');
+
+/* ✅ v8.54a — images jointes */
+const attachBtn = $('attachBtn');
+const imgInput = $('imgInput');
+const imgPreview = $('imgPreview');
 
 const statusDot = $('statusDot');
 const statusText = $('statusText');
@@ -1834,18 +1851,16 @@ document.getElementById('navLogout').addEventListener('click', (e) => {
 function updateQuota() {
   const total = state.limit;
   const remaining = state.remaining;
-  const percent = Math.max(0, (remaining / total) * 100);
 
-  quotaFill.style.width = percent + '%';
-  quotaFill.className = 'quota-fill' +
-    (percent <= 15 ? ' danger' : percent <= 40 ? ' warning' : '');
-
-  quotaValue.textContent = `${remaining} / ${total}`;
-
-  if (remaining <= 0 && !state.isPremium) {
-    quotaUpgrade.classList.add('show');
-  } else {
-    quotaUpgrade.classList.remove('show');
+  /* ✅ v8.54a — pastille discrète : plus de barre de progression */
+  quotaValue.textContent = `${remaining}/${total}`;
+  quotaBar.classList.remove('low', 'danger', 'show-upgrade');
+  if (state.isPremium) return;
+  if (remaining <= 0) {
+    quotaBar.classList.add('danger', 'show-upgrade');
+  } else if (remaining <= 3) {
+    quotaBar.classList.add('low');
+    if (remaining <= 2) quotaBar.classList.add('show-upgrade');
   }
 }
 
@@ -2080,7 +2095,18 @@ function renderMessage(msg) {
 
   const bubble = document.createElement('div');
   bubble.className = 'message-bubble';
-  bubble.innerHTML = renderMarkdown(msg.content);
+
+  /* ✅ v8.54a — vignettes des images jointes au message utilisateur */
+  if (Array.isArray(msg.images) && msg.images.length) {
+    const imgs = document.createElement('div');
+    imgs.className = 'msg-imgs';
+    imgs.innerHTML = msg.images.map((src) => '<img src="' + src + '" alt="image jointe">').join('');
+    bubble.appendChild(imgs);
+  }
+
+  const txt = document.createElement('div');
+  txt.innerHTML = renderMarkdown(msg.content);
+  while (txt.firstChild) bubble.appendChild(txt.firstChild);
 
   const time = document.createElement('div');
   time.className = 'message-time';
@@ -2182,7 +2208,8 @@ function autoResize() {
 
 function updateSendBtn() {
   const hasText = chatInput.value.trim().length > 0;
-  sendBtn.disabled = !hasText || state.sending;
+  /* ✅ v8.54a — on peut envoyer des images même sans texte */
+  sendBtn.disabled = (!hasText && !state.images.length) || state.sending;
 }
 
 chatInput.addEventListener('input', () => {
@@ -2199,18 +2226,101 @@ chatInput.addEventListener('keydown', (e) => {
 
 sendBtn.addEventListener('click', sendMessage);
 
+/* ═══════════════════════════════════════════════════════════════
+   ✅ v8.54a — IMAGES JOINTES (vision) : trombone → compression locale
+   (canvas, max 1400 px, JPEG 0.82) → vignettes → envoi à /api/arv
+   qui route vers les IA vision (Gemini → OpenRouter → Groq).
+   ═══════════════════════════════════════════════════════════════ */
+const MAX_IMAGES = 2;
+
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('lecture impossible'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('image invalide'));
+      img.onload = () => {
+        try {
+          const MAXDIM = 1400;
+          let w = img.width, h = img.height;
+          if (w > MAXDIM || h > MAXDIM) {
+            const k = MAXDIM / Math.max(w, h);
+            w = Math.round(w * k); h = Math.round(h * k);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        } catch (e) { reject(e); }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderImgPreview() {
+  imgPreview.innerHTML = '';
+  if (!state.images.length) { imgPreview.classList.remove('show'); return; }
+  imgPreview.classList.add('show');
+  state.images.forEach((src, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'img-chip';
+    chip.innerHTML = '<img src="' + src + '" alt=""><button type="button" aria-label="Retirer"><i class="fas fa-times"></i></button>';
+    chip.querySelector('button').addEventListener('click', () => {
+      state.images.splice(i, 1);
+      renderImgPreview();
+      updateSendBtn();
+    });
+    imgPreview.appendChild(chip);
+  });
+}
+
+attachBtn.addEventListener('click', () => {
+  if (state.sending) return;
+  imgInput.value = '';
+  imgInput.click();
+});
+
+imgInput.addEventListener('change', async () => {
+  const files = Array.from(imgInput.files || []).slice(0, MAX_IMAGES - state.images.length);
+  for (const f of files) {
+    if (!/^image\/(png|jpe?g|webp)$/i.test(f.type)) {
+      showToast('Formats acceptés : PNG, JPEG, WebP', 'error');
+      continue;
+    }
+    try {
+      const dataUrl = await compressImage(f);
+      if (state.images.length >= MAX_IMAGES) {
+        showToast('Maximum ' + MAX_IMAGES + ' images par message', 'info');
+        break;
+      }
+      state.images.push(dataUrl);
+    } catch (e) {
+      showToast('Image non prise en charge', 'error');
+    }
+  }
+  renderImgPreview();
+  updateSendBtn();
+  if (state.images.length && !chatInput.value) {
+    chatInput.placeholder = 'Décris ce que tu veux savoir sur l\'image (optionnel)...';
+  }
+});
+
 async function sendMessage() {
   if (state.sending || !state.user) return;
 
   const content = chatInput.value.trim();
-  if (!content) return;
+  const images = state.images.slice(0, 2);
+  if (!content && !images.length) return;
 
   if (state.remaining <= 0 && !state.isPremium) {
     showPremiumModal();
     return;
   }
 
-  const userMsg = { role: 'user', content, createdAt: new Date() };
+  const userMsg = { role: 'user', content: content || 'Analyse cette image pour moi.', createdAt: new Date(), images };
   const wasWelcome = state.messages.length === 0;
   state.messages.push(userMsg);
 
@@ -2220,12 +2330,15 @@ async function sendMessage() {
   renderMessage(userMsg);
 
   chatInput.value = '';
+  chatInput.placeholder = 'Pose ta question à ARV Assistant...';
+  state.images = [];
+  renderImgPreview();
   autoResize();
   state.sending = true;
   updateSendBtn();
   sendBtn.classList.add('loading');
   sendBtn.innerHTML = '<i class="fas fa-circle-notch"></i>';
-  statusText.textContent = 'Réflexion en cours...';
+  statusText.textContent = images.length ? 'Analyse de l\'image par tes IA...' : 'Réflexion en cours...';
 
   showTyping();
 
@@ -2239,8 +2352,9 @@ async function sendMessage() {
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        message: content,
-        conversationId: state.conversationId
+        message: content || 'Analyse cette image pour moi.',
+        conversationId: state.conversationId,
+        images: images.length ? images : undefined
       })
     });
 
@@ -2466,5 +2580,6 @@ updateSendBtn();
 console.log('🚀 ARV Assistant v2.1 — corrections C1-C7 appliquées');
 </script>
 <script type="module" src="./arvexa-confirm.js"></script>
+<script src="arvexa-modal.js" defer></script>
 </body>
 </html>

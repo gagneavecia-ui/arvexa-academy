@@ -191,7 +191,7 @@
     <div class="hero">
       <div class="hero-icon">🎯</div>
       <h1>Question du <em>jour</em></h1>
-      <p>4 questions générées par tes IA · tirées de tes cours du Résumé · ta série 🔥 avance</p>
+      <p>4 questions générées par tes IA · tirées UNIQUEMENT de tes leçons du Résumé · ta série 🔥 avance</p>
     </div>
 
     <div class="card">
@@ -202,6 +202,17 @@
       <div id="errorView" class="hidden">
         <div class="qd-center">😕 Impossible de charger les questions.<br>Vérifie ta connexion puis réessaie.</div>
         <div class="qd-actions"><button class="qd-btn ghost" id="retryBtn">Réessayer</button></div>
+      </div>
+
+      <!-- ✅ v8.54a — AUCUNE LEÇON FOURNIE : la Question du jour est tirée
+           UNIQUEMENT des leçons données par l'élève (cahier Résumé). Sans
+           leçon, aucune question n'est inventée ailleurs → on l'invite. -->
+      <div id="noCourseView" class="hidden">
+        <div class="qd-center">📚 Aucune leçon dans ton cahier <strong>Résumé</strong> pour l'instant.<br><br>La Question du jour est créée <strong>uniquement à partir de TES leçons</strong> — ajoute ta première leçon dans Résumé, et tes IA la transformeront en questions.</div>
+        <div class="qd-actions-col">
+          <a href="arv-progress.html" class="qd-btn">Ajouter une leçon dans Résumé</a>
+          <button class="qd-btn ghost" id="noCourseRetryBtn">Réessayer</button>
+        </div>
       </div>
 
       <!-- QUIZ -->
@@ -340,7 +351,7 @@ function etat() {
 }
 function saveEtat(e) { try { localStorage.setItem(KEY, JSON.stringify(e)); } catch (err) {} }
 function show(view) {
-  ['loadingView', 'errorView', 'quizView', 'doneView'].forEach((v) => {
+  ['loadingView', 'errorView', 'noCourseView', 'quizView', 'doneView'].forEach((v) => {
     $(v).classList.toggle('hidden', v !== view);
   });
 }
@@ -425,7 +436,7 @@ function terminer() {
   let ligne = '🔥 Série : ' + st.count + ' ' + jours + ' (record : ' + st.best + ')';
   if (st.freeze > 0) ligne += ' · <span class="conge">🛡️ 1 congé disponible</span>';
   $('doneStreak').innerHTML = ligne;
-  $('doneSub').textContent = 'Nouvelles questions demain — générées depuis tes cours du Résumé.';
+  $('doneSub').textContent = 'Nouvelles questions demain — générées uniquement depuis tes leçons du Résumé.';
   show('doneView');
   renderChip();
 }
@@ -441,7 +452,7 @@ function apresChargement(items) {
   if (e.lastDone === dayKey()) {
     $('doneScore').textContent = (typeof e.score === 'number' ? e.score : '—') + '/' + ordre.length;
     $('doneMsg').textContent = "Tu as déjà fait la question du jour aujourd'hui. Reviens demain à 7h — tes IA préparent la suite 🔥";
-    $('doneSub').textContent = 'Chaque jour, de nouvelles questions tirées de tes cours du Résumé.';
+    $('doneSub').textContent = 'Chaque jour, de nouvelles questions tirées uniquement de tes leçons du Résumé.';
     const st = window.ARVEXA_STREAK ? window.ARVEXA_STREAK.get() : { count: 0, best: 0, freeze: 0 };
     $('doneStreak').textContent = '🔥 Série actuelle : ' + (st.count || 0) + (st.count === 1 ? ' jour' : ' jours');
     show('doneView');
@@ -476,33 +487,119 @@ async function profilDe(user) {
   } catch (e) { /* cache local */ }
   try { return JSON.parse(localStorage.getItem('arvexa_user_data') || 'null'); } catch (e) { return null; }
 }
+/* ── ✅ v8.54a — EXTRAITS RÉELS DES LEÇONS FOURNIES PAR L'ÉLÈVE ──
+   « c'est en fonction de la leçon que l'utilisateur a fourni que la
+   question va se présenter… tout est extrait de son cours qu'il a donné ».
+   Pipeline : getDashboard (chapitres récents) → getFullLesson (contenu
+   TEXTUEL des sections : rawInput = la leçon fournie, explication,
+   structure) → le prompt n'envoie QUE ces extraits à l'IA. S'il n'a
+   fourni aucune leçon → écran noCourseView (aucune question inventée
+   ailleurs, la banque statique n'est plus utilisée). */
+const SUBJECT_LABELS = {};
+MATIERES.forEach((m) => { SUBJECT_LABELS[m.id] = m.label; });
+function extraSubjectLabel(key) {
+  if (SUBJECT_LABELS[key]) return SUBJECT_LABELS[key];
+  if (window.ARVEXA_SUBJECT_LABELS && window.ARVEXA_SUBJECT_LABELS[key]) return window.ARVEXA_SUBJECT_LABELS[key];
+  return String(key).charAt(0).toUpperCase() + String(key).slice(1).replace(/_/g, ' ');
+}
+function sectionLeconTexte(s) {
+  const bits = [];
+  const a = (s && s.analysis) ? s.analysis : {};
+  if (s && s.title) bits.push(String(s.title).slice(0, 90));
+  if (s && s.rawInput) bits.push(String(s.rawInput).slice(0, 700)); // LA leçon fournie par l'élève
+  if (a.explanation) {
+    if (a.explanation.understanding) bits.push(String(a.explanation.understanding).slice(0, 350));
+    (Array.isArray(a.explanation.parts) ? a.explanation.parts : []).slice(0, 3).forEach((p) => {
+      if (!p) return;
+      if (p.title) bits.push(String(p.title).slice(0, 90));
+      const txt = p.content || p.simpleExplanation || p.explanation || '';
+      if (txt) bits.push(String(txt).slice(0, 250));
+    });
+  }
+  if (a.structure) {
+    const st = a.structure;
+    (Array.isArray(st.formulas) ? st.formulas : []).slice(0, 4).forEach((f) => {
+      if (f) bits.push('Formule : ' + String(typeof f === 'string' ? f : JSON.stringify(f)).slice(0, 120));
+    });
+    if (st.method && st.method.title) bits.push('Méthode : ' + String(st.method.title).slice(0, 90));
+    (st.method && Array.isArray(st.method.steps) ? st.method.steps : []).slice(0, 3).forEach((x) => { if (x) bits.push('Étape : ' + String(x).slice(0, 110)); });
+    (Array.isArray(st.examples) ? st.examples : []).slice(0, 2).forEach((x) => { if (x) bits.push('Exemple : ' + String(typeof x === 'string' ? x : JSON.stringify(x)).slice(0, 160)); });
+    (Array.isArray(st.traps) ? st.traps : []).slice(0, 2).forEach((x) => { if (x) bits.push('Piège : ' + String(typeof x === 'string' ? x : JSON.stringify(x)).slice(0, 140)); });
+  }
+  if (s && s.userNotes) bits.push('Notes de l\'élève : ' + String(s.userNotes).slice(0, 200));
+  return bits.filter(Boolean).join(' · ');
+}
 async function coursDuResume(token) {
-  const out = [];
+  const H = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  const targets = [];
+  let subjects = [];
   try {
     const r = await fetch('/api/progress', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      method: 'POST', headers: H,
       body: JSON.stringify({ action: 'getDashboard' })
     });
-    if (!r.ok) return out;
+    if (!r.ok) return { extraits: [] };
     const dash = await r.json();
-    (Array.isArray(dash && dash.subjects) ? dash.subjects : [])
-      .filter((s) => (s.sectionsCount || 0) > 0)
-      .forEach((s) => out.push((s.label || s.key) + ' — ' + (s.sectionsCount || 0) + ' section' + ((s.sectionsCount || 0) > 1 ? 's' : '') + (s.last ? ' (dernière : ' + s.last + ')' : '')));
-    (Array.isArray(dash && dash.recentActivity) ? dash.recentActivity : []).slice(0, 6)
-      .forEach((a) => { if (a && a.chapterTitle) out.push(String(a.chapterTitle)); });
-  } catch (e) { /* hors ligne → prompt générique */ }
-  return out;
+    subjects = (Array.isArray(dash && dash.subjects) ? dash.subjects : []).filter((s) => (s.sectionsCount || 0) > 0);
+    (Array.isArray(dash && dash.recentActivity) ? dash.recentActivity : []).slice(0, 3).forEach((a) => {
+      if (a && a.subject && a.chapterId) targets.push({ subject: a.subject, chapterId: a.chapterId, chapterTitle: a.chapterTitle || '' });
+    });
+  } catch (e) { return { extraits: [] }; }
+
+  /* complète avec le chapitre le plus récent des 2 premières matières */
+  if (targets.length < 3) {
+    for (const s of subjects.slice(0, 2)) {
+      if (targets.length >= 4) break;
+      if (targets.some((t) => t.subject === s.key)) continue;
+      try {
+        const r = await fetch('/api/progress', {
+          method: 'POST', headers: H,
+          body: JSON.stringify({ action: 'listChapters', subject: s.key })
+        });
+        if (!r.ok) continue;
+        const data = await r.json();
+        const first = (Array.isArray(data && data.chapters) ? data.chapters : [])[0];
+        if (first && first.id) targets.push({ subject: s.key, chapterId: first.id, chapterTitle: first.title || '' });
+      } catch (e) { /* ignoré */ }
+    }
+  }
+
+  /* dédoublonne puis lit le CONTENU réel (getFullLesson) */
+  const seen = new Set();
+  const uniques = targets.filter((t) => {
+    const k = t.subject + '/' + t.chapterId;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(0, 3);
+
+  const extraits = [];
+  for (const t of uniques) {
+    try {
+      const r = await fetch('/api/progress', {
+        method: 'POST', headers: H,
+        body: JSON.stringify({ action: 'getFullLesson', subject: t.subject, chapterId: t.chapterId })
+      });
+      if (!r.ok) continue;
+      const data = await r.json();
+      const chapTitle = ((data && data.chapter && data.chapter.title) || t.chapterTitle || 'Chapitre').slice(0, 80);
+      const texte = (Array.isArray(data && data.sections) ? data.sections : [])
+        .map(sectionLeconTexte)
+        .filter(Boolean)
+        .join('\n— ')
+        .slice(0, 2000);
+      if (texte) extraits.push({ matiere: extraSubjectLabel(t.subject), chapitre: chapTitle, texte });
+    } catch (e) { /* ignoré */ }
+  }
+  return { extraits };
 }
-function buildPrompt(niveau, cours) {
-  const lignes = cours.length
-    ? 'COURS SUIVIS PAR CET ÉLÈVE (cahier Résumé) :\n' + cours.map((c, i) => (i + 1) + '. ' + c).join('\n')
-    : 'COURS SUIVIS : aucun pour l\'instant — base-toi sur le programme officiel de son niveau.';
+function buildPrompt(niveau, extraits) {
+  const blocs = extraits.map((x, i) => 'LEÇON ' + (i + 1) + ' — ' + x.matiere + ' · ' + x.chapitre + ' :\n"' + x.texte + '"');
   return 'Tu génères la « Question du jour » d\'ARVEXA School.\n\n'
     + 'NIVEAU DE L\'ÉLÈVE : ' + niveau + '.\n'
-    + lignes + '\n\n'
-    + 'CONSIGNE : crée EXACTEMENT 4 questions de quiz INÉDITES pour AUJOURD\'HUI, ancrées EN PRIORITÉ dans les cours suivis par cet élève (sinon, programme officiel de son niveau). Une question par domaine étudié — pour un profil littéraire ou supérieur, adapte les domaines (philosophie, histoire, français, économie…) au lieu des sciences. Questions courtes et précises, niveau ' + niveau + ', QCM à 4 choix avec exactement UNE bonne réponse, explication en 1-2 phrases.\n\n'
-    + 'RÉPONSE : UNIQUEMENT un tableau JSON STRICT, sans texte avant/après, sans balises markdown :\n'
+    + 'LEÇONS FOURNIES PAR CET ÉLÈVE (cahier Résumé) :\n' + blocs.join('\n\n') + '\n\n'
+    + 'CONSIGNE ABSOLUE : crée EXACTEMENT 4 questions de quiz INÉDITES pour AUJOURD\'HUI à partir UNIQUEMENT des leçons ci-dessus — la leçon donnée par l\'élève est la SEULE source autorisée. INTERDICTION FORMELLE de créer une question sur un chapitre, une leçon ou un thème ABSENT de ces extraits (pas de programme officiel, pas de culture générale, aucune connaissance extérieure). Chaque question porte sur une leçon DIFFÉRENTE de la liste et teste sa compréhension (définitions, formules, méthode, exemples vus dans la leçon). Les mauvaises réponses doivent être plausibles. Explication en 1-2 phrases appuyée sur la leçon source. Questions courtes et précises, niveau ' + niveau + ', QCM à 4 choix avec exactement UNE bonne réponse.\n\n'
+    + 'RÉPONSE : UNIQUEMENT un tableau JSON STRICT, sans texte avant/après, sans balises markdown (les champs matiere et chapitre reprennent la leçon source de la question) :\n'
     + '[{"matiere":"…","chapitre":"…","question":"…","options":["…","…","…","…"],"bonne":0,"explication":"…"}]';
 }
 function extractJson(txt) {
@@ -545,10 +642,17 @@ async function chargerIa(user) {
     ? CL.full(profil.classId || '', profil.customClass || '', profil.series)
     : (profil.classId || 'Terminale');
   const cours = await coursDuResume(token);
+  /* ✅ v8.54a — sans leçon fournie : AUCUNE question hors du cours de
+     l'élève → écran d'invitation (pas de banque statique). */
+  if (!cours.extraits.length) {
+    const err = new Error('aucune leçon fournie');
+    err.noCourses = true;
+    throw err;
+  }
   const r = await fetch('/api/arv', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify({ message: buildPrompt(niveau, cours) })
+    body: JSON.stringify({ message: buildPrompt(niveau, cours.extraits) })
   });
   const data = await r.json().catch(() => null);
   if (!r.ok || !data || !data.reply) {
@@ -559,26 +663,8 @@ async function chargerIa(user) {
   return qs;
 }
 
-/* ── Repli : banque statique du jour (comme avant v8.53a) ── */
-async function chargerBanque() {
-  const r = await fetch('./quotidien.json');
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  const data = await r.json();
-  const lancement = new Date(data.lancement + 'T00:00:00');
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  let jourNum = Math.floor((today - lancement) / 86400000);
-  if (!isFinite(jourNum) || jourNum < 0) jourNum = 0;
-  const items = MATIERES.map((m) => {
-    const liste = (data.matieres && data.matieres[m.id]) || [];
-    if (!liste.length) return null;
-    const it = liste[jourNum % liste.length];
-    return { label: m.label, icon: m.icon, c: it.c || '', q: it.q, o: it.o, a: it.a, e: it.e || '' };
-  }).filter(Boolean);
-  if (!items.length) throw new Error('banque vide');
-  return items;
-}
-
-/* ── Chargement : IA d'abord, banque en repli ── */
+/* ── Chargement : IA sur les leçons de l'élève (v8.54a : plus de banque
+   statique — sans leçon fournie → noCourseView, jamais de question hors cours) ── */
 async function charger() {
   show('loadingView');
   const c = cacheIa();
@@ -590,9 +676,8 @@ async function charger() {
     saveCacheIa(qs);
     apresChargement(qs);
   } catch (e) {
-    try {
-      apresChargement(await chargerBanque());
-    } catch (e2) { show('errorView'); }
+    if (e && e.noCourses) { show('noCourseView'); return; }
+    show('errorView');
   }
 }
 $('nextBtn').addEventListener('click', () => {
@@ -600,6 +685,8 @@ $('nextBtn').addEventListener('click', () => {
   else terminer();
 });
 $('retryBtn').addEventListener('click', charger);
+var noCourseRetryBtn = $('noCourseRetryBtn');
+if (noCourseRetryBtn) noCourseRetryBtn.addEventListener('click', charger);
 document.addEventListener('arvexa-streak-change', renderChip);
 renderChip();
 charger();

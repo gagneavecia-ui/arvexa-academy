@@ -529,6 +529,59 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(184, 134, 11, 0.25); border-radius: 10px; }
+    /* ============================================================
+       ✅ v8.54a — FICHE CAMARADE (bottom sheet) : numéro WhatsApp,
+       appeler / écrire. Poignée + glisser vers le bas = fermeture
+       (arvexa-modal.js, composant uniforme de tout le site).
+       ============================================================ */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 120;
+      background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(3px);
+      display: none; align-items: flex-end; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-sheet {
+      width: 100%; max-width: 480px; max-height: 86vh; overflow-y: auto;
+      background: rgba(15, 15, 15, 0.97);
+      border: 1px solid rgba(184, 134, 11, 0.14); border-bottom: none;
+      border-radius: 22px 22px 0 0;
+      padding: 26px 18px calc(18px + var(--safe-bottom));
+      animation: sheetUp 0.32s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+    html[data-theme="light"] .modal-sheet { background: rgba(250, 247, 240, 0.97); }
+    .mate-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .mate-ava {
+      width: 52px; height: 52px; border-radius: 16px; flex: 0 0 auto;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(184, 134, 11, 0.12); border: 1px solid rgba(184, 134, 11, 0.2);
+      font-weight: 800; font-size: 18px; color: var(--accent-bright);
+    }
+    .mate-name { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 700; color: var(--text-light); }
+    .mate-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+    .mate-phone {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 12px 14px; border-radius: 14px; margin-bottom: 12px;
+      background: rgba(var(--rgb-soft), 0.05); border: 1px solid rgba(184, 134, 11, 0.1);
+      font-size: 15px; font-weight: 700; color: var(--text-light); letter-spacing: 0.4px;
+    }
+    .mate-phone i { color: var(--accent-bright); }
+    .mate-phone.none { color: var(--text-dim); font-weight: 500; }
+    .mate-err { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--danger-light); padding: 8px 2px 12px; }
+    .mate-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .mate-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 10px; border-radius: 14px; text-decoration: none;
+      font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+      border: 1px solid rgba(184, 134, 11, 0.14);
+      background: rgba(184, 134, 11, 0.08); color: var(--text-light);
+      transition: var(--transition);
+    }
+    .mate-btn:hover { border-color: rgba(184, 134, 11, 0.3); }
+    .mate-btn:active { transform: scale(0.97); }
+    .mate-btn.primary { background: rgba(58, 182, 126, 0.12); border-color: rgba(58, 182, 126, 0.3); color: var(--success-light); }
+    .mate-btn.wa { background: rgba(37, 211, 102, 0.1); border-color: rgba(37, 211, 102, 0.3); color: #25D366; }
+    .mate-note { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 10px; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -726,6 +779,17 @@
 
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- ✅ v8.54a — FICHE CAMARADE : appui sur une carte → numéro WhatsApp,
+       appeler / écrire (réciprocité : le contact n'est visible que si tu
+       partages ta position toi-même). Poignée « trait du milieu » + glisser
+       vers le bas pour fermer (arvexa-modal.js, uniforme sur tout le site). -->
+  <div class="modal-overlay" id="mateModal">
+    <div class="modal-sheet" id="mateSheet" role="dialog" aria-modal="true" aria-label="Fiche camarade">
+      <button class="modal-close" id="mateModalClose" aria-hidden="true" tabindex="-1" style="position:absolute;"></button>
+      <div id="mateSheetContent"></div>
+    </div>
+  </div>
+
   <!-- v8.20 : MapLibre GL (carte 3D + satellite) chargé paresseusement par ensureMap() -->
   <script type="importmap">
 {
@@ -737,6 +801,7 @@
 }
 </script>
   <script type="module" src="./arvexa-confirm.js"></script>
+<script src="arvexa-modal.js" defer></script>
 
   <script type="module">
 // ================================================================
@@ -762,7 +827,7 @@
 import { requireAuth } from './auth-guard.js';
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import {
-  getAuth, signOut
+  getAuth, signOut, getIdToken
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 import {
   initializeFirestore,
@@ -780,7 +845,13 @@ const MIN_WRITE_MS = 40 * 1000;              // ≥ 40 s entre 2 écritures
 const MOVE_M = 60;                           // ou déplacement ≥ 60 m
 const BG_HEARTBEAT_MS = 60 * 1000;           // battement arrière-plan (1 min)
 const BG_MIN_WRITE_MS = 4 * 60 * 1000;       // en arrière-plan : ≥ 4 min
-const GEO_OPTS = { enableHighAccuracy: true, timeout: 30000, maximumAge: 15000 };
+/* ✅ v8.54a — PRÉCISION (« quand je suis au lit chez moi, la carte me place
+   au bout de la rue ») : seuils de qualité du fix GPS — en dessous de
+   ACC_OK le point n'est ni affiché comme prêt ni écrit dans Firestore. */
+const ACC_GOOD = 60;                         // précision confortable (m)
+const ACC_OK = 150;                          // utilisable (m)
+const ACC_MAX = 400;                         // au-delà : on attend mieux
+const GEO_OPTS = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
 
 // ---------------- État ----------------
 let myUid = null;
@@ -790,6 +861,8 @@ let auth = null;
 let shareOn = false;
 let watchId = null;
 let myPos = null;              // { lat, lng, accuracy, ts }
+let bestPos = null;            // ✅ v8.54a — meilleur fix de la session (précision la plus fine)
+let firstFixTs = 0;            // ✅ v8.54a — début de session GPS (tolérance avant écriture)
 let lastWrite = null;          // { lat, lng, t }
 let lastWriteTry = 0;
 let cityCache = { key: null, city: '', country: null };
@@ -933,8 +1006,8 @@ function arvStyle(mode) { // style fait main : aucun re-setStyle au changement d
       { id: 'osm', type: 'raster', source: 'osm', layout: { visibility: vis('plan') } },
       { id: 'sat', type: 'raster', source: 'sat', layout: { visibility: vis('sat') } },
       { id: 'satlab', type: 'raster', source: 'satlab', layout: { visibility: vis('hyb') } },
-      { id: 'accfill', type: 'fill', source: 'acc', paint: { 'fill-color': 'rgba(58, 182, 126, 0.13)' } },
-      { id: 'accline', type: 'line', source: 'acc', paint: { 'line-color': 'rgba(58, 182, 126, 0.45)', 'line-width': 1.2, 'line-dasharray': [2, 2] } },
+      { id: 'accfill', type: 'fill', source: 'acc', paint: { 'fill-color': ['case', ['<=', ['coalesce', ['get', 'r'], 600], ACC_GOOD], 'rgba(58, 182, 126, 0.15)', ['<=', ['coalesce', ['get', 'r'], 600], ACC_OK], 'rgba(212, 160, 23, 0.15)', 'rgba(184, 92, 58, 0.13)'] } },
+      { id: 'accline', type: 'line', source: 'acc', paint: { 'line-color': ['case', ['<=', ['coalesce', ['get', 'r'], 600], ACC_GOOD], 'rgba(58, 182, 126, 0.5)', ['<=', ['coalesce', ['get', 'r'], 600], ACC_OK], 'rgba(212, 160, 23, 0.5)', 'rgba(184, 92, 58, 0.5)'], 'line-width': 1.4, 'line-dasharray': [2, 2] } },
       { id: 'bldg3d', type: 'fill-extrusion', source: 'ofm', 'source-layer': 'building', minzoom: 14,
         layout: { visibility: 'none' },
         paint: {
@@ -967,7 +1040,12 @@ async function ensureMap() {
       if (e && e.dataType === 'source' && e.isSourceLoaded) { tileErrCount = 0; mapNet.style.display = 'none'; }
     });
     centerMeBtn.addEventListener('click', () => {
-      if (myPos && map) map.flyTo({ center: [myPos.lng, myPos.lat], zoom: 16.5, duration: 800 });
+      if (myPos && map) {
+        /* ✅ v8.54a — zoom adapté à la précision : au niveau de la rue quand
+           le signal est fin, sans faux zoom quand le signal est grossier. */
+        const zoom = myPos.accuracy <= ACC_GOOD ? 17.5 : (myPos.accuracy <= ACC_OK ? 17 : 16.5);
+        map.flyTo({ center: [myPos.lng, myPos.lat], zoom, duration: 800 });
+      }
     });
   } catch (e) {
     console.warn('[Proximité] carte 3D indisponible :', e);
@@ -1023,7 +1101,9 @@ function accCircleFeature(lat, lng, acc) {
     pts.push([lng + dLng, lat + dLat]);
   }
   pts.push(pts[0]);
-  return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [pts] } };
+  /* ✅ v8.54a — la couleur du cercle suit la précision : vert ≤ 60 m,
+     ambre ≤ 150 m, rouge au-delà (fix réseau grossier rejeté). */
+  return { type: 'Feature', properties: { r }, geometry: { type: 'Polygon', coordinates: [pts] } };
 }
 function updateAccCircle() {
   if (!map) return;
@@ -1037,6 +1117,8 @@ function updateAccCircle() {
 function popNode(p) {
   const wrap = document.createElement('div');
   wrap.innerHTML = popHtml(p);
+  const c = wrap.querySelector('.pop-contact');
+  if (c) c.addEventListener('click', () => openMateModal(p.uid));
   return wrap;
 }
 
@@ -1051,6 +1133,7 @@ function popHtml(p) {
     '</div>' +
     '<div class="pop-geo"><i class="fas fa-location-dot"></i> Position exacte : ' + round6(p.lat) + ', ' + round6(p.lng) + '</div>' +
     '<div class="pop-actions">' +
+      '<button type="button" class="go-btn pop-contact"><i class="fas fa-comments"></i> Contact</button>' +
       '<a class="go-btn" target="_blank" rel="noopener" href="' + GO_URL(p.lat, p.lng) + '"><i class="fas fa-diamond-turn-right"></i> Itinéraire</a>' +
     '</div>'
   );
@@ -1239,20 +1322,44 @@ async function writePosition(force = false) {
 }
 
 // ---------------- Géolocalisation ----------------
+/* ✅ v8.54a — FILTRAGE DE PRÉCISION : « chez moi au lit, la carte me place
+   au bout de la rue ». Cause : le navigateur livrait d'abord un fix réseau
+   grossier (± 500–2000 m) et la page l'acceptait tel quel. Désormais un
+   nouveau point ne remplace le courant que s'il est PLUS PRÉCIS (ou si
+   l'ancien devient périmé > 20 s) ; l'affichage, la carte et l'écriture
+   Firestore n'utilisent que ce meilleur fix, et rien n'est publié tant
+   que la précision reste mauvaise (> 150 m, tolérance 45 s → 400 m). */
 function onFix(pos) {
-  myPos = {
+  const fix = {
     lat: pos.coords.latitude,
     lng: pos.coords.longitude,
     accuracy: pos.coords.accuracy || 0,
     ts: Date.now()
   };
-  if (geoState !== 'blocked') setGeoState('live');
-  kvAccuracy.textContent = '± ' + Math.round(myPos.accuracy) + ' m';
+  const stale = bestPos && (Date.now() - bestPos.ts > 20000);
+  if (!bestPos || fix.accuracy <= bestPos.accuracy || stale) bestPos = fix;
+  if (!firstFixTs) firstFixTs = Date.now();
+  myPos = bestPos;
+
+  const acc = myPos.accuracy;
+  kvAccuracy.textContent = '± ' + Math.round(acc) + ' m' + (acc > ACC_OK ? ' — le signal s\'affine…' : '');
   kvUpdated.textContent = fmtAgo(myPos.ts);
   kvMode.textContent = document.hidden ? 'Arrière-plan' : 'Site ouvert';
+
+  if (geoState !== 'blocked') {
+    if (acc > ACC_OK) {
+      setGeoState('searching');
+      statusText.textContent = 'Signal GPS — précision ± ' + Math.round(acc) + ' m…';
+    } else {
+      setGeoState('live');
+      if (acc > ACC_GOOD) statusText.textContent = 'Partage activé — précision ± ' + Math.round(acc) + ' m';
+    }
+  }
+
   const now = Date.now();
   const moved = lastWrite ? distM(lastWrite, myPos) : Infinity;
-  if (!lastWrite || now - lastWrite.t >= MIN_WRITE_MS || moved >= MOVE_M) {
+  const exploitable = acc <= ACC_OK || (now - firstFixTs > 45000 && acc <= ACC_MAX);
+  if (exploitable && (!lastWrite || now - lastWrite.t >= MIN_WRITE_MS || moved >= MOVE_M)) {
     writePosition();
   }
   render();
@@ -1269,6 +1376,8 @@ function startSharing() {
     return;
   }
   shareOn = true;
+  bestPos = null;       // ✅ v8.54a — nouvelle session : on repart d'un fix propre
+  firstFixTs = 0;
   fitDone = false;      // recadrera la carte avec la nouvelle session
   centeredOnce = false; // v8.20 : re-placement unique de la session
   localStorage.setItem(SHARE_KEY, '1');
@@ -1291,7 +1400,7 @@ function stopSharing(silent = false) {
   if (myUid && db) {
     deleteDoc(doc(db, 'positions', myUid)).catch(() => {}); // hors ligne : la position expire d'elle-même (24 h)
   }
-  myPos = null; lastWrite = null;
+  myPos = null; bestPos = null; firstFixTs = 0; lastWrite = null;
   fitDone = false;
   centeredOnce = false;
   resetCards(); // v9.1 : les cartes DOM des camarades repartent de zéro
@@ -1509,11 +1618,113 @@ function render() {
   updateMateMarkers(list);
 }
 
-// Voir un camarade sur la carte : tap sur sa carte (hors boutons « Y aller » / « Discuter »)
+// ✅ v8.54a — FICHE CAMARADE (bottom sheet + poignée de glissement) :
+// appui sur la carte d'un camarade → son numéro WhatsApp + Appeler /
+// Écrire / Itinéraire / Voir sur la carte. Le numéro vient de /api/contact
+// (réciprocité : visible seulement si TU partages ta position aussi).
+const mateModal = $('mateModal');
+const mateSheetContent = $('mateSheetContent');
+const mateModalClose = $('mateModalClose');
+let mateUid = null;
+let mateToken = null;
+
+function closeMateModal() {
+  mateUid = null;
+  mateModal.classList.remove('show');
+}
+mateModalClose.addEventListener('click', closeMateModal);
+mateModal.addEventListener('click', (e) => { if (e.target === mateModal) closeMateModal(); });
+document.addEventListener('keydown', (e) => {
+  if (e && e.key === 'Escape' && mateModal.classList.contains('show')) closeMateModal();
+});
+
+async function openMateModal(uid) {
+  if (!uid || !shareOn) return; // réciprocité : on partage, donc on peut voir
+  mateUid = uid;
+  const p = lastList.find((x) => x.uid === uid);
+  const name = p ? p.name : 'Camarade';
+  const dist = (p && myPos) ? fmtKm(distM(myPos, p)) : '';
+  const city = p ? (p.city || 'Ville inconnue') : '';
+
+  mateSheetContent.innerHTML =
+    '<div class="mate-head">' +
+      '<div class="mate-ava">' + esc(initials(name)) + '</div>' +
+      '<div><div class="mate-name">' + esc(name) + '</div>' +
+      '<div class="mate-sub">' + esc(city) + (dist ? ' · ' + esc(dist) + ' de toi' : '') + (p ? ' · ⏱ ' + esc(fmtAgo(p.ts)) : '') + '</div></div>' +
+    '</div>' +
+    '<div class="mate-phone"><i class="fas fa-spinner fa-spin"></i> Chargement du contact…</div>';
+  mateModal.classList.add('show');
+
+  /* token frais pour l'API contact */
+  try {
+    if (auth && auth.currentUser) mateToken = await getIdToken(auth.currentUser);
+  } catch (e) { mateToken = mateToken || null; }
+
+  function appendActions(hasNum, wa) {
+    const wrap = document.createElement('div');
+    wrap.className = 'mate-actions';
+    let html = '';
+    if (hasNum && wa) {
+      const waUrl = 'https://wa.me/' + String(wa).replace(/[^0-9]/g, '') +
+        '?text=' + encodeURIComponent('Salut ! Je te vois sur ARVEXA « À proximité » — tu es dispo pour faire des exos / réviser ensemble ?');
+      html += '<a class="mate-btn wa" href="' + waUrl + '" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> Écrire</a>';
+      html += '<a class="mate-btn primary" href="tel:' + esc(wa) + '"><i class="fas fa-phone"></i> Appeler</a>';
+    }
+    html += '<a class="mate-btn" target="_blank" rel="noopener" href="' + GO_URL(p ? p.lat : 0, p ? p.lng : 0) + '"><i class="fas fa-diamond-turn-right"></i> Itinéraire</a>';
+    html += '<button class="mate-btn" type="button" data-act="map"><i class="fas fa-map-location-dot"></i> Voir sur la carte</button>';
+    wrap.innerHTML = html;
+    wrap.querySelector('[data-act="map"]').addEventListener('click', () => {
+      closeMateModal();
+      showOnMap(uid);
+    });
+    mateSheetContent.appendChild(wrap);
+    const note = document.createElement('div');
+    note.className = 'mate-note';
+    note.textContent = 'Le numéro est partagé uniquement entre élèves qui activent leur localisation. Reste prudent : prefère un lieu public pour vous rencontrer.';
+    mateSheetContent.appendChild(note);
+  }
+
+  try {
+    const r = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (mateToken || '') },
+      body: JSON.stringify({ uid })
+    });
+    const j = await r.json().catch(() => null);
+    if (mateUid !== uid) return; // la fiche a été fermée/changée entre-temps
+    const box = mateSheetContent.querySelector('.mate-phone');
+    if (!box) return;
+    if (!r.ok || !j || !j.success) {
+      box.className = 'mate-err';
+      box.innerHTML = '<i class="fas fa-lock"></i> ' + esc((j && j.error) || 'Contact indisponible pour le moment');
+      appendActions(false, null);
+      return;
+    }
+    if (!j.hasNumber) {
+      box.className = 'mate-phone none';
+      box.innerHTML = '<i class="fas fa-phone-slash"></i> Numéro non partagé';
+      appendActions(false, null);
+      return;
+    }
+    box.className = 'mate-phone';
+    box.innerHTML = '<i class="fab fa-whatsapp"></i> <span>' + esc(j.whatsapp) + '</span>';
+    appendActions(true, j.whatsapp);
+  } catch (e) {
+    if (mateUid !== uid) return;
+    const box = mateSheetContent.querySelector('.mate-phone');
+    if (box) {
+      box.className = 'mate-err';
+      box.innerHTML = '<i class="fas fa-wifi"></i> Connexion indisponible — réessaie';
+    }
+  }
+}
+
+// Voir un camarade sur la carte : tap sur sa carte → FICHE CONTACT (v8.54a :
+// numéro + appeler + écrire), avec « Voir sur la carte » dans la fiche.
 groupsWrap.addEventListener('click', (e) => {
   if (e.target.closest('a')) return;
   const card = e.target.closest('.person');
-  if (card && card.dataset.uid) showOnMap(card.dataset.uid);
+  if (card && card.dataset.uid) openMateModal(card.dataset.uid);
 });
 function myCityName() {
   return cityCache.city || '';
