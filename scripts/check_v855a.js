@@ -39,12 +39,15 @@ console.log('\n═══ AUDIT v8.55a — ' + new Date().toISOString() + ' ═�
 
 /* ── T1 : SW version + let ── */
 const sw = read('service-worker.js');
-test('T1  SW_VERSION = arvexa-offline-v8.57a avec let',
-  /let SW_VERSION = 'arvexa-offline-v8\.57a'/.test(sw) && !/const SW_VERSION/.test(sw));
+test('T1  SW_VERSION = arvexa-offline-v8.58a avec let',
+  /let SW_VERSION = 'arvexa-offline-v8\.58a'/.test(sw) && !/const SW_VERSION/.test(sw));
 
 /* ── T2 : précache des 2 nouveaux modules ── */
-test('T2  SW précache arvexa-net.js + arvexa-soon.js',
-  sw.includes("'./arvexa-net.js'") && sw.includes("'./arvexa-soon.js'"));
+// ✅ v8.58a — arvexa-net.js SUPPRIMÉ (adaptation réseau retirée) : arvexa-soon.js reste
+let arvNetFileExists = true;
+try { fs.readFileSync(path.join(__dirname, '..', 'arvexa-net.js'), 'utf8'); } catch (e) { arvNetFileExists = false; }
+test('T2  arvexa-net.js retiré du precache et du dépôt (v8.58a)',
+  !sw.includes("'./arvexa-net.js'") && sw.includes("'./arvexa-soon.js'") && !arvNetFileExists);
 
 /* ── T3 : auth-choice 100 % universel ── */
 const ac = read('auth-choice.html');
@@ -83,13 +86,11 @@ test('T7  Ambassadeur ARVEXA : carte + lien réel ambassadeur.html (v8.56a)',
   ix.includes('href="ambassadeur.html"') &&
   ix.includes('gagne en fonction des abonnements'));
 
-/* ── T8 : arvexa-net.js sur 17 pages ── */
+/* ── T8 : arvexa-net.js SUPPRIMÉ des pages (v8.58a) ── */
 const netPages = ['index.html', 'profil.html', 'notifications.html', 'abonnement.html', 'progression.html', 'arv.html', 'localisation.html',
   'auth-choice.html', 'login.html', 'register.html', 'onboarding.html', 'outils.html', 'exam.html', 'quotidien.html', 'arv-progress.html', 'planificateur.html', 'exam-history.html'];
-const missingNet = netPages.filter(p => !read(p).includes('arvexa-net.js'));
-test('T8  arvexa-net.js sur 17 pages', missingNet.length === 0, missingNet.join(', '));
-test('T8b arvexa-net.js syntaxe + détection saveData/2g',
-  nodeCheck('arvexa-net.js') && /saveData/.test(read('arvexa-net.js')) && /slow-2g/.test(read('arvexa-net.js')));
+const leftoverNet = netPages.filter(p => read(p).includes('arvexa-net.js'));
+test('T8  arvexa-net.js retiré de toutes les pages', leftoverNet.length === 0, leftoverNet.join(', '));
 
 /* ── T9 : abonnement — demande manuelle déverrouillée ── */
 const abo = read('abonnement.html');
@@ -130,7 +131,7 @@ test('T14 parcours.js : compte à rebours gardé par hasExamSafe',
   pj.includes('hasExamSafe()') && !/BAC dans '\s*\+/.test(pj) && nodeCheck('parcours.js'));
 
 /* ── T15 : syntaxe de tous les JS modifiés ── */
-const jsFiles = ['service-worker.js', 'parcours.js', 'arvexa-net.js', 'arvexa-soon.js', 'arvexa-classes.js', 'arvexa-modal.js'];
+const jsFiles = ['service-worker.js', 'parcours.js', 'arvexa-soon.js', 'arvexa-classes.js', 'arvexa-modal.js']; // ✅ v8.58a — arvexa-net.js supprimé
 const badJs = jsFiles.filter(p => !nodeCheck(p));
 test('T15 node --check sur 6 JS racine', badJs.length === 0, badJs.join(', '));
 const badApi = fs.readdirSync(path.join(ROOT, 'api')).filter(f => (f.endsWith('.js') || f.endsWith('.mjs')) && !nodeCheck('api/' + f));

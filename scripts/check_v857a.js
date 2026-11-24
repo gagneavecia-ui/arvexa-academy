@@ -23,17 +23,20 @@ T('ambassadeur : sélecteur pays 54 pays', amb.includes("'NE','🇳🇪','+227',
 T('ambassadeur : indicatif intelligent', amb.includes('countryByDial'));
 T('ambassadeur : préremplissage whatsapp inscription', amb.includes("u.whatsapp || u.phone || ''"));
 T('ambassadeur : champ promo candidature', amb.includes('appPromoName') && amb.includes('appPromoSize') && amb.includes('appInviteCount'));
-T('ambassadeur : CTA Gérer ma promo', amb.includes('ma-promo.html'));
+T('ambassadeur : Gérer ma promo inline (v8.58a)', amb.includes('promo-sec-title') && amb.includes('loadPromoSection'));
 T('ambassadeur : CSS .amb-cta défini', amb.includes('.amb-cta {'));
 
-const promo = R('ma-promo.html');
-T('ma-promo : création promo + code PROMO-XXXXXX', promo.includes('PROMO-') && promo.includes('genPromoCode'));
-T('ma-promo : rejoindre par code', promo.includes('joinPromo'));
-T('ma-promo : composer message/fichier', promo.includes("tabMessage") && promo.includes("tabFile"));
-T('ma-promo : upload Storage promo-files', promo.includes('promo-files/'));
-T('ma-promo : liste membres + retrait', promo.includes('removeMember'));
-T('ma-promo : rattachement parrainage ownerCode', promo.includes('ownerCode'));
-T('ma-promo : auto-détachement membre retiré', promo.includes("uData.promoRole === 'member'") && promo.includes("mSnap.exists()"));
+// ✅ v8.58a — ma-promo.html SUPPRIMÉE : toute la gestion vit dans ambassadeur.html
+T('ambassadeur : création promo + code PROMO-XXXXXX', amb.includes('PROMO-') && amb.includes('genPromoCode'));
+T('ambassadeur : rejoindre par code', amb.includes('joinPromoByCode'));
+T('ambassadeur : composer message/fichier', amb.includes('tabMessage') && amb.includes('tabFile'));
+T('ambassadeur : upload Storage promo-files', amb.includes('promo-files/'));
+T('ambassadeur : liste membres + retrait', amb.includes('removeMember'));
+T('ambassadeur : rattachement parrainage ownerCode', amb.includes('ownerCode'));
+T('ambassadeur : auto-détachement membre retiré', amb.includes("uData.promoRole === 'member'") && amb.includes('mSnap.exists()'));
+T('ambassadeur : publication sans ReferenceError mode', amb.includes("let promoMode = 'message'") && !/let mode = 'message'/.test(amb));
+T('ambassadeur : vue membre ?promo=CODE', amb.includes('PROMO_PARAM') && amb.includes('renderPromoParamFlow'));
+T('menu : plus aucun lien ma-promo.html', !/href="ma-promo\.html"/.test(amb));
 
 const abo = R('abonnement.html');
 T('abonnement : section recharges requêtes', abo.includes('Recharges de requêtes'));
@@ -42,8 +45,8 @@ T('abonnement : achat pack kind:credits', abo.includes("kind: 'credits'") && abo
 T('abonnement : garde retour paiement rafraîchit solde', abo.includes('renderCreditsBalance(snap.data())'));
 
 const sw = R('service-worker.js');
-T('SW : version v8.57a avec let', /let SW_VERSION = 'arvexa-offline-v8\.57a';/.test(sw));
-T('SW : ma-promo.html précaché', sw.includes("'./ma-promo.html',"));
+T('SW : version v8.58a avec let', /let SW_VERSION = 'arvexa-offline-v8\.58a';/.test(sw));
+T('SW : ma-promo.html retiré du precache (v8.58a)', !sw.includes("'./ma-promo.html',") && !sw.includes("'./arvexa-net.js',"));
 
 const rules = R('firestore.rules');
 T('règles : promos read public', /match \/promos\/\{promoId\} \{/.test(rules) && /allow read: if true;/.test(rules));

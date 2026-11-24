@@ -23,7 +23,9 @@
 // profil/notifications/localisation/abonnement/arv/outils/login (menus), +progression.html, −parcours.html/−ma-journee.html.
 // (v8.50a, suite) : dès l'inscription, la classe/série/classe libre/prénom sont FIGÉS dans arvexa_session (register.html) et relus AVANT tout le reste (seed + restauration instantanée) → « BAC 2027 » (Terminale), « BEPC 2027 » (3ᵉ), objectif par domaine, prénom peint sans squelette — ZÉRO appel Firebase pour l'afficher, onSnapshot ne fait que rafraîchir la copie locale (freezeExamInfoToSession) ; (2) « Question du jour » sous la carte principale SUPPRIMÉE (carte + relance + lien ma-journée) ; (3) OUTILS : carte « Plus d'outils » remplacée par « Chat IA » (arv.html), la boîte complète vit uniquement dans le menu ; (4) ANCIEN PARCOURS DÉCONNECTÉ (demande : « on ne les utilise plus ») — matiere.html/chapitre.html/lecture.html redirigent vers l'accueil, parcours.js renvoie matières/chapitres vers arv-progress.html, jalon « BAC 2027 » adapté à la classe, texte abonnement sans « chapitres » ; (5) RÉALISATIONS BRANCHÉES SUR LA PAGE RÉSUMÉ — fini le comptage matières/parts ouvertes : badges = sections résumées (1/5/15/30), matières explorées, heures d'étude, série de jours — tout lu dans le cache local du cahier (arvexa_dash_cache_v1) + activité de l'appareil, ZÉRO Firebase ; (6) KATEX BLINDÉ SUR TOUTES LES PAGES : pile locale 0.16.11 unique (CDN jsdelivr supprimés — offline-first), mhchem.min.js ajouté partout (\ce{} chimie), katex-utils.js partout — arv.html/planificateur/exam-history/formulaires basculés sur la pile locale complète. SW arvexa-offline-v8.50a (bump INDISPENSABLE : index/register/arv-progress/exam/arv/planificateur/exam-history/formulaires/parcours.js/katex-utils.js changent). Original arvexa. INTACT e0d5211.// ✅ v8.49a — BASCULE FIREBASE : LA VRAIE BASE D'ORIGINE arvexa-fbf10 (demande du propriétaire : « la base utilisée jusqu'ici n'est pas la bonne, voici la bonne — cohérente avec celle du début » ; vérifié en direct : l'original arvexa. v8.31 pointe déjà vers arvexa-fbf10 et arvexaschool.vercel.app était déjà dans ses authorizedDomains) — l'ancien projet nexgen-39043 remplacé PARTOUT dans 27 fichiers (apiKey AIzaSyDHsc…, authDomain arvexa-fbf10.firebaseapp.com, projectId, storageBucket, messagingSenderId 920108330053, appId 1:920108330053:web:f532d71cbc2c824bc7472c) ; serveur api/*.js inchangé (lit FIREBASE_ADMIN_CREDENTIALS / FIREBASE_WEB_API_KEY → mis à jour sur Vercel AVANT le push avec le nouveau service account fbf10) ; authorizedDomains fbf10 + arvexa-academy.vercel.app ajouté (Identity Toolkit admin v2) ; compte sonde + profil users/{uid} recréés dans fbf10 (upsert OK, signInWithPassword OK, lecture own-doc via règles OK) ; scripts/ de sonde alignés sur la nouvelle WEB_KEY. SW arvexa-offline-v8.49a (bump INDISPENSABLE : 27 fichiers précachés changent). Original arvexa. INTACT e0d5211.// ✅ v8.48a — FIN DE GÉNÉRATION GARANTIE + SIGNATURE (demande du propriétaire : « la génération ne termine jamais, il y a des coupures — à la fin tu mets une signature qui prouve que l'IA a terminé la section complète ») + RIGUEUR PAR MATIÈRE + APPUI SIMPLE CARTE MENTALE : (1) api/progress.js — budget IA 78 s → 56 s et maxDuration 90 → 60 (Vercel HOBBY = plafond réel 60 s : la fonction était TUÉE à 60 s, le fetch du client mourait sans réponse → « génération qui ne termine jamais ») ; SIGNATURE DE COMPLÉTION : toute réponse IA doit finir par "signature":"ARVEXA-COMPLETE" (absente = sortie coupée par max_tokens → réponse rejetée, relais modèle/fournisseur suivant, maxTokens ×1,6 auto) — résumé, questions, QCM ET carte mentale ; finish_reason length/MAX_TOKENS détecté côté fournisseur ; action completeSection qui régénère UNIQUEMENT les parties manquantes d'une section (explication/structure/questions) ; RIGOR_BY_PROFILE injecté dans l'explication de chaque profil (maths/PC : unités SI + étapes de calcul ; SVT : terminologie biologique exacte ; philosophie : concepts/arguments ; français : règles nommées ; anglais/espagnol/allemand : traductions exactes dans LA langue ; histoire-géo : dates/acteurs/causes-conséquences ; informatique/techno/éco/général). (2) arv-progress.html — badge SIGNATURE doré en fin de résumé (« Résumé complet — signé ARVEXA IA ») + mini-signature sur les onglets QCM et carte mentale + bloc « Section incomplète → Terminer » qui appelle completeSection puis repeint ; APPUI SIMPLE sur une carte mentale ouvre l'explication (le click fantôme qui fermait la modale aussitôt ouverte est avalé — l'appui long n'est plus nécessaire) ; modale z-index 11000 et toasts 12000 AU-DESSUS du plein écran (10000) : l'explication s'affiche DANS le plein écran, plus besoin d'en sortir. SW arvexa-offline-v8.48a (bump INDISPENSABLE : arv-progress.html précaché change). Original arvexa. INTACT e0d5211.
 // ✅ v8.48b — FIX COMPLÉTION SENSIBLE AU PROFIL : l'histoire-géo (profil « history ») est NARRATIVE par conception (understanding + context + keyFacts, SANS « parts » — format v8.47a) → l'ancienne garde parts>0 la déclarait à jamais incomplète (bouton « Terminer la section » en rond, badge jamais doré). sectionCompleteness(analysis, profile) côté serveur + analysisCompleteness(a, profile) côté client : history = explication réelle + 3+ points clés ; autres profils = parties. Fusion completeSection alignée (history accepte keyFacts≥3). normalizeAnalysis : strip RÉCURSIF de tout champ "signature" (plus aucun niveau stocké ne garde le champ interne). SW arvexa-offline-v8.48b (bump INDISPENSABLE : arv-progress.html précaché change). Original arvexa. INTACT e0d5211.
-let SW_VERSION = 'arvexa-offline-v8.57a'; // ⚡ v8.57a — BUGS SIGNALEMENTS + GÉRER MA PROMO + RECHARGES DE REQUÊTES SUR LA PAGE ABONNEMENT (demandes du propriétaire) :
+let SW_VERSION = 'arvexa-offline-v8.58a'; // ⚡ v8.58a — CAUSE GÉNÉRALE DU FAUX « PROBLÈME DE CONNEXION » RÉPARÉE + ADAPTATION RÉSEAU SUPPRIMÉE + GÉRER MA PROMO DANS LA PAGE AMBASSADEUR (demandes du propriétaire) :
+// (1) CAUSE GÉNÉRALE RÉPARÉE — handleHTML servait la navigation depuis le cache RUNTIME (arvexa-html) jamais purgé à chaque déploiement ; sur connexion classée « lente » (économie de données activée = courant sur mobile) le VIEUX HTML partait immédiatement → l'élève restait sur l'ancienne version malgré un réseau sain : mélange vieux HTML + nouveaux JS du precache = « problème de connexion », nom absent, cartes déplacées, éléments manquants. NOUVELLE STRATÉGIE precache-first : la copie PRECACHE (re-téléchargée FRAÎCHE à chaque install) est servie instantanément, rafraîchie en arrière-plan ; pages non précachées → réseau 2,5 s puis cache runtime puis offline.html ; branche « isSlowConnection → vieux cache » supprimée de la navigation. ACTIVATE : purge automatique de arvexa-html quand la version change (marqueur __sw_epoch__ dans arvexa-data — téléchargements de l'élève conservés). (2) ADAPTATION RÉSEAU SUPPRIMÉE (demande : « tu le remets comme avant ») — arvexa-net.js retiré des 20 pages + du precache + du dépôt : sur connexions mal classées « slow » elle coupait TOUTES les animations/transitions (spinner figé → « ça ne marche pas ») et son CSS global écrasait les styles des cartes. (3) ACCUEIL — badge « Nouveau » retiré de la carte Ambassadeur (demande : « tu enlèves ces badges »). (4) GÉRER MA PROMO DÉMÉNAGÉE (demande : « pas dans la page du menu, dans la page ambassadeur, qui apparaît une fois qu'on valide son titre ») — ma-promo.html SUPPRIMÉE, toute la gestion (créer l'espace, composer message/PDF/exercice avec upload Storage + repli lien, fil avec suppression, membres avec retrait, dissolution confirmée, vue membre ?promo=CODE en lecture seule avec quitter) vit DANS ambassadeur.html : section inline du dashboard validé, vue membre accessible via ambassadeur.html?promo=CODE ; les 7 liens de menu « Ma promo » (index, arv, profil, abonnement, notifications, progression, localisation) retirés ; lien de partage des promos → ambassadeur.html?promo=CODE. (5) AUDIT COMPLET — 4 CAUSES CACHÉES TROUVÉES ET RÉPARÉES : a) publishPost référençait « mode » déclaré dans le composant du dashboard → ReferenceError silencieux, la publication ne partait JAMAIS (bug hérité de ma-promo.html v8.57a) → promoMode au niveau module ; b) renderDashboard appelait loadPromoSection(user) sans que user existe dans sa portée → la page retombait sur le formulaire public au lieu du dashboard → renderDashboard(amb, uid) ; c) login.html sanitizeRedirect STRIPPAIT la query → le ?promo=PROMO-XXXXXX (et ?ref=) perdu après connexion, le membre tombait sur la page générique → query+hash préservés (liste blanche sur le chemin uniquement) ; d) login.html ALLOWED_REDIRECTS sans ambassadeur/marketplace/localisation → redirection vers index.html systématique depuis ces pages. Testé de bout en bout sur comptes sondes : candidature, dashboard, création promo, publication message, fil, membres, lien ?promo, adhésion membre + rattachement parrainage referredBy=ownerCode, quitter. (6) CARTES/CSS : carte Ambassadeur de l'accueil réalignée après retrait du badge, balises vérifiées équilibrées sur les 9 pages touchées. Précachés changent : ambassadeur.html réécrit, login.html, arvexa-net.js −, ma-promo.html −, 7 pages de menus, service-worker.js. SW arvexa-offline-v8.58a. Original arvexa. INTACT e0d5211.
+// ✅ v8.57a — BUGS SIGNALEMENTS RÉPARÉS + GÉRER MA PROMO + RECHARGES DE REQUÊTES SUR LA PAGE ABONNEMENT (demandes du propriétaire) :
 // (1) FAUX « PROBLÈME DE CONNEXION » RÉPARÉ — cause racine : fetch keepalive:true + corps > 64 Ko → TypeError INSTANTANÉE affichée comme erreur réseau alors que la connexion est stable (typiquement à l'ajout d'un long cours dans le Résumé). arv-progress.html : le keepalive n'est plus posé que sous 60 Ko + UNE retente silencieuse sans keepalive (bascule WiFi↔data, DNS lent). (2) NOM DE L'ÉLÈVE INSTANTANÉ SUR LA PAGE RÉSUMÉ — arv-progress ne lisait le prénom QUE dans Firestore (lent à froid → « Élève » affiché) : semage immédiat depuis arvexa_user_data puis arvexa_session (uid vérifié, zéro réseau) + re-cache local à chaque snapshot Firestore. (3) AMBASSADEUR — candidature complète (demande : « quelques formulaires obligatoires pour bien choisir le profil ») : sélecteur de PAYS 100 % custom à gauche du téléphone (54 pays, modale dorée avec recherche, indicatif intelligent — même modèle que register.html v8.32), numéro prérempli depuis l'inscription (users/{uid}.whatsapp → pays + national), + champs promo (nom de la promo, nb d'élèves de la promo, nb d'élèves qu'il peut inviter) ; CSS .amb-cta enfin défini (bug latent v8.56a). (4) MA-PROMO.HTML — NOUVELLE PAGE « GÉRER MA PROMO » : vue landing (non connecté), choix Créer/Rejoindre (code PROMO-XXXXXX lisible sans I/O/0/1), dashboard responsable (code + partage WhatsApp/copier, stats membres/publications/gains, composer Message ou PDF/Exercice avec upload Firebase Storage promo-files/ 8 Mo, fil avec suppression, liste membres avec retrait, dissolution confirmée) et vue membre (fil en lecture seule + partage + quitter) ; rattachement parrainage automatique : les membres d'une promo d'ambassadeur héritent son ownerCode dans referredBy s'ils n'ont pas de parrain → 10 % de commission au responsable sur chaque abonnement de sa promo ; auto-détachement d'un membre retiré (vérification d'appartenance à l'ouverture) ; doublons « Marketplace » des 4 sidebars supprimés (bug v8.56a) + lien « Ma promo » dans les 7 sidebars. (5) ABONNEMENT — section « RECHARGES DE REQUÊTES » : carte de solde (aiCredits + expiration, ∞ Premium) + grille des packs chargés depuis products (type:credits, prix relu côté serveur via creer-checkout kind:credits, SasPay, retour d'activation avec garde sur le solde) — la page vend désormais les abonnements ET les requêtes. (6) RÈGLES — firestore.rules v7 : promos (read public, create/update/delete verrouillés au responsable, memberCount ±1 borné pour l'adhésion), promos/{id}/members (auto-inscription, retrait owner|soi), promos/{id}/posts (écritures du responsable, lecture membres) ; storage.rules : chemin promo-files/{promoId}/ ouvert (lecture connectés, écriture responsable cross-service 8 Mo PDF/image). SW arvexa-offline-v8.57a (bump INDISPENSABLE : ma-promo.html précaché + index/abonnement/notifications/profil/progression/arv/localisation/ambassadeur/arv-progress changent). Original arvexa. INTACT e0d5211.
 // (1) MARKETPLACE — marketplace.html RÉELLE (fini le toast) : solde de crédits + packs (Pack Starter 30 req/500 F/30 j, Pack Examen 100 req/1 500 F/90 j seedés dans products/ status approved) + « Bientôt » (annales, fiches, formations) + Ma bibliothèque (users/{uid}/purchases) ; achat via /api/creer-checkout {kind:'credits'} — prix lu côté SERVEUR dans Firestore, tunnel SasPay existant, success_url marketplace.html ; webhook crédite users/{uid}.aiCredits (transaction, expiration cumulée) + purchase. (2) AMBASSADEUR — ambassadeur.html RÉELLE : vue publique (hero luxe, 10 % commission, critères, candidature ambassadorApplications) + dashboard ambassadeur validé (code ARV-XXXXXX, lien ?ref, partage WhatsApp, stats clics/inscriptions/conversions, gains, rangs bronze→platine) ; capture ?ref 30 j sur index.html ; register.html pose referredBy + doc referrals (garde compte < 14 j) ; webhook crédite 10 % de commission (ambassadors/{uid}.earnings) et passe referrals en converted ; scripts/approve_ambassador.mjs (list/approve/reject). (3) CRÉDITS IA — api/_credits.js (transactions Firestore, premium jamais débité, jamais sous zéro) : arv.js consomme 1 crédit quand les 10/j gratuits sont épuisés, exam.js 5 crédits au-delà de 2/j, planificateur OUVERT aux non-Premium pour 5 crédits (cache gratuit pour tous, remboursement si fallback local) ; messages 429/403 orientés Marketplace (arv/exam/planificateur). (4) PRIX — mensuel 2 000 → 3 000 F (creer-checkout + abonnement.html), annuel 18 000 F inchangé. (5) MENU — les 11 liens data-soon Marketplace des 7 sidebars deviennent de vrais liens, bouton Ambassadeur de l'accueil → ambassadeur.html, badge « Bientôt » → « Nouveau ». (6) RÈGLES — products (lecture publique/écriture admin), purchases (lecture propriétaire, écriture impossible), ambassadorApplications, ambassadors, referrals (create verrouillé au nouveau compte), refClicks (create anonyme borné). SW arvexa-offline-v8.56a (bump INDISPENSABLE : marketplace.html + ambassadeur.html précachés + index/arv/exam/planificateur/abonnement/register/7 sidebars changent).
 // ✅ v8.55b — complément v8.55a : offline/404 « Tous niveaux, tous domaines », tableau périodique « Mode examen » (3 précachés changent → re-bump)
@@ -95,13 +97,16 @@ const PRECACHE = [
   './install-banner.js', // v5.6 barrière d'installation PWA
   './arvexa-confirm.js',
   './arvexa-modal.js', // ✅ v8.54a — poignée + glisser vers le bas, uniforme sur toutes les modales
-  './arvexa-net.js', // ✅ v8.55a — adaptation réseau (2G → 5G), data-net + CSS d'allègement
+  // ✅ v8.58a — arvexa-net.js SUPPRIMÉ (adaptation réseau retirée à la demande du
+  // propriétaire : sur les connexions mal classées « lentes » elle figeait les
+  // animations — spinners arrêtés — et participait à la perception de panne).
   './arvexa-soon.js', // ✅ v8.55a — toasts « bientôt disponible » (Marketplace, Ambassadeur)
   // ⚡ v8.56a — MARKETPLACE (packs de crédits IA) + AMBASSADEUR (programme parrainage) : pages réelles
   './marketplace.html',
   './ambassadeur.html',
-  // ⚡ v8.57a — GÉRER MA PROMO : espace de classe des ambassadeurs (messages, PDF, exercices, membres)
-  './ma-promo.html',
+  // ✅ v8.58a — ma-promo.html SUPPRIMÉ : la gestion de promo vit maintenant
+  // DANS ambassadeur.html (section « Gérer ma promo », visible une fois
+  // l'ambassadeur validé — demande du propriétaire ; plus aucun lien menu).
   './wake-lock.js',
   // ✅ v8.0 — SYNC FIREBASE DES PROGRESSIONS : moteur + structure officielle des cours
   './arvexa-sync.js',
@@ -261,10 +266,31 @@ async function migrateLegacyCaches() {
   } catch (e) {}
 }
 
+// ✅ v8.58a — PURGE DU CACHE HTML RUNTIME À CHAQUE CHANGEMENT DE VERSION :
+// un marqueur (epoch) est stocké dans CACHE_DATA. Si la version active diffère
+// du marqueur, CACHE_HTML est supprimé — aucune page d'une ANCIENNE version ne
+// peut plus être servie après un déploiement (le precache, lui, vient d'être
+// re-téléchargé à l'instant : il est frais). Les téléchargements de l'élève
+// (CACHE_DATA) sont bien sûr conservés — seul le marqueur y est écrit.
+async function purgeStaleHtmlCache() {
+  try {
+    const data = await caches.open(CACHE_DATA);
+    const marker = await data.match('__sw_epoch__');
+    let prev = null;
+    if (marker) { try { prev = await marker.text(); } catch (e) { prev = null; } }
+    if (prev !== SW_VERSION) {
+      await caches.delete(CACHE_HTML);
+      await data.put('__sw_epoch__', new Response(SW_VERSION));
+      console.log('[SW] Cache HTML purgé (nouvelle version :', prev, '→', SW_VERSION + ')');
+    }
+  } catch (e) {}
+}
+
 self.addEventListener('activate', (event) => {
   console.log(`[SW] Activate ${SW_VERSION}`);
   event.waitUntil(
     migrateLegacyCaches()
+      .then(() => purgeStaleHtmlCache())
       .then(() => caches.keys())
       .then((names) =>
         Promise.all(
@@ -360,27 +386,45 @@ function offlineFallback(req) {
 }
 
 async function handleHTML(req) {
+  // ✅ v8.58a — CAUSE GÉNÉRALE DU FAUX « PROBLÈME DE CONNEXION » RÉPARÉE
+  // (signalements répétés du propriétaire : « ma connexion est stable mais le
+  // site affiche des problèmes », « les corrections déployées ne marchent pas »).
+  // CAUSE RÉELLE : la navigation était servie depuis le cache RUNTIME
+  // (CACHE_HTML), qui n'est JAMAIS purgé à chaque déploiement — et sur
+  // connexion classée « lente » (économie de données / effectiveType 2g-3g,
+  // très courant sur les réseaux mobiles) le VIEUX HTML partait immédiatement.
+  // Résultat : l'élève restait sur l'ancienne version — mélange vieux HTML +
+  // nouveaux JS du precache = erreurs aléatoires malgré un réseau sain.
+  // NOUVELLE STRATÉGIE — PRECACHE-FIRST :
+  //  1. La copie PRECACHE (CACHE_STATIC) est re-téléchargée FRAÎCHE à chaque
+  //     installation du SW → elle est TOUJOURS à la version déployée.
+  //  2. On la sert instantanément → navigation rapide sur TOUTES les
+  //     connexions, plus aucune branche « connexion lente → vieux cache ».
+  //  3. Le réseau rafraîchit la copie en arrière-plan (non bloquant) pour les
+  //     visites suivantes au sein de la même version.
+  //  4. Page non précachée → réseau d'abord (garde-fou 2,5 s) puis CACHE_HTML
+  //     puis offline.html — logique historique conservée.
+  const staticCache = await caches.open(CACHE_STATIC);
+  const fresh = await staticCache.match(req, { ignoreSearch: true });
+
+  // Rafraîchissement d'arrière-plan : jamais bloquant, met à jour STATIC + HTML
+  fetch(req)
+    .then(async (response) => {
+      if (response && response.ok) {
+        try { await staticCache.put(req, response.clone()); } catch (e) {}
+        try { const hc = await caches.open(CACHE_HTML); await hc.put(req, response.clone()); } catch (e) {}
+      }
+    })
+    .catch(() => {});
+
+  if (fresh) return fresh;
+
+  // ── Page NON précachée : réseau d'abord, repli cache runtime ──
   const cache = await caches.open(CACHE_HTML);
   // ✅ v4.31 — ignoreSearch : la navigation hors-ligne « /lecture.html?subject=… »
   // doit retrouver le cache « /lecture.html » (sans query, le match échouait
   // et l'élève tombait sur offline.html alors que la page EST en cache)
   const cached = await cache.match(req, { ignoreSearch: true });
-
-  // Mode avion / pas de connectivité déclarée → cache direct
-  if (self.navigator && self.navigator.onLine === false && cached) return cached;
-
-  // ✅ v5.4 — Connexion LENTE (2G / slow-2g / économiseur de données) → cache
-  // d'abord : la page s'affiche INSTANTANÉMENT, le réseau rafraîchit en
-  // arrière-plan pour la prochaine visite. Avant : network-first (2,5 s de
-  // patience) rendait chaque navigation pénible en 2G même page en cache.
-  if (cached && isSlowConnection()) {
-    fetch(req)
-      .then((response) => {
-        if (response && response.ok) cache.put(req, response.clone());
-      })
-      .catch(() => {});
-    return cached;
-  }
 
   // La promesse réseau vit au-delà du garde-fou : si elle aboutit après un
   // repli sur cache, elle rafraîchit quand même le cache pour la prochaine fois.
