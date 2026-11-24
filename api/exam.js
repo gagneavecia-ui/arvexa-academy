@@ -146,7 +146,7 @@ function jsonError(response, status, error, code) {
 
 function applyCors(request, response) {
   const ALLOWED_ORIGINS = new Set([
-    'https://arvexaschool.vercel.app',
+    'https://arvexa-academy.vercel.app',
     'https://admin-89.vercel.app',
     'http://localhost:3000',
     'http://localhost:5000'

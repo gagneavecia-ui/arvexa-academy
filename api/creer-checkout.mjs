@@ -24,7 +24,8 @@ function resolveSiteUrl(req) {
   const proto = String(req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
   const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
   if (host) return `${proto}://${host}`;
-  return 'https://arvexaschool.vercel.app';
+  // ✅ v8.55a — repli sur le domaine vivant (l'ancien arvexaschool.vercel.app est mort)
+  return 'https://arvexa-academy.vercel.app';
 }
 
 // ✅ FIX CRITIQUE (2026-10-26) — même correction que le webhook : init

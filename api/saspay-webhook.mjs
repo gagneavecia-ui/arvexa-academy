@@ -175,7 +175,10 @@ export default async function handler(req, res) {
         saspayTransactionId: data.id || null,
         saspayReference: reference,
         saspayAmountPaid: paidAmount,
-        subscriptionPaidAt: FieldValue.serverTimestamp()
+        subscriptionPaidAt: FieldValue.serverTimestamp(),
+        // ✅ v8.55a — clôt la demande manuelle éventuelle : l'écran
+        // « en attente » d'abonnement.html ne doit plus s'afficher.
+        manualPaymentRequest: { status: 'processed', processedVia: 'saspay_webhook', processedAt: new Date().toISOString(), reference }
       });
       batch.update(pendingRef, {
         status: 'processed',

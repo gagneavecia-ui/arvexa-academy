@@ -10,7 +10,7 @@ function resolveSiteUrl(req) {
   if (envOrigin) return envOrigin.startsWith('http') ? envOrigin : `https://${envOrigin}`;
   const proto = String(req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
   const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
-  return host ? `${proto}://${host}` : 'https://arvexaschool.vercel.app';
+  return host ? `${proto}://${host}` : 'https://arvexa-academy.vercel.app';
 }
 
 export default async function handler(req, res) {
@@ -113,7 +113,7 @@ export default async function handler(req, res) {
     providers = {
       groq: await probe('https://api.groq.com/openai/v1/chat/completions', process.env.GROQ_MODEL || 'openai/gpt-oss-120b', process.env.GROQ_API_KEY),
       openrouter: await probe('https://openrouter.ai/api/v1/chat/completions', process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b', process.env.OPENROUTER_API_KEY, {
-        'HTTP-Referer': (process.env.APP_ORIGIN || '').startsWith('http') ? process.env.APP_ORIGIN : 'https://arvexaschool.vercel.app',
+        'HTTP-Referer': (process.env.APP_ORIGIN || '').startsWith('http') ? process.env.APP_ORIGIN : 'https://arvexa-academy.vercel.app',
         'X-Title': 'ARVEXA Notebook'
       }),
       mistral: mistralResults

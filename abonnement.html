@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-contact.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-net.js" defer></script><script src="arvexa-soon.js" defer></script><script src="arvexa-contact.js"></script><script src="arvexa-i18n.js" defer></script>
   <meta name="description" content="ARVEXA School - Abonnement Premium">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1405,6 +1405,7 @@
     <a href="arv-progress.html"><i class="fas fa-graduation-cap"></i> Résumé</a>
     <a href="outils.html"><i class="fas fa-toolbox"></i> Outils</a>
     <a href="localisation.html"><i class="fas fa-location-dot"></i> À proximité</a>
+      <a href="#" data-soon="Marketplace ARVEXA — bientôt disponible"><i class="fas fa-store"></i> Marketplace</a>
     <div class="nav-divider"></div>
     <a href="index.html?avis=1" class="avis-link"><i class="fas fa-star"></i> Donner mon avis</a>
     <div class="nav-divider"></div>
@@ -1616,6 +1617,9 @@
         </div>
 
         <div class="pending-actions">
+          <button type="button" class="btn-action secondary" id="verifyManualBtn">
+            <i class="fas fa-rotate"></i> Vérifier l'activation
+          </button>
           <a href="https://wa.me/22774872082" target="_blank" rel="noopener noreferrer" class="btn-action primary">
             <i class="fab fa-whatsapp"></i> Contacter le support
           </a>
@@ -1829,6 +1833,7 @@ import {
   persistentLocalCache,
   persistentSingleTabManager,
   doc,
+  getDoc,
   updateDoc,
   onSnapshot,
   serverTimestamp,
@@ -2014,15 +2019,24 @@ function getUserState(data) {
   const status = data.subscriptionStatus || 'none';
   const endDate = toDate(data.subscriptionEndDate);
 
-  if (status === 'pending') return 'pending';
+  // ✅ v8.55a — demande manuelle en attente : champ libre écrit par le
+  // client (non verrouillé par les règles), lu comme état « pending ».
+  const manual = data.manualPaymentRequest;
+  const manualPending = !!(manual && manual.status === 'pending');
 
   const hasPremium = data.premium === true ||
                      data.isUnlocked === true ||
                      data.hasDeposited === true;
 
+  // PRIORITÉ : l'activation serveur (webhook/admin) GAGNE toujours sur
+  // une demande manuelle encore marquée « pending » — sinon un compte
+  // activé resterait coincé sur l'écran d'attente.
   if (hasPremium && endDate) {
     return endDate.getTime() > Date.now() ? 'premium' : 'expired';
   }
+  if (status === 'active') return 'premium';
+
+  if (status === 'pending' || manualPending) return 'pending';
 
   if (status === 'expired') return 'expired';
   if (hasPremium && !endDate) return 'premium';
@@ -2055,13 +2069,22 @@ function showScreen(screenName) {
 // RENDU DES ÉCRANS
 // ================================================================
 function renderPendingScreen(data) {
-  document.getElementById('pendingRef').textContent = data.subscriptionRequestId || '—';
-
+  // ✅ v8.55a — la demande manuelle vit dans `manualPaymentRequest` (champ
+  // libre, non verrouillé par les règles) ; repli sur les anciens champs
+  // plats pour les demandes créées avant v8.55a.
+  const m = data.manualPaymentRequest || {};
   const planLabels = { monthly: '📱 Mensuel', annual: '📅 Annuel' };
-  document.getElementById('pendingPlan').textContent = planLabels[data.subscriptionPlan] || '—';
+
+  document.getElementById('pendingRef').textContent =
+    m.requestId || data.subscriptionRequestId || '—';
+
+  document.getElementById('pendingPlan').textContent =
+    (m.status === 'pending' ? planLabels[m.plan] : planLabels[data.subscriptionPlan]) ||
+    m.planLabel || planLabels[data.subscriptionPlan] || '—';
 
   document.getElementById('pendingAmount').textContent =
-    data.subscriptionPrice ? data.subscriptionPrice.toLocaleString('fr-FR') + ' FCFA' : '—';
+    (m.price != null ? m.price : data.subscriptionPrice)
+      ? Number(m.price != null ? m.price : data.subscriptionPrice).toLocaleString('fr-FR') + ' FCFA' : '—';
 
   const reqDate = toDate(data.subscriptionRequestDate);
   document.getElementById('pendingDate').textContent = reqDate
@@ -2446,16 +2469,34 @@ async function sendToWhatsApp() {
 async function saveSubscriptionRequest(fullName, whatsapp, display, requestId, paymentMethod) {
   if (!currentUser) return false;
   try {
+    // ✅ v8.55a — FIABILISATION MANUELLE : `subscriptionStatus` et
+    // `subscriptionPlan` sont des champs VERROUILLÉS par firestore.rules
+    // (réservés au serveur — SDK admin/webhook). Le client qui les écrivait
+    // ici se prenait un permission-denied silencieux → la demande manuelle
+    // n'était jamais enregistrée et l'écran « en attente » n'apparaissait
+    // jamais. La demande passe désormais par `manualPaymentRequest`, champ
+    // libre non verrouillé ; les champs d'abonnement officiels restent
+    // écrits UNIQUEMENT par le serveur (webhook SasPay ou admin).
     await updateDoc(doc(db, 'users', currentUser.uid), {
-      subscriptionStatus: 'pending',
-      subscriptionPlan: currentPlan,
       subscriptionPrice: display.final,
       subscriptionOriginalPrice: display.original,
       subscriptionRequestId: requestId,
       subscriptionRequestDate: serverTimestamp(),
       subscriptionFullName: fullName,
       subscriptionWhatsapp: whatsapp,
-      subscriptionPaymentMethod: paymentMethod
+      subscriptionPaymentMethod: paymentMethod,
+      manualPaymentRequest: {
+        plan: currentPlan,
+        planLabel: currentPlan === 'annual' ? 'Annuel' : 'Mensuel',
+        price: display.final,
+        originalPrice: display.original,
+        requestId,
+        fullName,
+        whatsapp,
+        paymentMethod,
+        status: 'pending',
+        updatedAt: new Date().toISOString()
+      }
     });
 
     try {
@@ -2643,13 +2684,44 @@ if (statut === 'succes') {
   setTimeout(() => {
     window.arvexaConfirm({
       title: 'Paiement reçu',
-      message: 'Ton abonnement sera <strong>activé dans quelques instants</strong>. Reviens sur cette page dans un instant.',
+      message: 'Ton paiement est <strong>confirmé</strong>. Ton abonnement s\'active automatiquement dans quelques instants — <strong>reste sur cette page</strong> : elle se mettra à jour toute seule dès l\'activation.',
       icon: '✅',
       confirmText: 'Parfait !',
       showCancel: false,
       variant: 'primary'
     });
   }, 500);
+
+  // ✅ v8.55a — FIABILISATION AUTOMATIQUE : garde d'activation live.
+  // Le webhook SasPay écrit l'activation côté serveur ; l'écouteur
+  // onSnapshot de la page reroute tout seul vers l'écran premium dès
+  // qu'il arrive. Si rien n'arrive après 3 minutes, on force une
+  // relecture SERVEUR (hors cache) — le cache local Firestore peut
+  // masquer l'activation jusqu'à plusieurs minutes.
+  try {
+    const succWatch = setInterval(async () => {
+      if (!currentUser || isRedirecting) { clearInterval(succWatch); return; }
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid), { source: 'server' });
+        if (snap.exists()) {
+          const st = getUserState(snap.data());
+          if (st === 'premium') {
+            clearInterval(succWatch);
+            routeToScreen(snap.data());
+            window.arvexaConfirm({
+              title: 'Abonnement activé',
+              message: 'Ton abonnement <strong>Premium est actif</strong> ! Tout ARVEXA est débloqué : bon travail.',
+              icon: '🎉',
+              confirmText: 'Commencer',
+              showCancel: false,
+              variant: 'primary'
+            });
+          }
+        }
+      } catch (e) { /* réseau instable : on retentera au prochain tick */ }
+    }, 20000);
+    setTimeout(() => { clearInterval(succWatch); }, 180000);
+  } catch (e) { console.warn('Garde d\'activation indisponible :', e.message); }
 } else if (statut === 'annule') {
   window.history.replaceState({}, '', window.location.pathname);
   setTimeout(() => {
@@ -2670,6 +2742,57 @@ confirmBtn.addEventListener('click', sendToWhatsApp);
 document.getElementById('renewBtn')?.addEventListener('click', () => {
   try { localStorage.setItem(RENEW_FLAG_KEY, 'true'); } catch (e) {}
   showScreen('free');
+});
+
+// ✅ v8.55a — "Vérifier l'activation" : relecture FORCÉE côté serveur
+// (source:'server', le cache local Firestore peut garder un ancien état
+// plusieurs minutes). Reroute immédiat si le compte est déjà premium.
+document.getElementById('verifyManualBtn')?.addEventListener('click', async () => {
+  const btn = document.getElementById('verifyManualBtn');
+  if (!currentUser || !btn) return;
+  const oldHtml = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Vérification…';
+  btn.disabled = true;
+  try {
+    const snap = await getDoc(doc(db, 'users', currentUser.uid), { source: 'server' });
+    if (snap.exists()) {
+      const st = getUserState(snap.data());
+      if (st === 'premium') {
+        routeToScreen(snap.data());
+        window.arvexaConfirm({
+          title: 'Abonnement activé',
+          message: 'Ton abonnement <strong>Premium est actif</strong> ! Tout ARVEXA est débloqué.',
+          icon: '🎉',
+          confirmText: 'Commencer',
+          showCancel: false,
+          variant: 'primary'
+        });
+      } else {
+        routeToScreen(snap.data());
+        if (st === 'pending') showScreen('pending');
+        window.arvexaConfirm({
+          title: 'Pas encore activé',
+          message: 'Ton activation est <strong>en cours de traitement</strong>. Si ça dure plus de 24 h, contacte le support avec ta référence.',
+          icon: '⏳',
+          confirmText: 'OK',
+          showCancel: false,
+          variant: 'primary'
+        });
+      }
+    }
+  } catch (e) {
+    window.arvexaConfirm({
+      title: 'Vérification impossible',
+      message: 'Connexion <strong>faible ou absente</strong>. Réessaie dans quelques instants.',
+      icon: '📡',
+      confirmText: 'OK',
+      showCancel: false,
+      variant: 'primary'
+    });
+  } finally {
+    btn.innerHTML = oldHtml;
+    btn.disabled = false;
+  }
 });
 
 // ================================================================

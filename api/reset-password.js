@@ -242,7 +242,7 @@ function buildResetConfirmEmail() {
 <tr><td style="padding:18px 28px 8px 28px;" align="center">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td
     style="background-color:#E0B84A;border-radius:24px;padding:12px 26px;font-size:14px;font-weight:bold;">
-    <a href="https://arvexaschool.vercel.app/login.html" style="color:#0A0A0A;text-decoration:none;">Me connecter</a>
+    <a href="https://arvexa-academy.vercel.app/login.html" style="color:#0A0A0A;text-decoration:none;">Me connecter</a>
   </td></tr></table>
 </td></tr>
 <tr><td style="padding:16px 28px 6px 28px;">
