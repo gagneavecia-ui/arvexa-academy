@@ -296,6 +296,28 @@
       <div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement des packs…</div>
     </div>
 
+    <!-- ═══ ABONNEMENTS PREMIUM (⚡ v8.59a — cartes connectées au paiement automatique SasPay) ═══ -->
+    <div class="section-title"><i class="fas fa-crown"></i> Abonnements Premium <span>IA illimitée</span></div>
+    <div class="packs-grid">
+      <div class="pack-card" id="subMonthlyCard">
+        <div class="pack-icon"><i class="fas fa-crown"></i></div>
+        <div class="pack-name">Premium Mensuel</div>
+        <div class="pack-credits">♾️ Tout illimité · 1 mois</div>
+        <div class="pack-validity"><i class="fas fa-infinity"></i> Chat, examens, plans d'études</div>
+        <div class="pack-price"><span class="amount">3&nbsp;000</span><span class="cur">FCFA / mois</span></div>
+        <button class="pack-buy" id="buyMonthly"><i class="fas fa-crown"></i> Devenir Premium</button>
+      </div>
+      <div class="pack-card featured" id="subAnnualCard">
+        <span class="pack-badge">Meilleur prix</span>
+        <div class="pack-icon"><i class="fas fa-gem"></i></div>
+        <div class="pack-name">Premium Annuel</div>
+        <div class="pack-credits">♾️ Tout illimité · 12 mois</div>
+        <div class="pack-validity"><i class="fas fa-gift"></i> 2 mois offerts vs mensuel</div>
+        <div class="pack-price"><span class="amount">18&nbsp;000</span><span class="cur">FCFA / an</span></div>
+        <button class="pack-buy" id="buyAnnual"><i class="fas fa-gem"></i> Devenir Premium</button>
+      </div>
+    </div>
+
     <!-- ═══ BIENTÔT ═══ -->
     <div class="section-title"><i class="fas fa-hourglass-half"></i> Bientôt dans la boutique</div>
     <div class="teaser">
@@ -362,7 +384,7 @@
   } from "firebase/auth";
   import {
     initializeFirestore, persistentLocalCache, persistentSingleTabManager,
-    collection, doc, getDoc, getDocs, query, where, orderBy, getFirestore
+    collection, doc, getDoc, getDocs, query, where, getFirestore
   } from "firebase/firestore";
 
   const firebaseConfig = {
@@ -452,14 +474,18 @@
 
   async function loadPacks() {
     try {
+      // ✅ v8.59a — SANS orderBy : where+where+orderBy exigeait un INDEX COMPOSITE
+      // inexistant sur products → FAILED_PRECONDITION → le catch affichait un faux
+      // « problème de connexion » (signalement propriétaire). Des égalités seules
+      // ne demandent AUCUN index ; le tri se fait côté client.
       const q = query(
         collection(db, 'products'),
         where('type', '==', 'credits'),
-        where('status', '==', 'approved'),
-        orderBy('price', 'asc')
+        where('status', '==', 'approved')
       );
       const snap = await getDocs(q);
-      const products = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const products = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
       renderPacks(products);
     } catch (e) {
       console.error('Chargement packs :', e);
@@ -473,7 +499,7 @@
   }
 
   // ─── Achat ───
-  async function buyPack(productId, btn) {
+  async function startCheckout(body, btn) {
     const user = auth.currentUser;
     if (!user) {
       try { sessionStorage.setItem('redirectAfterLogin', 'marketplace.html'); } catch (e) {}
@@ -489,13 +515,11 @@
       const res = await fetch('/api/creer-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(Object.assign({
           uid: user.uid,
-          kind: 'credits',
-          productId,
           customerEmail: user.email || 'eleve@arvexaschool.com',
           customerName: uData.fullName || uData.firstName || 'Élève ARVEXA'
-        })
+        }, body))
       });
       const text = await res.text();
       let data;
@@ -511,6 +535,14 @@
       alert('Paiement indisponible : ' + (err.message || 'réessaie dans un instant.'));
     }
   }
+
+  function buyPack(productId, btn) { startCheckout({ kind: 'credits', productId }, btn); }
+
+  // ⚡ v8.59a — abonnements Premium depuis la Marketplace (prix relu côté serveur)
+  const buyMonthlyBtn = document.getElementById('buyMonthly');
+  const buyAnnualBtn = document.getElementById('buyAnnual');
+  if (buyMonthlyBtn) buyMonthlyBtn.addEventListener('click', () => startCheckout({ kind: 'subscription', plan: 'monthly' }, buyMonthlyBtn));
+  if (buyAnnualBtn) buyAnnualBtn.addEventListener('click', () => startCheckout({ kind: 'subscription', plan: 'annual' }, buyAnnualBtn));
 
   // ─── Bibliothèque ───
   function renderLibrary(items) {
@@ -574,12 +606,32 @@
 
   loadPacks();
 
-  // ⚡ Retour de paiement : recharger le solde après 8 s et 20 s
-  // (le webhook SasPay crédite le compte — délai réseau mobile)
+  // ⚡ Retour de paiement : ACTIVATION IMMÉDIATE par vérification serveur
+  // (/api/verifier-paiement confirme la session SasPay et active même si le
+  // webhook est retardé) + rechargement du solde en secours.
   if (paidReference) {
+    [0, 6000, 15000, 30000].forEach((delay) => setTimeout(() => checkActivation(paidReference), delay));
     setTimeout(refreshBalance, 8000);
     setTimeout(refreshBalance, 20000);
     setTimeout(refreshBalance, 45000);
+  }
+  async function checkActivation(ref) {
+    try {
+      const res = await fetch('/api/verifier-paiement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref })
+      });
+      const data = await res.json().catch(() => null);
+      if (data && data.ok && data.activated) {
+        refreshBalance();
+        refreshLibrary();
+      }
+    } catch (e) { /* silencieux */ }
+  }
+  function refreshLibrary() {
+    const user = auth.currentUser;
+    if (user) loadLibrary(user.uid);
   }
   function refreshBalance() {
     const user = auth.currentUser;

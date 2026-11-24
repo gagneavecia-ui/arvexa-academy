@@ -160,8 +160,8 @@ T('quotidien : importmap Firebase présent', qdj.includes('firebasejs/12.12.1/fi
 /* ── 6. SW ── */
 console.log('\n[6] Service worker');
 const sw = read('service-worker.js');
-T('SW_VERSION = arvexa-offline-v8.58a (let)', /let SW_VERSION = 'arvexa-offline-v8.58a';/.test(sw));
-T('changelog v8.58a sur la ligne du bump', /let SW_VERSION = 'arvexa-offline-v8.58a'; \/\/ ⚡ v8.58a/.test(sw));
+T('SW_VERSION = arvexa-offline-v8.59a (let)', /let SW_VERSION = 'arvexa-offline-v8.59a';/.test(sw));
+T('changelog v8.59a sur la ligne du bump', /let SW_VERSION = 'arvexa-offline-v8.59a'; \/\/ ⚡ v8.59a/.test(sw));
 T('précache : quotidien.html conservé', sw.includes("'./quotidien.html'"));
 T('précache : parcours.js conservé', sw.includes("'./parcours.js'"));
 

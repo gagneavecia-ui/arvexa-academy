@@ -45,7 +45,7 @@ T('abonnement : achat pack kind:credits', abo.includes("kind: 'credits'") && abo
 T('abonnement : garde retour paiement rafraîchit solde', abo.includes('renderCreditsBalance(snap.data())'));
 
 const sw = R('service-worker.js');
-T('SW : version v8.58a avec let', /let SW_VERSION = 'arvexa-offline-v8\.58a';/.test(sw));
+T('SW : version v8.58a avec let', /let SW_VERSION = 'arvexa-offline-v8\.59a';/.test(sw));
 T('SW : ma-promo.html retiré du precache (v8.58a)', !sw.includes("'./ma-promo.html',") && !sw.includes("'./arvexa-net.js',"));
 
 const rules = R('firestore.rules');

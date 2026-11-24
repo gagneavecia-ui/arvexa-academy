@@ -3254,17 +3254,6 @@ function showEmptyState(el, icon, title, message) {
   `;
 }
 
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'Bonjour';
-  if (h >= 12 && h < 18) return 'Bon après-midi';
-  return 'Bonsoir';
-}
-
-function getFirstName() {
-  return state.userData?.firstName || state.userData?.displayName?.split(' ')[0] || 'Élève';
-}
-
 // ✅ v4.13 — actions légères (lecture/écriture directe, SANS IA) : sur un 429
 // passager elles sont retentées silencieusement côté client. Seule la
 // création de section (IA) affiche immédiatement un message calme.
@@ -3886,7 +3875,6 @@ function paintDashboard(data) {
 
     el.innerHTML = `
       <div class="greeting">
-        <h1>${getGreeting()}, <em>${escapeHtml(getFirstName())}</em></h1>
         <p>${totalSections > 0 ? 'Continue là où tu t\'es arrêté.' : 'Commence ton premier cahier.'}</p>
       </div>
 

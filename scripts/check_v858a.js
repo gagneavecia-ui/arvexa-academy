@@ -22,7 +22,7 @@ console.log('[v8.58a] SW precache-first + purge cache HTML · arvexa-net supprim
 
 /* ── 1. SW : cause générale (stale HTML servi en navigation) ── */
 const sw = R('service-worker.js');
-T('SW : version v8.58a avec let', /let SW_VERSION = 'arvexa-offline-v8\.58a';/.test(sw) && !/const SW_VERSION/.test(sw));
+T('SW : version v8.58a avec let', /let SW_VERSION = 'arvexa-offline-v8\.59a';/.test(sw) && !/const SW_VERSION/.test(sw));
 T('SW : handleHTML sert la copie precache d\'abord', /const staticCache = await caches\.open\(CACHE_STATIC\);\s*\n\s*const fresh = await staticCache\.match\(req, \{ ignoreSearch: true \}\);/.test(sw));
 T('SW : branche isSlowConnection→vieux cache supprimée de la navigation', !/cached && isSlowConnection\(\)/.test(sw));
 T('SW : purge du cache HTML à chaque version (__sw_epoch__)', sw.includes('purgeStaleHtmlCache') && sw.includes("'__sw_epoch__'") && /caches\.delete\(CACHE_HTML\)/.test(sw));

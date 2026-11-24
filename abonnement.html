@@ -1931,8 +1931,7 @@ import {
   // ⚡ v8.57a — recharges de requêtes (packs Marketplace)
   getDocs,
   query,
-  where,
-  orderBy
+  where
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 // ================================================================
@@ -2775,6 +2774,7 @@ const statut = urlParams.get('statut');
 if (statut === 'succes') {
   // ✅ Modale uniforme (même modèle que index.html)
   window.history.replaceState({}, '', window.location.pathname);
+  const paidReference = urlParams.get('ref') || null;
   setTimeout(() => {
     window.arvexaConfirm({
       title: 'Paiement reçu',
@@ -2785,6 +2785,33 @@ if (statut === 'succes') {
       variant: 'primary'
     });
   }, 500);
+
+  // ⚡ v8.59a — ACTIVATION IMMÉDIATE PAR VÉRIFICATION SERVEUR : au retour de
+  // SasPay, /api/verifier-paiement relit la session SasPay côté serveur et
+  // active les crédits/abonnement même si le webhook est retardé ou perdu.
+  if (paidReference) {
+    [0, 6000, 15000, 30000, 45000].forEach((delay) => {
+      setTimeout(async () => {
+        try {
+          const res = await fetch('/api/verifier-paiement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ref: paidReference })
+          });
+          const data = await res.json().catch(() => null);
+          if (data && data.ok && data.activated) {
+            const snap = await getDoc(doc(db, 'users', currentUser?.uid || '—'), { source: 'server' });
+            if (snap.exists()) {
+              renderCreditsBalance(snap.data());
+              const st = getUserState(snap.data());
+              if (st === 'premium') routeToScreen(snap.data());
+            }
+            loadCreditsPacks();
+          }
+        } catch (e) { /* silencieux */ }
+      }, delay);
+    });
+  }
 
   // ✅ v8.55a — FIABILISATION AUTOMATIQUE : garde d'activation live.
   // Le webhook SasPay écrit l'activation côté serveur ; l'écouteur
@@ -3014,13 +3041,17 @@ async function loadCreditsPacks() {
   const grid = document.getElementById('creditsGrid');
   if (!grid) return;
   try {
+    // ✅ v8.59a — SANS orderBy : where+where+orderBy exigeait un INDEX COMPOSITE
+    // inexistant sur products → FAILED_PRECONDITION → faux « problème de
+    // connexion » (signalement propriétaire). Égalités seules = aucun index
+    // requis ; le tri se fait côté client.
     const snap = await getDocs(query(
       collection(db, 'products'),
       where('type', '==', 'credits'),
-      where('status', '==', 'approved'),
-      orderBy('price', 'asc')
+      where('status', '==', 'approved')
     ));
-    const products = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const products = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
     grid.replaceChildren();
     if (!products.length) {
       const empty = document.createElement('div');

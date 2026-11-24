@@ -206,6 +206,9 @@ export default async function handler(req, res) {
         credits: productInfo ? productInfo.credits : null,
         validityDays: productInfo ? productInfo.validityDays : null,
         amount,
+        // ⚡ v8.59a — id de session SasPay : permet à /api/verifier-paiement
+        // de relire le statut de paiement côté serveur (canal de secours)
+        saspaySessionId: data.data?.id || null,
         promo: promoApplied ? promoApplied.code : null,
         status: 'pending',
         createdAt: FieldValue.serverTimestamp()

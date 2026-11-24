@@ -39,8 +39,8 @@ console.log('\n═══ AUDIT v8.55a — ' + new Date().toISOString() + ' ═�
 
 /* ── T1 : SW version + let ── */
 const sw = read('service-worker.js');
-test('T1  SW_VERSION = arvexa-offline-v8.58a avec let',
-  /let SW_VERSION = 'arvexa-offline-v8\.58a'/.test(sw) && !/const SW_VERSION/.test(sw));
+test('T1  SW_VERSION = arvexa-offline-v8.59a avec let',
+  /let SW_VERSION = 'arvexa-offline-v8\.59a'/.test(sw) && !/const SW_VERSION/.test(sw));
 
 /* ── T2 : précache des 2 nouveaux modules ── */
 // ✅ v8.58a — arvexa-net.js SUPPRIMÉ (adaptation réseau retirée) : arvexa-soon.js reste
@@ -110,9 +110,9 @@ test('T11 Vérification serveur forcée câblée',
   abo.includes('id="verifyManualBtn"') && abo.includes("{ source: 'server' }"));
 
 /* ── T12 : webhook clôt la demande manuelle ── */
-const hook = read('api/saspay-webhook.mjs');
-test('T12 webhook : manualPaymentRequest clôturée à l\'activation',
-  hook.includes("manualPaymentRequest: { status: 'processed'"));
+const activation = read('api/_activation.mjs');
+test('T12 activation (webhook+verifier) : manualPaymentRequest clôturée à l\'activation (v8.59a : module partagé)',
+  activation.includes('manualPaymentRequest: {') && activation.includes("status: 'processed'") && read('api/saspay-webhook.mjs').includes("from './_activation.mjs'"));
 
 /* ── T13 : domaine mort éradiqué ── */
 const dead = [];

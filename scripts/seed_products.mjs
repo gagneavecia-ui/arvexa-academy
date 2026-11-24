@@ -17,6 +17,21 @@ const db = getFirestore();
 
 const PRODUCTS = [
   {
+    id: 'pack-flash',
+    data: {
+      type: 'credits',
+      title: 'Boost Flash',
+      description: '10 requêtes IA pour un coup de pouce immédiat — 7 jours.',
+      credits: 10,
+      validityDays: 7,
+      price: 200,
+      currency: 'XOF',
+      status: 'approved',
+      order: 0,
+      updatedAt: FieldValue.serverTimestamp()
+    }
+  },
+  {
     id: 'pack-starter',
     data: {
       type: 'credits',
@@ -43,6 +58,21 @@ const PRODUCTS = [
       currency: 'XOF',
       status: 'approved',
       order: 2,
+      updatedAt: FieldValue.serverTimestamp()
+    }
+  },
+  {
+    id: 'pack-mega',
+    data: {
+      type: 'credits',
+      title: 'Méga Pack',
+      description: '300 requêtes IA — la plus rentable, valable 6 mois.',
+      credits: 300,
+      validityDays: 180,
+      price: 3500,
+      currency: 'XOF',
+      status: 'approved',
+      order: 3,
       updatedAt: FieldValue.serverTimestamp()
     }
   }
