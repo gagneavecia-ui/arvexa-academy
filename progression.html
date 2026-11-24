@@ -303,7 +303,6 @@
       <a href="notifications.html"><i class="fas fa-bell"></i> Notifications</a>
       <a href="arv-progress.html"><i class="fas fa-graduation-cap"></i> Résumé</a>
       <a href="outils.html"><i class="fas fa-toolbox"></i> Outils</a>
-      <a href="classement.html"><i class="fas fa-trophy"></i> Classement</a>
       <a href="localisation.html"><i class="fas fa-location-dot"></i> À proximité</a>
       <div class="nav-divider"></div>
       <a href="index.html?avis=1" class="avis-link"><i class="fas fa-star"></i> Donner mon avis</a>
@@ -380,6 +379,7 @@
               <stop offset="100%" stop-color="rgba(224, 184, 74, 0.02)"></stop>
             </linearGradient>
           </defs>
+          <g class="pg-grid"></g>
           <line x1="10" y1="136" x2="630" y2="136" stroke="rgba(160,160,144,0.25)" stroke-width="1"></line>
           <path class="pg-area" fill="url(#pgAreaGold)" stroke="none" d=""></path>
           <path class="pg-line" fill="none" stroke="var(--accent-bright)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d=""></path>
@@ -404,6 +404,7 @@
               <stop offset="100%" stop-color="rgba(58, 182, 126, 0.02)"></stop>
             </linearGradient>
           </defs>
+          <g class="pg-grid"></g>
           <line x1="10" y1="136" x2="630" y2="136" stroke="rgba(160,160,144,0.25)" stroke-width="1"></line>
           <path class="pg-area" fill="url(#pgAreaGreen)" stroke="none" d=""></path>
           <path class="pg-line" fill="none" stroke="var(--success-light)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d=""></path>
@@ -538,6 +539,26 @@
     const h = Math.floor(m / 60), r = m % 60;
     return r === 0 ? h + ' h' : h + ' h ' + (r < 10 ? '0' : '') + r;
   }
+  /* ✅ v8.52a — Fenêtre temporelle : N derniers jours CONSÉCUTIFS en clés
+     YYYY-MM-DD (heure locale, jamais de décalage UTC) — l'axe des courbes
+     est un VRAI axe de temps même si l'API/cache renvoie des trous. */
+  function pgLastNDays(n) {
+    const out = [];
+    const now = new Date();
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      out.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+    }
+    return out;
+  }
+  /* ✅ v8.52a — Plafond Y « rond » (1/2/5 × 10ᵏ) : le sommet de la courbe ne
+     colle plus au haut du cadre. */
+  function pgNiceMax(v) {
+    if (v <= 5) return 5;
+    const pow = Math.pow(10, Math.floor(Math.log10(v)));
+    for (const m of [1, 2, 5, 10]) { if (m * pow >= v) return m * pow; }
+    return 10 * pow;
+  }
   function dayLabel(dateKey) {
     if (!dateKey) return '';
     try {
@@ -549,22 +570,41 @@
     return Number(x || 0).toFixed(dec === undefined ? 1 : dec).replace('.', ',');
   }
 
-  /* ── SPLINE (Catmull-Rom → Bézier cubique) : la « courbe vague »
-     professionnelle demandée — douce, sans angles. ── */
-  function smoothPath(pts) {
-    if (!pts.length) return '';
-    if (pts.length === 1) return 'M' + pts[0][0] + ',' + pts[0][1];
-    let d = 'M' + pts[0][0] + ',' + pts[0][1];
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] || pts[i];
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const p3 = pts[i + 2] || p2;
-      const c1x = (p1[0] + (p2[0] - p0[0]) / 6).toFixed(2);
-      const c1y = (p1[1] + (p2[1] - p0[1]) / 6).toFixed(2);
-      const c2x = (p2[0] - (p3[0] - p1[0]) / 6).toFixed(2);
-      const c2y = (p2[1] - (p3[1] - p1[1]) / 6).toFixed(2);
-      d += ' C' + c1x + ',' + c1y + ' ' + c2x + ',' + c2y + ' ' + p2[0] + ',' + p2[1];
+  /* ✅ v8.52a — SPLINE MONOTONE (Fritsch–Carlson, l'algo d3.curveMonotoneX) :
+     la « courbe vague » professionnelle — douce, PASSE PAR CHAQUE POINT RÉEL
+     et ne peut mathématiquement PAS dépasser les valeurs voisines. L'ancien
+     Catmull-Rom sur-sautait au-dessus/en dessous du cadre SVG dès qu'un pic
+     suivait des jours à zéro → courbe coupée/pliée = le bug vu à l'écran. */
+  function monotonePath(pts) {
+    const n = pts.length;
+    if (!n) return '';
+    if (n === 1) return 'M' + pts[0][0] + ',' + pts[0][1];
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
+    const dx = [], slop = [];
+    for (let i = 0; i < n - 1; i++) {
+      const h = (xs[i + 1] - xs[i]) || 1;
+      dx.push(h);
+      slop.push((ys[i + 1] - ys[i]) / h);
+    }
+    const tang = [slop[0]];
+    for (let i = 1; i < n - 1; i++) {
+      if (slop[i - 1] * slop[i] <= 0) tang.push(0);
+      else {
+        const w1 = 2 * dx[i] + dx[i - 1];
+        const w2 = dx[i] + 2 * dx[i - 1];
+        tang.push((w1 + w2) / (w1 / slop[i - 1] + w2 / slop[i]));
+      }
+    }
+    tang.push(slop[n - 2]);
+    const r2 = (v) => Math.round(v * 100) / 100;
+    let d = 'M' + r2(xs[0]) + ',' + r2(ys[0]);
+    for (let i = 0; i < n - 1; i++) {
+      const c1x = r2(xs[i] + dx[i] / 3);
+      const c1y = r2(ys[i] + (tang[i] * dx[i]) / 3);
+      const c2x = r2(xs[i + 1] - dx[i] / 3);
+      const c2y = r2(ys[i + 1] - (tang[i + 1] * dx[i]) / 3);
+      d += ' C' + c1x + ',' + c1y + ' ' + c2x + ',' + c2y + ' ' + r2(xs[i + 1]) + ',' + r2(ys[i + 1]);
     }
     return d;
   }
@@ -579,18 +619,27 @@
     if (!svg) return;
     const innerW = W - PAD_L - PAD_R;
     const innerH = H - PAD_T - PAD_B;
-    const maxVal = Math.max(1, ...values);
+    const maxVal = pgNiceMax(Math.max(1, ...values));
     const n = values.length;
     const stepX = n > 1 ? innerW / (n - 1) : innerW;
+    const yFor = (v) => PAD_T + innerH - (v / maxVal) * (innerH - 6) - 3;
     const pts = values.map((v, i) => {
       const x = PAD_L + i * stepX;
-      const y = PAD_T + innerH - (v / maxVal) * (innerH - 6) - 3;
+      const y = yFor(v);
       return [Math.round(x * 100) / 100, Math.round(y * 100) / 100];
     });
     const line = svg.querySelector('.pg-line');
     const area = svg.querySelector('.pg-area');
     const dotsG = svg.querySelector('.pg-dots');
-    const linePath = smoothPath(pts);
+    /* ✅ v8.52a — grille temporelle pointillée (mi-hauteur / plafond rond) */
+    const gridG = svg.querySelector('.pg-grid');
+    if (gridG) {
+      gridG.innerHTML = [0.5, 1].map((g) => {
+        const gy = Math.round(yFor(maxVal * g) * 100) / 100;
+        return '<line x1="' + PAD_L + '" y1="' + gy + '" x2="' + (W - PAD_R) + '" y2="' + gy + '" stroke="rgba(160,160,144,0.12)" stroke-width="1" stroke-dasharray="3 5"></line>';
+      }).join('');
+    }
+    const linePath = monotonePath(pts);
     const areaPath = n > 0
       ? linePath + ' L' + pts[n - 1][0] + ',' + (PAD_T + innerH) + ' L' + pts[0][0] + ',' + (PAD_T + innerH) + ' Z'
       : '';
@@ -650,6 +699,14 @@
     const subjects = Array.isArray(dash.subjects) ? dash.subjects : [];
     const dashStreak = (dash.streak && Number(dash.streak.current || 0)) || 0;
 
+    /* ✅ v8.52a — FENÊTRE TEMPORELLE RÉELLE : les 14 derniers jours
+       CONSÉCUTIFS construits localement, appariés par date exacte au
+       dashboard (API ou cache). L'axe des deux courbes est désormais un
+       vrai axe de temps — plus aucune position « au hasard ». */
+    const days14 = pgLastNDays(14);
+    const byDate = new Map(activity.map((a) => [String(a.date || '').slice(0, 10), a]));
+    const dayAct = (k) => byDate.get(k) || {};
+
     const sections = Number(summary.totalSections || 0) || 0;
     const chapters = Number(summary.totalChapters || 0) || 0;
     const minutes = Number(studyTime.totalMinutes || 0) || 0;
@@ -660,22 +717,22 @@
     $('kpiChapters').textContent = String(chapters);
     $('kpiTime').textContent = fmtMin(minutes);
     $('kpiStreak').innerHTML = String(streak) + '<small>j</small>';
-    const activeDays = activity.filter((a) => (Number(a.sections) || 0) > 0 || (Number(a.minutes) || 0) > 0).length;
-    const regularite = activity.length ? Math.round((activeDays / activity.length) * 100) : 0;
+    const activeDays = days14.filter((k) => (Number(dayAct(k).sections) || 0) > 0 || (Number(dayAct(k).minutes) || 0) > 0).length;
+    const regularite = Math.round((activeDays / 14) * 100);
     $('kpiRegularite').innerHTML = String(regularite) + '<small>%</small>';
 
-    /* Courbe 1 — sections / jour */
-    const secVals = activity.map((a) => Math.max(0, Number(a.sections) || 0));
+    /* Courbe 1 — sections / jour (axe = dates réelles) */
+    const secVals = days14.map((k) => Math.max(0, Number(dayAct(k).sections) || 0));
     const secTotal = secVals.reduce((a, b) => a + b, 0);
     $('badgeSections14').textContent = secTotal + ' en 14 jours';
-    drawSpline('chartSections', secVals, activity.map((a) => a.date));
+    drawSpline('chartSections', secVals, days14);
     $('emptySections').style.display = secTotal === 0 ? '' : 'none';
 
-    /* Courbe 2 — minutes / jour */
-    const minVals = activity.map((a) => Math.max(0, Number(a.minutes) || 0));
+    /* Courbe 2 — minutes / jour (axe = dates réelles) */
+    const minVals = days14.map((k) => Math.max(0, Number(dayAct(k).minutes) || 0));
     const minTotal = minVals.reduce((a, b) => a + b, 0);
     $('badgeTime14').textContent = fmtMin(minTotal) + ' en 14 jours';
-    drawSpline('chartTime', minVals, activity.map((a) => a.date));
+    drawSpline('chartTime', minVals, days14);
 
     /* Courbe 3 — répartition par matière (barres) */
     const active = subjects.filter((s) => (s.sectionsCount || 0) > 0)
@@ -705,11 +762,11 @@
     }
 
     /* Tendances & probabilités — TOUT calculé sur les données réelles */
-    const last7 = activity.slice(-7);
-    const sec7 = last7.reduce((a, b) => a + (Number(b.sections) || 0), 0);
+    const last7 = days14.slice(-7);
+    const sec7 = last7.reduce((a, k) => a + (Number(dayAct(k).sections) || 0), 0);
     const sec14 = secVals.reduce((a, b) => a + b, 0);
     const rythme7 = sec7 / 7;
-    const rythme14 = sec14 / Math.max(1, activity.length);
+    const rythme14 = sec14 / 14;
     const trends = [];
 
     /* 1 — Rythme */
@@ -740,11 +797,11 @@
     if (examLine) trends.push({ ico: 'fa-flag-checkered', lbl: 'Projection jusqu\'à l\'examen', txt: examLine });
 
     /* 3 — Probabilité de jour actif (régularité) */
-    const p = activity.length ? activeDays / activity.length : 0;
+    const p = activeDays / 14;
     trends.push({
       ico: 'fa-calendar-check',
       lbl: 'Probabilité de jour actif',
-      txt: 'Sur les 14 derniers jours tu as été actif ' + activeDays + ' jour' + (activeDays > 1 ? 's' : '') + ' sur ' + activity.length + ' — soit <em>' + Math.round(p * 100) + ' %</em> de chance, sur tes habitudes récentes, qu\'un jour donné soit un jour de travail.'
+      txt: 'Sur les 14 derniers jours tu as été actif ' + activeDays + ' jour' + (activeDays > 1 ? 's' : '') + ' sur 14 — soit <em>' + Math.round(p * 100) + ' %</em> de chance, sur tes habitudes récentes, qu\'un jour donné soit un jour de travail.'
     });
 
     /* 4 — Meilleure matière / matière à surveiller */

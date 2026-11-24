@@ -3487,69 +3487,35 @@ function renderRecommendationsBlock() {
 }
 
 // ── CARTE STATISTIQUES (v8.38) — remplace la carte « révisions officielles » ──
-// Métriques du cahier + courbe des sections ajoutées sur 14 jours
-// (données dailyActivity via getDashboard.activity).
+// ✅ v8.52a — LES COURBES REPARTENT DE ZÉRO (demande propriétaire : « les
+// courbes bug, tu repars… dans la page résumé c'est une courbe connectée au
+// temps, c'est le temps qui est calculé, rends-la la plus réaliste ») :
+// (1) la courbe trace désormais le TEMPS D'ÉTUDE (minutes/jour) — plus les
+// sections (souvent toutes à zéro → ligne plate morte) ; (2) l'axe est un
+// VRAI AXE TEMPOREL : fenêtre des 14 derniers jours CONSÉCUTIFS construite
+// localement (aucun jour manquant, dates réelles jalonnent la courbe) ;
+// (3) lissage SPLINE MONOTONE (Fritsch–Carlson, l'algo des librairies pro) :
+// vague douce, PASSE PAR CHAQUE POINT RÉEL et ne peut mathématiquement PAS
+// dépasser les valeurs voisines — l'ancien Catmull-Rom sur-sautait au-dessus
+// et en dessous du cadre SVG → courbe coupée/pliée = le bug vu à l'écran.
+// Le tracé animé du début à la fin est conservé (animateStatCharts).
 function renderStatsCard(data) {
   const summary = data.summary || {};
   const studyTime = data.studyTime || { formatted: { total: '0 min' } };
   const activity = safeArray(data.activity);
   const hasSections = (summary.totalSections || 0) > 0;
 
-  // ── Courbe SVG (aire + ligne) des sections ajoutées / jour ──
-  // ✅ v8.51a — « COURBE VAGUE » PROFESSIONNELLE + TRACÉ ANIMÉ (demande du
-  // propriétaire : « tu changes la courbe en mettant une courbe vague, un
-  // groupe très professionnel, et lorsque je charge la page la courbe
-  // commence du début jusqu'à la fin, ça se trace ») : lissage Catmull-Rom
-  // → Bézier cubique (plus aucun angle), puis animation stroke-dasharray —
-  // la ligne SE DESSINE du début à la fin à l'affichage, l'aire et les
-  // points apparaissent ensuite (préférence reduced-motion respectée).
-  const W = 640, H = 150, PAD_L = 10, PAD_R = 10, PAD_T = 16, PAD_B = 10;
-  const innerW = W - PAD_L - PAD_R;
-  const innerH = H - PAD_T - PAD_B;
-  const values = activity.map((a) => Math.max(0, Number(a.sections) || 0));
-  const maxVal = Math.max(1, ...values);
-  const n = values.length;
-  const stepX = n > 1 ? innerW / (n - 1) : innerW;
-
-  const pts = values.map((v, i) => {
-    const x = PAD_L + i * stepX;
-    const y = PAD_T + innerH - (v / maxVal) * (innerH - 6) - 3;
-    return [Math.round(x * 100) / 100, Math.round(y * 100) / 100];
-  });
-
-  const linePath = smoothStatPath(pts);
-  // ✅ v8.42 — tolère un historique vide (nouvel élève / cache {} jamais crash)
-  const areaPath = n > 0 ? `${linePath} L${pts[n - 1][0]},${PAD_T + innerH} L${pts[0][0]},${PAD_T + innerH} Z` : '';
-
-  const dots = pts.map((p, i) =>
-    `<circle class="stat-dot" cx="${p[0]}" cy="${p[1]}" r="${values[i] > 0 ? 3.4 : 1.6}" fill="${values[i] > 0 ? 'var(--accent-bright)' : 'rgba(160,160,144,0.5)'}"></circle>`
-  ).join('');
-
+  // ── Fenêtre temporelle réelle + minutes par jour (v8.52a) ──
+  const days = lastNDays(14);
+  const byDate = new Map(activity.map((a) => [String(a.date || '').slice(0, 10), a]));
+  const values = days.map((k) => Math.max(0, Number((byDate.get(k) || {}).minutes) || 0));
   const total14 = values.reduce((a, b) => a + b, 0);
 
-  const chart = `
-    <div class="stat-chart-wrap">
-      <div class="stat-chart-title">Sections ajoutées — 14 derniers jours (${total14})</div>
-      <svg class="stat-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Courbe des sections ajoutées sur 14 jours">
-        <defs>
-          <linearGradient id="statArea" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="rgba(224, 184, 74, 0.38)"></stop>
-            <stop offset="100%" stop-color="rgba(224, 184, 74, 0.02)"></stop>
-          </linearGradient>
-        </defs>
-        <line x1="${PAD_L}" y1="${PAD_T + innerH}" x2="${W - PAD_R}" y2="${PAD_T + innerH}" stroke="rgba(160,160,144,0.25)" stroke-width="1"></line>
-        <path class="stat-area" d="${areaPath}" fill="url(#statArea)" stroke="none"></path>
-        <path class="stat-line" d="${linePath}" fill="none" stroke="var(--accent-bright)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>
-        ${dots}
-      </svg>
-      <div class="stat-chart-days">
-        <span>${dayLabel(activity[0]?.date)}</span>
-        <span>${dayLabel(activity[Math.floor(n / 2)]?.date)}</span>
-        <span>Aujourd'hui</span>
-      </div>
-      ${!hasSections ? '<div class="stat-empty-hint">Ajoute ta première section avec le bouton « Ajouter » pour voir ta courbe monter.</div>' : ''}
-    </div>
-  `;
+  const chart = statTimeChart(values, days, {
+    title: `Temps d'étude — 14 derniers jours (${fmtStatMin(total14)})`,
+    aria: 'Courbe du temps d\'étude sur 14 jours',
+    empty: !hasSections ? '<div class="stat-empty-hint">Résume ta première section avec le bouton « Ajouter » : chaque minute travaillée montera sur ta courbe.</div>' : '',
+  });
 
   return `
     <div class="stat-card" aria-label="Mes statistiques">
@@ -3575,24 +3541,124 @@ function dayLabel(dateKey) {
   } catch (e) { return ''; }
 }
 
-/* ✅ v8.51a — Lissage Catmull-Rom → Bézier cubique : transforme les points
-   d'une série en une « courbe vague » douce et professionnelle. */
-function smoothStatPath(pts) {
-  if (!pts.length) return '';
-  if (pts.length === 1) return `M${pts[0][0]},${pts[0][1]}`;
-  let d = `M${pts[0][0]},${pts[0][1]}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] || pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] || p2;
-    const c1x = (p1[0] + (p2[0] - p0[0]) / 6).toFixed(2);
-    const c1y = (p1[1] + (p2[1] - p0[1]) / 6).toFixed(2);
-    const c2x = (p2[0] - (p3[0] - p1[0]) / 6).toFixed(2);
-    const c2y = (p2[1] - (p3[1] - p1[1]) / 6).toFixed(2);
-    d += ` C${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]}`;
+/* ✅ v8.52a — Fenêtre temporelle : les N derniers jours CONSÉCUTIFS en clés
+   YYYY-MM-DD (heure locale — jamais de décalage UTC), pour un axe vraiment
+   connecté au temps même si l'API/cache renvoie des trous ou moins de jours. */
+function lastNDays(n) {
+  const out = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    out.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+  }
+  return out;
+}
+
+/* ✅ v8.52a — Spline MONOTONE (Fritsch–Carlson, l'algo d3.curveMonotoneX) :
+   « vague » douce SANS sur-saut — chaque bout de Bézier tombe EXACTEMENT sur
+   un point réel et la courbe ne dépasse jamais la valeur de ses voisins. */
+function monotoneStatPath(pts) {
+  const n = pts.length;
+  if (!n) return '';
+  if (n === 1) return `M${pts[0][0]},${pts[0][1]}`;
+  const xs = pts.map((p) => p[0]);
+  const ys = pts.map((p) => p[1]);
+  const dx = [], slop = [];
+  for (let i = 0; i < n - 1; i++) {
+    const h = (xs[i + 1] - xs[i]) || 1;
+    dx.push(h);
+    slop.push((ys[i + 1] - ys[i]) / h);
+  }
+  const tang = [slop[0]];
+  for (let i = 1; i < n - 1; i++) {
+    if (slop[i - 1] * slop[i] <= 0) tang.push(0);
+    else {
+      const w1 = 2 * dx[i] + dx[i - 1];
+      const w2 = dx[i] + 2 * dx[i - 1];
+      tang.push((w1 + w2) / (w1 / slop[i - 1] + w2 / slop[i]));
+    }
+  }
+  tang.push(slop[n - 2]);
+  const r2 = (v) => Math.round(v * 100) / 100;
+  let d = `M${r2(xs[0])},${r2(ys[0])}`;
+  for (let i = 0; i < n - 1; i++) {
+    const c1x = r2(xs[i] + dx[i] / 3);
+    const c1y = r2(ys[i] + (tang[i] * dx[i]) / 3);
+    const c2x = r2(xs[i + 1] - dx[i] / 3);
+    const c2y = r2(ys[i + 1] - (tang[i + 1] * dx[i]) / 3);
+    d += ` C${c1x},${c1y} ${c2x},${c2y} ${r2(xs[i + 1])},${r2(ys[i + 1])}`;
   }
   return d;
+}
+
+/* ✅ v8.52a — Plafond Y « rond » (1/2/5 × 10ᵏ) : le sommet de la courbe ne
+   colle plus au haut du cadre et les proportions restent lisibles. */
+function niceStatMax(v) {
+  if (v <= 5) return 5;
+  const pow = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 2, 5, 10]) { if (m * pow >= v) return m * pow; }
+  return 10 * pow;
+}
+
+/* ✅ v8.52a — Minutes au format court pour les titres (78 → « 1 h 18 »). */
+function fmtStatMin(m) {
+  m = Math.max(0, Math.round(Number(m) || 0));
+  if (m < 60) return m + ' min';
+  const h = Math.floor(m / 60), r = m % 60;
+  return r === 0 ? h + ' h' : h + ' h ' + String(r).padStart(2, '0');
+}
+
+/* ✅ v8.52a — Gabarit SVG de courbe temporelle (partagé) : grille pointillée
+   + axe des dates réelles, aire dorée, ligne spline monotone, points réels.
+   Prête pour animateStatCharts (tracé animé du début à la fin). */
+function statTimeChart(values, days, opts) {
+  const o = opts || {};
+  const W = 640, H = 150, PAD_L = 10, PAD_R = 10, PAD_T = 16, PAD_B = 10;
+  const innerW = W - PAD_L - PAD_R;
+  const innerH = H - PAD_T - PAD_B;
+  const maxVal = niceStatMax(Math.max(1, ...values));
+  const n = values.length;
+  const stepX = n > 1 ? innerW / (n - 1) : innerW;
+  const yFor = (v) => PAD_T + innerH - (v / maxVal) * (innerH - 6) - 3;
+  const pts = values.map((v, i) => [Math.round((PAD_L + i * stepX) * 100) / 100, Math.round(yFor(v) * 100) / 100]);
+
+  const linePath = monotoneStatPath(pts);
+  // ✅ v8.42 — tolère un historique vide (nouvel élève / cache {} jamais crash)
+  const areaPath = n > 0 ? `${linePath} L${pts[n - 1][0]},${PAD_T + innerH} L${pts[0][0]},${PAD_T + innerH} Z` : '';
+
+  const dots = pts.map((p, i) =>
+    `<circle class="stat-dot" cx="${p[0]}" cy="${p[1]}" r="${values[i] > 0 ? 3.4 : 1.6}" fill="${values[i] > 0 ? 'var(--accent-bright)' : 'rgba(160,160,144,0.5)'}"></circle>`
+  ).join('');
+
+  const grid = [0.5, 1].map((g) => {
+    const y = Math.round(yFor(maxVal * g) * 100) / 100;
+    return `<line x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}" stroke="rgba(160,160,144,0.12)" stroke-width="1" stroke-dasharray="3 5"></line>`;
+  }).join('');
+
+  return `
+    <div class="stat-chart-wrap">
+      <div class="stat-chart-title">${o.title || ''}</div>
+      <svg class="stat-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${o.aria || 'Courbe des 14 derniers jours'}">
+        <defs>
+          <linearGradient id="statArea" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(224, 184, 74, 0.38)"></stop>
+            <stop offset="100%" stop-color="rgba(224, 184, 74, 0.02)"></stop>
+          </linearGradient>
+        </defs>
+        ${grid}
+        <line x1="${PAD_L}" y1="${PAD_T + innerH}" x2="${W - PAD_R}" y2="${PAD_T + innerH}" stroke="rgba(160,160,144,0.25)" stroke-width="1"></line>
+        <path class="stat-area" d="${areaPath}" fill="url(#statArea)" stroke="none"></path>
+        <path class="stat-line" d="${linePath}" fill="none" stroke="var(--accent-bright)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>
+        ${dots}
+      </svg>
+      <div class="stat-chart-days">
+        <span>${dayLabel(days[0])}</span>
+        <span>${dayLabel(days[Math.max(0, Math.floor((n - 1) / 2))])}</span>
+        <span>Aujourd'hui</span>
+      </div>
+      ${o.empty || ''}
+    </div>
+  `;
 }
 
 /* ✅ v8.51a — Animation de tracé : chaque .stat-chart de la vue se dessine
