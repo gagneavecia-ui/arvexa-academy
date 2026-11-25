@@ -15,6 +15,7 @@ import crypto from 'crypto';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { activateCheckout } from './_activation.mjs';
+import { notifyTelegramBestEffort } from './_telegram.mjs'; /* ✅ v8.69a — alerte sur échecs */
 
 // ✅ FIX CRITIQUE (2026-10-26) — le webhook crashait au CHARGEMENT du module
 // (FUNCTION_INVOCATION_FAILED) : il lisait FIREBASE_SERVICE_ACCOUNT, variable
@@ -135,7 +136,11 @@ export default async function handler(req, res) {
       if (!pendingSnap.exists) {
         // Fail-closed : sans enregistrement serveur, on n'active rien.
         console.error('🚫 Checkout inconnu (aucun enregistrement serveur) :', reference);
-        return res.status(200).json({ received: true, activated: false, reason: 'unknown_reference' });
+        // ✅ v8.69a — réponse 4xx (et plus 200) : SasPay peut retenter — le doc
+        // pending est écrit AVANT l'appel de checkout, un inconnu peut être une
+        // course transitoire. + alerte Telegram (l'échec était invisible avant).
+        await notifyTelegramBestEffort(`🚨 ARVEXA — WEBHOOK : checkout inconnu ${reference} (pas d'enregistrement serveur).`);
+        return res.status(404).json({ received: true, activated: false, reason: 'unknown_reference' });
       }
 
       const pending = pendingSnap.data();
@@ -151,6 +156,9 @@ export default async function handler(req, res) {
       const expectedAmount = Number(pending.amount || 0);
       if (!paidAmount || paidAmount < expectedAmount) {
         console.error(`🚫 Montant insuffisant : payé=${paidAmount}, attendu=${expectedAmount} (${reference})`);
+        // ✅ v8.69a — condition PERMANENTE (un retry ne changera rien) : 200 OK
+        // pour ne pas boucler SasPay, mais alerte Telegram pour investigation.
+        await notifyTelegramBestEffort(`🚨 ARVEXA — WEBHOOK : montant insuffisant ${reference} (payé=${paidAmount}, attendu=${expectedAmount}).`);
         return res.status(200).json({ received: true, activated: false, reason: 'amount_mismatch' });
       }
 
@@ -160,7 +168,12 @@ export default async function handler(req, res) {
         processedVia: 'webhook'
       });
       if (!result.activated) {
-        return res.status(200).json({ received: true, activated: false, reason: result.reason });
+        // ✅ v8.69a — échec TRANSITOIRE (doc verrouillé, latence Firestore…) :
+        // réponse 5xx → SasPay RETENTE son webhook (avant : 200 = jamais
+        // retenté, paiement encaissé sans produit livré). + alerte Telegram.
+        console.error('🚫 Activation échouée via webhook :', reference, result.reason);
+        await notifyTelegramBestEffort(`🚨 ARVEXA — WEBHOOK : activation échouée ${reference} (${result.reason || 'raison inconnue'}). Nouvelle tentative SasPay attendue.`);
+        return res.status(500).json({ received: true, activated: false, reason: result.reason });
       }
     }
 

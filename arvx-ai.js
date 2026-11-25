@@ -63,11 +63,20 @@
   async function ask(task, payload) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), AI_TIMEOUT_MS);
+    /* ✅ v8.69a — le kit IA est authentifié : chaque appel porte le jeton
+       Firebase de l'élève, fourni par la page via window.ARVX_AI_AUTH_PROVIDER.
+       Le serveur vérifie le jeton et décrémente 1 crédit (Premium : illimité). */
+    let bearer = null;
+    if (typeof window.ARVX_AI_AUTH_PROVIDER === 'function') {
+      try { bearer = await window.ARVX_AI_AUTH_PROVIDER(); } catch (e) { bearer = null; }
+    }
+    const headers = { 'Content-Type': 'application/json' };
+    if (bearer) headers.Authorization = 'Bearer ' + bearer;
     let res;
     try {
       res = await fetch((window.ARVX_AI && window.ARVX_AI.endpoint) || '/api/ai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify(Object.assign({ task, lang: lang() }, payload || {})),
         signal: ctrl.signal,
       });
@@ -80,6 +89,11 @@
     let body = null;
     try { body = await res.json(); } catch (e) { body = null; }
     if (!res.ok || !body || body.ok !== true) {
+      /* ✅ v8.69a — quota IA épuisé côté serveur (ARV_LIMIT_REACHED) :
+         signalé à la page comme « rate » — le vrai message (recharge tes
+         crédits) reste lisible dans body.error côté console */
+      const srvCode = body && body.code ? String(body.code) : '';
+      if (srvCode === 'ARV_LIMIT_REACHED' || srvCode === 'ARV_DAILY_LIMIT') throw new AiError('rate');
       const code = (body && body.error) || (res.status === 413 ? 'too_large' : 'ai_error');
       throw new AiError(code === 'rate' ? 'rate' : (res.status >= 400 && res.status < 500 && code === 'ai_error' ? 'bad' : code));
     }

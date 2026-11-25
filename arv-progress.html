@@ -2954,6 +2954,12 @@ select:focus-visible,
     }
     #extractPill .pct-bar { margin-top: 9px; }
 
+
+    /* ✅ v8.69a — mode clair : QCM et révisions restent lisibles */
+    html[data-theme="light"] .qcmz-choice.good { background: rgba(46,125,50,.08); border-color: rgba(46,125,50,.35); color: #1B5E20; }
+    html[data-theme="light"] .qcmz-choice.bad { background: rgba(192,57,43,.07); border-color: rgba(192,57,43,.32); color: #8E2A20; }
+    html[data-theme="light"] .mx-rev { background: rgba(46,125,50,.06); border-color: rgba(46,125,50,.28); color: #1B5E20; }
+    html[data-theme="light"] .voice-rec-btn.recording { background: linear-gradient(135deg, #C0392B, #8E2A20); }
 </style>
   <script src="analytics.js"></script>
   <script src="register-sw.js" defer></script>
@@ -2983,15 +2989,45 @@ select:focus-visible,
   @keyframes arvBootSpinRev{to{transform:rotate(-360deg)}}
   @keyframes arvBootShimmer{to{left:100%}}
   @media (prefers-reduced-motion:reduce){.arv-boot-ring,.arv-boot-ring::after{animation-duration:1.8s}.arv-boot-bar::after{animation:none}}
+    .arv-boot{align-items:flex-start;justify-content:center}
+    /* ✅ v8.69a — SKELETON : structure de page visible immédiatement,
+       les vraies données arrivent ensuite en fondu (levée vérifiée inchangée) */
+    .arv-skel{width:100%;max-width:560px;padding:calc(58px + 8px) 18px 0;display:flex;flex-direction:column;gap:12px}
+    .arv-skel-bar{position:relative;height:14px;border-radius:8px;background:rgba(212,175,55,.10);overflow:hidden}
+    .arv-skel-bar::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.16),transparent);animation:arvSkelShimmer 1.4s ease-in-out infinite}
+    .arv-skel-bar.w60{width:60%}.arv-skel-bar.w40{width:40%}.arv-skel-bar.w75{width:75%}
+    .arv-skel-hero{height:120px;border-radius:18px;background:rgba(212,175,55,.07);border:1px solid rgba(212,175,55,.12);position:relative;overflow:hidden}
+    .arv-skel-hero::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.5s ease-in-out infinite}
+    .arv-skel-cards{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+    .arv-skel-card{border-radius:16px;border:1px solid rgba(212,175,55,.10);background:rgba(212,175,55,.05);overflow:hidden;position:relative}
+    .arv-skel-card::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.6s ease-in-out infinite}
+    .arv-skel-card .h{height:42px;background:rgba(212,175,55,.08)}
+    .arv-skel-card .c{height:12px;border-radius:6px;margin:12px 14px;background:rgba(212,175,55,.10)}
+    .arv-skel-rows{display:flex;flex-direction:column;gap:10px}
+    .arv-skel-row{display:flex;gap:12px;align-items:center;border-radius:14px;border:1px solid rgba(212,175,55,.10);background:rgba(212,175,55,.05);padding:12px;position:relative;overflow:hidden}
+    .arv-skel-row::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.6s ease-in-out infinite}
+    .arv-skel-row .av{width:40px;height:40px;border-radius:12px;background:rgba(212,175,55,.12);flex-shrink:0}
+    .arv-skel-row .ln{height:11px;border-radius:6px;background:rgba(212,175,55,.10);flex:1}
+    .arv-skel-row .ln+.ln{margin-top:7px}
+    @keyframes arvSkelShimmer{to{transform:translateX(100%)}}
+    @media (prefers-reduced-motion:reduce){.arv-skel-bar::after,.arv-skel-card::after,.arv-skel-row::after,.arv-skel-hero::after{animation:none}}
+    html[data-theme="light"] .arv-skel-bar{background:rgba(184,134,11,.12)}
+    html[data-theme="light"] .arv-skel-card,html[data-theme="light"] .arv-skel-row,html[data-theme="light"] .arv-skel-hero{background:rgba(184,134,11,.06);border-color:rgba(184,134,11,.14)}
+    html[data-theme="light"] .arv-skel-card .c,html[data-theme="light"] .arv-skel-row .av,html[data-theme="light"] .arv-skel-row .ln{background:rgba(184,134,11,.12)}
 </style>
 <div class="arv-boot" id="bootLoader" role="status" aria-label="Chargement de la page">
-  <div class="arv-boot-inner">
-    <span class="arv-boot-ring" aria-hidden="true"></span>
-    <div class="arv-boot-word">ARVEXA <em>School</em></div>
-    <span class="arv-boot-bar" aria-hidden="true"></span>
-    <div class="arv-boot-label">Chargement...</div>
+  <div class="arv-skel">
+      <div class="arv-skel-bar w40"></div>
+      <div class="arv-skel-rows">
+<div class="arv-skel-row"><div class="av"></div><div style="flex:1;"><div class="ln" style="width:70%;"></div><div class="ln" style="width:45%;"></div></div></div>
+<div class="arv-skel-row"><div class="av"></div><div style="flex:1;"><div class="ln" style="width:70%;"></div><div class="ln" style="width:45%;"></div></div></div>
+<div class="arv-skel-row"><div class="av"></div><div style="flex:1;"><div class="ln" style="width:70%;"></div><div class="ln" style="width:45%;"></div></div></div>
+<div class="arv-skel-row"><div class="av"></div><div style="flex:1;"><div class="ln" style="width:70%;"></div><div class="ln" style="width:45%;"></div></div></div>
+<div class="arv-skel-row"><div class="av"></div><div style="flex:1;"><div class="ln" style="width:70%;"></div><div class="ln" style="width:45%;"></div></div></div>
+      </div>
+      <div class="arv-boot-label" style="opacity:.6;">Chargement…</div>
+    </div>
   </div>
-</div>
 <script>
 (function(){
   var t0 = Date.now();
@@ -3196,6 +3232,9 @@ const db = getFirestore(app);
 /* ✅ v8.63a — exposition de l'instance Auth : le cache du dashboard est
    estampillé par uid (garde anti-croisement entre comptes). */
 window.firebaseAuth = auth;
+/* ✅ v8.69a — le kit IA (/api/arv?kit=1) est désormais authentifié + à crédits :
+   chaque appel OCR/analyse porte le jeton Firebase de l'élève connecté. */
+window.ARVX_AI_AUTH_PROVIDER = async () => (auth.currentUser ? await getIdToken(auth.currentUser, true) : null);
 
 const MIN_CONTENT_LENGTH = 40;
 const MAX_CONTENT_LENGTH = 2500; // calibré IA : taille que l'analyse traite sans problème

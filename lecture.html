@@ -1860,6 +1860,14 @@
       .content-wrapper { padding: 20px 16px 30px; }
     }
 
+    /* ✅ v8.69a — bande 601-768 px : les libellés Audio/Notes du header ne
+       peuvent ni rétrécir ni passer à la ligne → débordement possible ;
+       on passe les boutons en icônes seules, comme sur mobile */
+    @media (min-width: 601px) and (max-width: 768px) {
+      .tts-btn, .notes-btn { width: 34px; padding: 0; justify-content: center; }
+      .tts-btn span, .notes-btn span { display: none; }
+    }
+
     @media (max-width: 600px) {
       .content-wrapper { padding: 16px 14px 28px; }
       #contentBody { font-size: 15.5px; line-height: 1.8; }
@@ -3911,10 +3919,14 @@ function loadTTSVoices() {
   if (!TTS_SUPPORTED) return;
   const voices = tts.synth.getVoices();
   if (!voices || voices.length === 0) return;
+  /* ✅ v8.69a — la voix suit la LANGUE DE L'APPLICATION (avant : fr-FR codé en
+     dur, une voix française parlait même quand l'app était en anglais) */
+  const lang = (window.ARVEXA_LANG && window.ARVEXA_LANG.get() === 'en') ? 'en' : 'fr';
+  const pref = lang === 'en' ? ['en-gb', 'en-us', 'en'] : ['fr-fr', 'fr'];
   tts.voice =
-    voices.find(v => v.lang && v.lang.toLowerCase() === 'fr-fr' && v.localService) ||
-    voices.find(v => v.lang && v.lang.toLowerCase() === 'fr-fr') ||
-    voices.find(v => v.lang && v.lang.toLowerCase().startsWith('fr')) ||
+    voices.find(v => v.lang && pref.indexOf(v.lang.toLowerCase()) !== -1 && v.localService) ||
+    voices.find(v => v.lang && pref.indexOf(v.lang.toLowerCase()) !== -1) ||
+    voices.find(v => v.lang && v.lang.toLowerCase().indexOf(lang) === 0) ||
     null;
 }
 
@@ -3922,6 +3934,8 @@ loadTTSVoices();
 if (TTS_SUPPORTED && 'onvoiceschanged' in window.speechSynthesis) {
   window.speechSynthesis.onvoiceschanged = loadTTSVoices;
 }
+/* ✅ v8.69a — rechargement de la voix quand l'élève change la langue de l'app */
+window.addEventListener('arvexa-langchange', () => { loadTTSVoices(); });
 
 function cleanTTS(text) {
   if (!text) return '';
@@ -4068,7 +4082,8 @@ function speakChunk(index) {
 
   const utterance = new SpeechSynthesisUtterance(text);
   tts.utterance = utterance;
-  utterance.lang = 'fr-FR';
+  /* ✅ v8.69a — la langue de lecture suit l'application (FR par défaut, EN si choisi) */
+  utterance.lang = (window.ARVEXA_LANG && window.ARVEXA_LANG.get() === 'en') ? 'en-US' : 'fr-FR';
   utterance.rate = tts.rate;
   utterance.pitch = tts.pitch;
   utterance.volume = tts.volume;

@@ -225,6 +225,11 @@
       font-family: 'Inter', sans-serif;
     }
     .qd-share-btn:active { transform: scale(.97); }
+
+    /* ✅ v8.69a — mode clair : bouton retour, pastilles, carte */
+    html[data-theme="light"] .back-btn { background: rgba(122,90,8,.06); border-color: rgba(184,134,11,.18); color: #5A5038; }
+    html[data-theme="light"] .qd-dot { background: rgba(184,134,11,.16); }
+    html[data-theme="light"] .card { box-shadow: 0 12px 34px rgba(122,90,8,.12); }
 </style>
 <script src="arvexa-applock.js" defer></script>
 </head>
@@ -251,15 +256,41 @@
   @keyframes arvBootSpinRev{to{transform:rotate(-360deg)}}
   @keyframes arvBootShimmer{to{left:100%}}
   @media (prefers-reduced-motion:reduce){.arv-boot-ring,.arv-boot-ring::after{animation-duration:1.8s}.arv-boot-bar::after{animation:none}}
+    .arv-boot{align-items:flex-start;justify-content:center}
+    /* ✅ v8.69a — SKELETON : structure de page visible immédiatement,
+       les vraies données arrivent ensuite en fondu (levée vérifiée inchangée) */
+    .arv-skel{width:100%;max-width:560px;padding:calc(58px + 8px) 18px 0;display:flex;flex-direction:column;gap:12px}
+    .arv-skel-bar{position:relative;height:14px;border-radius:8px;background:rgba(212,175,55,.10);overflow:hidden}
+    .arv-skel-bar::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.16),transparent);animation:arvSkelShimmer 1.4s ease-in-out infinite}
+    .arv-skel-bar.w60{width:60%}.arv-skel-bar.w40{width:40%}.arv-skel-bar.w75{width:75%}
+    .arv-skel-hero{height:120px;border-radius:18px;background:rgba(212,175,55,.07);border:1px solid rgba(212,175,55,.12);position:relative;overflow:hidden}
+    .arv-skel-hero::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.5s ease-in-out infinite}
+    .arv-skel-cards{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+    .arv-skel-card{border-radius:16px;border:1px solid rgba(212,175,55,.10);background:rgba(212,175,55,.05);overflow:hidden;position:relative}
+    .arv-skel-card::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.6s ease-in-out infinite}
+    .arv-skel-card .h{height:42px;background:rgba(212,175,55,.08)}
+    .arv-skel-card .c{height:12px;border-radius:6px;margin:12px 14px;background:rgba(212,175,55,.10)}
+    .arv-skel-rows{display:flex;flex-direction:column;gap:10px}
+    .arv-skel-row{display:flex;gap:12px;align-items:center;border-radius:14px;border:1px solid rgba(212,175,55,.10);background:rgba(212,175,55,.05);padding:12px;position:relative;overflow:hidden}
+    .arv-skel-row::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.6s ease-in-out infinite}
+    .arv-skel-row .av{width:40px;height:40px;border-radius:12px;background:rgba(212,175,55,.12);flex-shrink:0}
+    .arv-skel-row .ln{height:11px;border-radius:6px;background:rgba(212,175,55,.10);flex:1}
+    .arv-skel-row .ln+.ln{margin-top:7px}
+    @keyframes arvSkelShimmer{to{transform:translateX(100%)}}
+    @media (prefers-reduced-motion:reduce){.arv-skel-bar::after,.arv-skel-card::after,.arv-skel-row::after,.arv-skel-hero::after{animation:none}}
+    html[data-theme="light"] .arv-skel-bar{background:rgba(184,134,11,.12)}
+    html[data-theme="light"] .arv-skel-card,html[data-theme="light"] .arv-skel-row,html[data-theme="light"] .arv-skel-hero{background:rgba(184,134,11,.06);border-color:rgba(184,134,11,.14)}
+    html[data-theme="light"] .arv-skel-card .c,html[data-theme="light"] .arv-skel-row .av,html[data-theme="light"] .arv-skel-row .ln{background:rgba(184,134,11,.12)}
 </style>
 <div class="arv-boot" id="bootLoader" role="status" aria-label="Chargement de la page">
-  <div class="arv-boot-inner">
-    <span class="arv-boot-ring" aria-hidden="true"></span>
-    <div class="arv-boot-word">ARVEXA <em>School</em></div>
-    <span class="arv-boot-bar" aria-hidden="true"></span>
-    <div class="arv-boot-label">Chargement...</div>
+  <div class="arv-skel">
+      <div class="arv-skel-bar w40"></div>
+      <div class="arv-skel-hero" style="height:110px;"></div>
+      <div class="arv-skel-card"><div class="c" style="margin-top:14px;"></div><div class="c" style="width:70%;margin-top:0;"></div></div>
+      <div class="arv-skel-card"><div class="c" style="margin-top:14px;"></div><div class="c" style="width:70%;margin-top:0;"></div></div>
+      <div class="arv-boot-label" style="opacity:.6;">Chargement…</div>
+    </div>
   </div>
-</div>
 <script>
 (function(){
   var t0 = Date.now();
@@ -397,10 +428,15 @@
       <!-- CHARGEMENT -->
       <div id="loadingView" class="qd-center">⏳ Tes IA préparent tes questions du jour…</div>
 
-      <!-- ERREUR -->
+      <!-- ERREUR — ✅ v8.69a : le message s'adapte à la VRAIE cause (quota, session, réseau) -->
       <div id="errorView" class="hidden">
-        <div class="qd-center">😕 Impossible de charger les questions.<br>Vérifie ta connexion puis réessaie.</div>
+        <div class="qd-center">😕 <span id="errorMsg">Impossible de charger les questions.<br>Vérifie ta connexion puis réessaie.</span></div>
         <div class="qd-actions"><button class="qd-btn ghost" id="retryBtn">Réessayer</button></div>
+      </div>
+
+      <!-- ✅ v8.69a — repli statique : banque de secours quand l'IA est indisponible -->
+      <div id="secoursBanner" class="hidden" style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#E0B84A;background:rgba(184,134,11,.08);border:1px solid rgba(184,134,11,.25);border-radius:10px;padding:8px 12px;margin-bottom:12px;">
+        <i class="fas fa-shield-heart"></i> Questions de secours (hors de tes leçons) — tes IA n'ont pas répondu cette fois.
       </div>
 
       <!-- ✅ v8.54a — AUCUNE LEÇON FOURNIE : la Question du jour est tirée
@@ -855,7 +891,12 @@ async function chargerIa(user) {
   });
   const data = await r.json().catch(() => null);
   if (!r.ok || !data || !data.reply) {
-    throw new Error(data && data.error ? String(data.error).slice(0, 90) : 'HTTP ' + r.status);
+    /* ✅ v8.69a — on PROPAGE le code du serveur (ex. ARV_LIMIT_REACHED) :
+       le catch de charger() affichera le vrai message au lieu du faux
+       « vérifie ta connexion » */
+    const err = new Error(data && data.error ? String(data.error).slice(0, 90) : 'HTTP ' + r.status);
+    if (data && data.code) err.code = String(data.code);
+    throw err;
   }
   const qs = normalizeIa(extractJson(data.reply));
   if (qs.length < 2) throw new Error('questions IA invalides');
@@ -866,18 +907,72 @@ async function chargerIa(user) {
    statique — sans leçon fournie → noCourseView, jamais de question hors cours) ── */
 async function charger() {
   show('loadingView');
+  const banniere = $('secoursBanner');
+  if (banniere) banniere.classList.add('hidden');
   const c = cacheIa();
   if (c) { apresChargement(c.qs); return; }
   try {
-    const user = await attendreUser(5000);
+    /* ✅ v8.69a — 10 s au lieu de 5 s : sur 4G, l'auth SDK est parfois lent à
+       s'initialiser au premier lancement ; la session n'est plus « expirée » à tort */
+    const user = await attendreUser(10000);
     if (!user) throw new Error('non connecté');
     const qs = await chargerIa(user);
     saveCacheIa(qs);
     apresChargement(qs);
   } catch (e) {
+    /* ✅ v8.69a — diagnostic visible en console : le catch n'est plus muet */
+    console.error('[quotidien] échec du chargement :', e);
     if (e && e.noCourses) { show('noCourseView'); return; }
+    /* ✅ v8.69a — quota IA atteint : le message RÉEL du serveur
+       (« Limite du jour… recharge tes crédits ⚡ ») au lieu du faux
+       « vérifie ta connexion » (la connexion n'est pour rien) */
+    if (e && e.code === 'ARV_LIMIT_REACHED') {
+      $('errorMsg').textContent = '⚡ ' + (e.message || 'Limite du jour atteinte. Recharge tes crédits dans la Marketplace.');
+      show('errorView');
+      return;
+    }
+    if (e && String(e && e.message || e) === 'non connecté') {
+      $('errorMsg').textContent = 'Session expirée ou connexion requise. Connecte-toi puis réessaie.';
+      show('errorView');
+      return;
+    }
+    /* ✅ v8.69a — repli statique : si l'IA ou le réseau échoue, la Question du
+       jour reste JOUABLE grâce à la banque de secours quotidien.json,
+       clairement signalée comme « hors de tes leçons » */
+    const secours = await banqueSecours();
+    if (secours.length >= 2) {
+      if (banniere) banniere.classList.remove('hidden');
+      apresChargement(secours);
+      return;
+    }
+    $('errorMsg').textContent = 'Impossible de charger les questions. Vérifie ta connexion puis réessaie.';
     show('errorView');
   }
+}
+
+/* ✅ v8.69a — banque de secours (quotidien.json à la racine) : 4 questions au
+   hasard, format identique à celui de l'IA (label, question, options, bonne,
+   explication, chapitre). Discret : ne remplace l'IA QUE quand elle échoue. */
+async function banqueSecours() {
+  try {
+    const r = await fetch('quotidien.json', { cache: 'no-store' });
+    const d = await r.json();
+    const matieres = d && d.matieres ? d.matieres : {};
+    const tout = Object.values(matieres).flat();
+    for (let i = tout.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = tout[i]; tout[i] = tout[j]; tout[j] = tmp;
+    }
+    return tout.slice(0, 4).map((it) => ({
+      label: 'Culture & sciences',
+      icon: iconFor('Mathématiques'),
+      c: String(it.c || '').slice(0, 80),
+      q: String(it.q || '').slice(0, 400),
+      o: (Array.isArray(it.o) ? it.o : []).slice(0, 4),
+      a: Number(it.a) || 0,
+      e: String(it.e || '').slice(0, 300)
+    })).filter((it) => it.q && it.o.length >= 2);
+  } catch (err) { return []; }
 }
 $('nextBtn').addEventListener('click', () => {
   if (idx < ordre.length - 1) { idx += 1; renderQuestion(); }

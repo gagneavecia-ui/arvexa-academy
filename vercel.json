@@ -73,5 +73,11 @@
       "src": "^/\\.firebase(/.*)?$",
       "status": 404
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/rescan-paiements",
+      "schedule": "0 4 * * *"
+    }
   ]
 }

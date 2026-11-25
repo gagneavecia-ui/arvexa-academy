@@ -25,6 +25,46 @@
      DICTIONNAIRE FR → EN (clés = textes réels des pages, normalisés)
      ───────────────────────────────────────────────────────────────── */
   var DICT_RAW = {
+    /* ── ✅ v8.69a — trous de traduction signalés par le propriétaire ── */
+    "Tout lire": "Read all",
+    /* Erreurs IA (arvx-ai.js) */
+    "Connexion impossible — vérifie ton réseau.": "Connection unavailable — check your network.",
+    "Trop de demandes — réessaie dans quelques minutes.": "Too many requests — try again in a few minutes.",
+    "Fichier trop lourd — réduis sa taille ou envoie moins de pages.": "File too large — shrink it or send fewer pages.",
+    "L’IA est indisponible — réessaie dans un instant.": "The AI is unavailable — try again in a moment.",
+    "Impossible de lire ce PDF — essaie un autre fichier.": "Can't read this PDF — try another file.",
+    /* Profil */
+    "Maître ARVEXA": "ARVEXA Master",
+    "Débutant": "Beginner",
+    "Enflammé": "On fire",
+    "⏳ Expiré": "⏳ Expired",
+    "👑 Premium à vie": "👑 Lifetime Premium",
+    "Débloquer Premium": "Unlock Premium",
+    "Non renseigné": "Not specified",
+    /* Épreuves (exam) */
+    "Épreuves": "Papers",
+    "Prépare-toi comme à l'examen.": "Prepare as if it were the real exam.",
+    "Examen blanc chronométré ou entraînement tiré de": "Timed mock exam or training drawn from",
+    "Dernières épreuves": "Latest papers",
+    "Terminé !": "Done!",
+    "Réponse du serveur invalide.": "Invalid server response.",
+    /* Matières */
+    "Français": "French",
+    "Économie & Gestion": "Economics & Management",
+    "Éducation civique": "Civic Education",
+    /* Lecture */
+    "Cours": "Course",
+    /* Question du jour */
+    "Question du": "Question of the",
+    "jour": "day",
+    "✅ Exact !": "✅ Correct!",
+    "Parfait ! Tes IA t'ont préparé un sans-faute 🎯": "Perfect! Your AIs prepared a flawless run 🎯",
+    "Bien joué ! Revois les détails et ta série grandira 🔥": "Well done! Review the details and your streak will grow 🔥",
+    "⏳ Tes IA préparent tes questions du jour…": "⏳ Your AIs are preparing today's questions…",
+    "Impossible de charger les questions.": "Can't load the questions.",
+    "Vérifie ta connexion puis réessaie.": "Check your connection and try again.",
+    "Session expirée ou connexion requise. Connecte-toi puis réessaie.": "Session expired or sign-in required. Sign in and try again.",
+    "Questions de secours (hors de tes leçons) — tes IA n'ont pas répondu cette fois.": "Backup questions (outside your lessons) — your AIs didn't answer this time.",
     /* ── Navigation & commun ── */
     "Accueil": "Home",
     /* ── Page Progression (v8.51a — remplace Ma journée + Mon parcours) ── */

@@ -123,17 +123,38 @@
     /* ===== SOLDE ===== */
     .balance-card {
       position: relative; overflow: hidden;
-      background: linear-gradient(150deg, rgba(184,134,11,.16), rgba(26,58,42,.35) 55%, rgba(10,10,10,.6));
-      border: 1px solid rgba(224,184,74,.3);
-      border-radius: 22px; padding: 22px 20px; margin-bottom: 22px;
-      box-shadow: 0 18px 50px rgba(0,0,0,.45);
+      background: linear-gradient(150deg, rgba(184,134,11,.22), rgba(26,58,42,.42) 55%, rgba(10,10,10,.72));
+      border: 1px solid rgba(224,184,74,.34);
+      border-radius: 22px; padding: 24px 20px 22px; margin-bottom: 22px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(224,184,74,.16);
     }
-    .balance-card::after {
-      content: ''; position: absolute; top: -60px; right: -60px;
-      width: 180px; height: 180px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(224,184,74,.14), transparent 70%);
+    /* ✅ v8.69a — carte solde premium : liseré doré dégradé + reflet balayant,
+       même langage visuel que les cartes vedettes de la boutique */
+    .balance-card::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px;
+      background: linear-gradient(140deg, rgba(224,184,74,.6), transparent 36%, transparent 64%, rgba(224,184,74,.38));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
       pointer-events: none;
     }
+    .balance-card::after {
+      content: ''; position: absolute; top: -70px; right: -70px;
+      width: 210px; height: 210px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(224,184,74,.18), transparent 70%);
+      pointer-events: none;
+    }
+    .balance-sheen {
+      position: absolute; top: 0; bottom: 0; width: 34%;
+      background: linear-gradient(100deg, transparent, rgba(224,184,74,.10), transparent);
+      transform: skewX(-16deg);
+      animation: balanceSheen 5.5s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes balanceSheen {
+      0%, 100% { left: -45%; }
+      55% { left: 120%; }
+    }
+    @media (prefers-reduced-motion: reduce) { .balance-sheen { animation: none; opacity: 0; } }
     .balance-label {
       display: flex; align-items: center; gap: 8px;
       font-size: 12px; font-weight: 700; letter-spacing: 1.4px;
@@ -143,6 +164,7 @@
       font-family: 'Playfair Display', serif;
       font-size: 44px; font-weight: 800; line-height: 1.15; margin-top: 6px;
       color: var(--text-light);
+      text-shadow: 0 2px 18px rgba(224,184,74,.22);
     }
     .balance-value small { font-size: 15px; font-weight: 600; color: var(--text-dim); font-family: 'Inter', sans-serif; }
     .balance-expiry { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; }
@@ -152,7 +174,7 @@
     .cost-pill {
       font-size: 11.5px; font-weight: 600; color: var(--text-dim);
       padding: 6px 11px; border-radius: 999px;
-      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+      background: rgba(224,184,74,.07); border: 1px solid rgba(224,184,74,.16);
     }
     .cost-pill b { color: var(--accent-bright); font-weight: 800; }
 
@@ -169,6 +191,9 @@
        DEUX petits boutons côte à côte comme la page abonnement) ===== */
     .packs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
     @media (max-width: 420px) { .packs-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }
+    /* ✅ v8.69a — à 320 px les deux boutons côte à côte s'écrasaient :
+       ils s'empilent (cartes compactes conservées en 2 colonnes) */
+    @media (max-width: 360px) { .pack-card .pack-actions { grid-template-columns: 1fr; } }
     /* ✅ v8.65a — OFFRES CLASSÉES PAR PAGE (demande du propriétaire : « dans la
        page market les offres il faut les classer : examens, résumés, questions »).
        Têtes de groupe pleine largeur, comme la page abonnement. */
@@ -342,6 +367,11 @@
     html[data-theme="light"] .status-banner.success { background: rgba(46,125,50,.10); border: 1px solid rgba(46,125,50,.38); color: #1B5E20; }
     html[data-theme="light"] .status-banner.cancel { background: rgba(192,57,43,.08); border: 1px solid rgba(192,57,43,.32); color: #8C2318; }
     html[data-theme="light"] .balance-card { background: linear-gradient(150deg, rgba(184,134,11,.12), rgba(255,255,255,.92)); border: 1px solid rgba(184,134,11,.30); box-shadow: 0 10px 30px rgba(122,90,8,.10); }
+    html[data-theme="light"] .balance-card::before { background: linear-gradient(140deg, rgba(184,134,11,.5), transparent 36%, transparent 64%, rgba(184,134,11,.3)); }
+    html[data-theme="light"] .balance-card::after { background: radial-gradient(circle, rgba(184,134,11,.10), transparent 70%); }
+    html[data-theme="light"] .balance-value { text-shadow: none; }
+    /* ✅ v8.69a — mode clair : le haut de page ne reste plus sombre */
+    html[data-theme="light"] body { background: radial-gradient(ellipse at top, #FFFFFF 0%, #F5F1E6 62%); }
     html[data-theme="light"] .balance-label { color: #5A4A10; }
     html[data-theme="light"] .cost-pill { background: rgba(184,134,11,.08); border: 1px solid rgba(184,134,11,.24); color: #6E675A; }
     html[data-theme="light"] .pack-card { background: rgba(255,255,255,.93); border: 1px solid rgba(184,134,11,.26); box-shadow: 0 4px 18px rgba(122,90,8,.08); }
@@ -386,15 +416,45 @@
   @keyframes arvBootSpinRev{to{transform:rotate(-360deg)}}
   @keyframes arvBootShimmer{to{left:100%}}
   @media (prefers-reduced-motion:reduce){.arv-boot-ring,.arv-boot-ring::after{animation-duration:1.8s}.arv-boot-bar::after{animation:none}}
+    .arv-boot{align-items:flex-start;justify-content:center}
+    /* ✅ v8.69a — SKELETON : structure de page visible immédiatement,
+       les vraies données arrivent ensuite en fondu (levée vérifiée inchangée) */
+    .arv-skel{width:100%;max-width:560px;padding:calc(58px + 8px) 18px 0;display:flex;flex-direction:column;gap:12px}
+    .arv-skel-bar{position:relative;height:14px;border-radius:8px;background:rgba(212,175,55,.10);overflow:hidden}
+    .arv-skel-bar::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.16),transparent);animation:arvSkelShimmer 1.4s ease-in-out infinite}
+    .arv-skel-bar.w60{width:60%}.arv-skel-bar.w40{width:40%}.arv-skel-bar.w75{width:75%}
+    .arv-skel-hero{height:120px;border-radius:18px;background:rgba(212,175,55,.07);border:1px solid rgba(212,175,55,.12);position:relative;overflow:hidden}
+    .arv-skel-hero::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.5s ease-in-out infinite}
+    .arv-skel-cards{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+    .arv-skel-card{border-radius:16px;border:1px solid rgba(212,175,55,.10);background:rgba(212,175,55,.05);overflow:hidden;position:relative}
+    .arv-skel-card::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.6s ease-in-out infinite}
+    .arv-skel-card .h{height:42px;background:rgba(212,175,55,.08)}
+    .arv-skel-card .c{height:12px;border-radius:6px;margin:12px 14px;background:rgba(212,175,55,.10)}
+    .arv-skel-rows{display:flex;flex-direction:column;gap:10px}
+    .arv-skel-row{display:flex;gap:12px;align-items:center;border-radius:14px;border:1px solid rgba(212,175,55,.10);background:rgba(212,175,55,.05);padding:12px;position:relative;overflow:hidden}
+    .arv-skel-row::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.6s ease-in-out infinite}
+    .arv-skel-row .av{width:40px;height:40px;border-radius:12px;background:rgba(212,175,55,.12);flex-shrink:0}
+    .arv-skel-row .ln{height:11px;border-radius:6px;background:rgba(212,175,55,.10);flex:1}
+    .arv-skel-row .ln+.ln{margin-top:7px}
+    @keyframes arvSkelShimmer{to{transform:translateX(100%)}}
+    @media (prefers-reduced-motion:reduce){.arv-skel-bar::after,.arv-skel-card::after,.arv-skel-row::after,.arv-skel-hero::after{animation:none}}
+    html[data-theme="light"] .arv-skel-bar{background:rgba(184,134,11,.12)}
+    html[data-theme="light"] .arv-skel-card,html[data-theme="light"] .arv-skel-row,html[data-theme="light"] .arv-skel-hero{background:rgba(184,134,11,.06);border-color:rgba(184,134,11,.14)}
+    html[data-theme="light"] .arv-skel-card .c,html[data-theme="light"] .arv-skel-row .av,html[data-theme="light"] .arv-skel-row .ln{background:rgba(184,134,11,.12)}
 </style>
 <div class="arv-boot" id="bootLoader" role="status" aria-label="Chargement de la page">
-  <div class="arv-boot-inner">
-    <span class="arv-boot-ring" aria-hidden="true"></span>
-    <div class="arv-boot-word">ARVEXA <em>School</em></div>
-    <span class="arv-boot-bar" aria-hidden="true"></span>
-    <div class="arv-boot-label">Chargement...</div>
+  <div class="arv-skel">
+      <div class="arv-skel-bar w40"></div>
+      <div class="arv-skel-hero"></div>
+      <div class="arv-skel-cards">
+<div class="arv-skel-card"><div class="h"></div><div class="c"></div><div class="c" style="width:55%;margin-top:0;"></div></div>
+<div class="arv-skel-card"><div class="h"></div><div class="c"></div><div class="c" style="width:55%;margin-top:0;"></div></div>
+<div class="arv-skel-card"><div class="h"></div><div class="c"></div><div class="c" style="width:55%;margin-top:0;"></div></div>
+<div class="arv-skel-card"><div class="h"></div><div class="c"></div><div class="c" style="width:55%;margin-top:0;"></div></div>
+      </div>
+      <div class="arv-boot-label" style="opacity:.6;">Chargement…</div>
+    </div>
   </div>
-</div>
 <script>
 (function(){
   var t0 = Date.now();
@@ -543,6 +603,7 @@
 
     <!-- ═══ SOLDE ═══ -->
     <div class="balance-card">
+      <span class="balance-sheen" aria-hidden="true"></span>
       <div class="balance-label"><i class="fas fa-bolt"></i> Tes requêtes IA</div>
       <div class="balance-value" id="balanceValue">—</div>
       <div class="balance-expiry" id="balanceExpiry">Chaque jour : 10 messages ARV + 2 examens gratuits. Les crédits prennent le relais.</div>
@@ -756,11 +817,18 @@
       </div>`;
   }
 
+  /* ✅ v8.69a — demande du propriétaire : 6 cartes d'offres au lieu de 7.
+     On garde les MEILLEURES offres de chaque catégorie : 2 par page de crédits
+     (les plus gros packs, triés par valeur décroissante), 6 au total.
+     Ajuster MAX_PAR_PAGE / MAX_TOTAL pour changer la sélection. */
+  const MAX_PAR_PAGE = 2;
+  const MAX_TOTAL = 6;
+
   function renderPacks(products) {
     const grid = $('packsGrid');
     grid.replaceChildren();
-    $('packsCount').textContent = products.length ? `${products.length} offres` : '';
     if (!products.length) {
+      $('packsCount').textContent = '';
       const empty = document.createElement('div');
       empty.className = 'library-empty';
       empty.innerHTML = '<i class="fas fa-box-open"></i>Aucune offre disponible pour le moment — reviens très vite !';
@@ -773,8 +841,13 @@
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(p);
     });
+    let creees = 0;
     PACK_PAGE_ORDER.forEach(({ key, icon, label }) => {
-      const list = groups.get(key) || [];
+      if (creees >= MAX_TOTAL) return;
+      const list = (groups.get(key) || [])
+        .slice()
+        .sort((a, b) => Number(b.credits || 0) - Number(a.credits || 0))
+        .slice(0, MAX_PAR_PAGE);
       if (!list.length) return;
       const head = document.createElement('div');
       head.className = 'cp-group-head';
@@ -786,8 +859,10 @@
         card.innerHTML = packCardHtml(p, icon);
         card.querySelector('.pk-auto').addEventListener('click', (e) => buyPack(p.id, e.currentTarget));
         grid.appendChild(card);
+        creees++;
       });
     });
+    $('packsCount').textContent = `${creees} offres`;
   }
 
   async function loadPacks() {
@@ -846,9 +921,12 @@
     try {
       const userSnap = await getDoc(doc(db, 'users', user.uid));
       const uData = userSnap.exists() ? userSnap.data() : {};
+      /* ✅ v8.69a — le checkout est authentifié : le serveur vérifie le jeton
+         et déduit l'uid du TOKEN (l'uid du body ne fait plus foi) */
+      const idToken = await user.getIdToken(true);
       const res = await fetch('/api/creer-checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
         body: JSON.stringify(Object.assign({
           uid: user.uid,
           customerEmail: user.email || 'eleve@arvexaschool.com',

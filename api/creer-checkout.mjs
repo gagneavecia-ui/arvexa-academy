@@ -7,6 +7,7 @@
 
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth'; /* ✅ v8.69a — auth du checkout */
 
 // ⚡ v1.1 — prix mensuel porté de 2 000 à 3 000 FCFA (décision propriétaire),
 // annuel inchangé (18 000 F = l'offre mise en avant).
@@ -91,6 +92,26 @@ export default async function handler(req, res) {
     // ⚡ v1.1 — kind : 'subscription' (défaut) | 'credits' (packs Marketplace)
     const { uid, plan, kind, productId, promoCode, customerEmail, customerName } = req.body || {};
     const checkoutKind = kind === 'credits' ? 'credits' : 'subscription';
+
+    // ✅ v8.69a — CHECKOUT AUTHENTIFIÉ (audit paiements P3) : l'uid vient du
+    // JETON Firebase (Authorization: Bearer), plus jamais du body — un
+    // malveillant ne peut plus créer de checkout pour autrui ni se créditiser.
+    let authUid = null;
+    try {
+      const authHeader = String(req.headers.authorization || '');
+      const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+      if (!bearer) {
+        return res.status(401).json({ error: 'Connexion requise.' });
+      }
+      const decoded = await getAuth().verifyIdToken(bearer);
+      authUid = decoded.uid;
+    } catch (authErr) {
+      console.error('🔴 creer-checkout : jeton invalide :', authErr.message);
+      return res.status(401).json({ error: 'Session invalide — reconnecte-toi.' });
+    }
+    if (!authUid || authUid !== String(uid || '')) {
+      return res.status(403).json({ error: 'Session et compte ne correspondent pas.' });
+    }
 
     if (!uid) return res.status(400).json({ error: 'Champs manquants' });
     if (typeof uid !== 'string' || uid.length > 128) return res.status(400).json({ error: 'UID invalide' });

@@ -635,11 +635,12 @@
       border: 1px solid rgba(184, 134, 11, 0.25);
     }
     .img-chip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    /* ✅ v8.69a — cible tactile 26 px (18 px = suppression d'image accidentelle) */
     .img-chip button {
-      position: absolute; top: 2px; right: 2px;
-      width: 18px; height: 18px; border-radius: 50%; border: none;
+      position: absolute; top: 0; right: 0;
+      width: 26px; height: 26px; border-radius: 0 10px 0 12px; border: none;
       background: rgba(0, 0, 0, 0.65); color: #fff;
-      font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
     .msg-imgs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
     .msg-imgs img {

@@ -112,7 +112,17 @@ service cloud.firestore {
                 'saspayAmountPaid',
                 'saspayCheckoutReference',
                 'saspayCheckoutSessionId',
-                'saspayCheckoutStartedAt'
+                'saspayCheckoutStartedAt',
+                /* ✅ v8.69a — SOLDE DE CRÉDITS VERROUILLÉ (audit paiements) :
+                   avant, un client SDK pouvait s'écrire aiCredits/aiCredits*
+                   directement → packs gratuits. Seul le SDK admin (serveur,
+                   via _credits.js et les API) peut toucher ces champs. */
+                'aiCredits',
+                'aiCreditsResume',
+                'aiCreditsChat',
+                'aiCreditsExam',
+                'creditsExpiry',
+                'referredBy'
               ]))
 
       // ✅ v3 — PAYS VERROUILLÉ (choix forcé dans exam/reviseur) :

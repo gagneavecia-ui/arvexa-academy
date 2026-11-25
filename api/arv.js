@@ -711,6 +711,44 @@ module.exports = async function handler(request, response) {
   // /api/arv?kit=1 ; on délègue au handler du kit (limité à 12 fonctions
   // sur le plan Hobby, donc une seule fonction pour les deux IA).
   if (request.url && /[?&]kit=1/.test(request.url)) {
+    // ✅ v8.69a — KIT SÉCURISÉ (audit paiements P1) : l'endpoint était ouvert
+    // (rate-limit IP seul) → IA gratuite quasi illimitée aux frais du
+    // propriétaire, en contournant packs et Premium. Désormais : jeton
+    // Firebase OBLIGATOIRE + 1 crédit consommé par appel IA en transaction
+    // Firestore (Premium = illimité, géré par consumeCredits). Les pages
+    // clientes (arv-progress, exam) envoient le jeton via ARVX_AI_AUTH_PROVIDER.
+    let kitUser;
+    try {
+      kitUser = await verifyFirebaseToken(request);
+    } catch (error) {
+      console.error('ARV kit auth error:', error.message);
+      return jsonError(response, 503, 'Service temporairement indisponible.');
+    }
+    if (!kitUser) {
+      return jsonError(response, 401, 'Connexion requise.', 'AUTH_REQUIRED');
+    }
+    const kitTask = request.body && request.body.task ? String(request.body.task) : 'chat';
+    const kitPage = kitTask === 'chat' ? 'chat' : 'resume'; // OCR image/document → réserve « resume »
+    let kitCredit;
+    try {
+      kitCredit = await consumeCredits(
+        getAdminServices().db,
+        kitUser.uid,
+        kitPage === 'chat' ? COSTS.chat : COSTS.resume,
+        kitPage
+      );
+    } catch (creditError) {
+      console.error('ARV kit credits error:', creditError.message);
+      return jsonError(response, 503, 'Vérification des crédits temporairement indisponible.');
+    }
+    if (!kitCredit.allowed) {
+      return response.status(429).json({
+        success: false,
+        error: 'Limite du jour atteinte. Recharge tes crédits ⚡ dans la Marketplace ou passe Premium.',
+        code: 'ARV_LIMIT_REACHED',
+        creditsRemaining: kitCredit.remaining || 0
+      });
+    }
     return require('../_shared/arvx-ai-handler.js')(request, response);
   }
   if (request.method !== 'POST') {

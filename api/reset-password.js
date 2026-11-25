@@ -197,30 +197,57 @@ ${innerHtml}
 }
 
 function buildCodeEmail(code, minutes) {
-  const spaced = String(code).split('').join(' ');
-  const inner = `<tr><td style="padding:10px 28px 4px 28px;">
-  <h1 style="margin:0;font-size:19px;color:#F5F0E8;font-weight:bold;">Réinitialisation de ton mot de passe</h1>
+  /* ✅ v8.69a — refonte demandée par le propriétaire : plus premium, plus
+     lisible, responsive. Le code est affiché chiffre par chiffre (boîtes
+     dorées) + version texte sélectionnable en secours. Les clients mail
+     bloquent le JavaScript : le bouton « Coller le code » vit dans la page
+     forgot-password.html, et le CTA ouvre directement ARVEXA. */
+  const digits = String(code).split('');
+  const box = (d) =>
+    `<td align="center" style="width:44px;height:52px;background-color:#0A0A0A;border:1.5px solid rgba(224,184,74,0.55);border-radius:10px;font-family:'Courier New',monospace;font-size:26px;font-weight:bold;color:#E0B84A;">${d}</td>`;
+  const gap = '<td style="width:6px;font-size:0;line-height:0;">&nbsp;</td>';
+  const digitCells = digits.map(box).join(gap);
+  const spaced = digits.join(' ');
+  const inner = `<tr><td style="padding:12px 28px 4px 28px;">
+  <div style="font-size:11px;font-weight:bold;letter-spacing:2px;color:#8A8A7A;text-transform:uppercase;">Sécurité du compte</div>
+  <h1 style="margin:8px 0 0 0;font-size:21px;color:#F5F0E8;font-weight:bold;">Ton code de réinitialisation</h1>
 </td></tr>
 <tr><td style="padding:10px 28px 4px 28px;">
-  <p style="margin:0;font-size:14px;color:#C9C9B8;line-height:1.7;">
-    Salut ! Voici ton code de vérification pour choisir un nouveau mot de passe sur ARVEXA.
-    Il est valable <strong style="color:#E0B84A;">${minutes} minutes</strong>.
+  <p style="margin:0;font-size:14.5px;color:#C9C9B8;line-height:1.75;">
+    Salut ! Tes IA ARVEXA ont préparé un code pour reprendre le contrôle de ton compte.
+    Il est valable <strong style="color:#E0B84A;">${minutes} minutes</strong> — une fois passé ce délai, demande simplement un nouveau code.
   </p>
 </td></tr>
-<tr><td style="padding:20px 28px;" align="center">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td
-    style="background-color:rgba(224,184,74,0.08);border:1px solid rgba(224,184,74,0.4);border-radius:12px;padding:16px 26px;font-size:32px;font-weight:bold;letter-spacing:10px;color:#E0B84A;font-family:'Courier New',monospace;">${spaced}</td></tr></table>
+<tr><td style="padding:20px 28px 6px 28px;" align="center">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${digitCells}</tr></table>
 </td></tr>
-<tr><td style="padding:6px 28px 12px 28px;">
-  <p style="margin:0;font-size:12.5px;color:#8A8A7A;line-height:1.7;">
-    Ouvre la page ARVEXA, saisis ce code puis choisis ton nouveau mot de passe.
-    Chaque nouveau code remplace le précédent.
+<tr><td style="padding:6px 28px 2px 28px;" align="center">
+  <p style="margin:0;font-size:12px;color:#8A8A7A;letter-spacing:1px;">
+    Code à sélectionner et copier : <span style="color:#F5F0E8;font-weight:bold;">${spaced}</span>
   </p>
+</td></tr>
+<tr><td style="padding:20px 28px 6px 28px;" align="center">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td align="center">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td
+      style="background-color:#E0B84A;border-radius:26px;padding:14px 34px;font-size:14.5px;font-weight:bold;box-shadow:0 6px 18px rgba(224,184,74,0.25);">
+      <a href="https://arvexa-academy.vercel.app/forgot-password.html" style="color:#0A0A0A;text-decoration:none;">Entrer mon code sur ARVEXA</a>
+    </td></tr></table>
+  </td></tr></table>
+</td></tr>
+<tr><td style="padding:14px 28px 6px 28px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:rgba(224,184,74,0.06);border:1px solid rgba(224,184,74,0.18);border-radius:12px;">
+  <tr><td style="padding:12px 16px;font-size:12.5px;color:#C9C9B8;line-height:1.8;">
+    <strong style="color:#E0B84A;">Comment ça marche :</strong><br>
+    1&nbsp;·&nbsp;Touche «&nbsp;Entrer mon code&nbsp;» ci-dessus<br>
+    2&nbsp;·&nbsp;Colle ou saisis les 6 chiffres<br>
+    3&nbsp;·&nbsp;Choisis ton nouveau mot de passe — c'est prêt&nbsp;✨
+  </td></tr></table>
 </td></tr>
 <tr><td style="padding:8px 28px 6px 28px;">
   <p style="margin:0;font-size:12px;color:#8A8A7A;line-height:1.7;">
     <strong style="color:#F5F0E8;">Tu n'as pas demandé ce code ?</strong><br>
     Ignore cet email : ton mot de passe reste inchangé et aucun compte n'est créé.
+    Ne partage JAMAIS ce code — l'équipe ARVEXA ne te le demandera jamais.
   </p>
 </td></tr>`;
   return {
