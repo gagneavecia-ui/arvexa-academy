@@ -1223,7 +1223,7 @@ ${STRUCTURE_CONTROL}
 Réponds UNIQUEMENT avec le JSON.`;
 }
 
-function correctionPrompt(body) {
+function correctionPrompt(body, notebookContext) {
   const subject = body.exam.subjects.find((s) => s.id === body.subjectId) || body.exam.subjects[0];
   if (!subject) throw new Error('subject_not_found');
 
@@ -1248,9 +1248,27 @@ function correctionPrompt(body) {
     });
   });
 
+  // ⚡ v8.64a — LE COURS DE L'ÉLÈVE : en mode Entraînement, la correction
+  // emploie les MOTS EXACTS et les TECHNIQUES de la leçon résumée (page
+  // Résumé) — l'élève reconnaît son cours dans chaque explication.
+  const courseBlock = (notebookContext && notebookContext.contentText)
+    ? `
+
+═══════════════════════════════════════════════
+LE COURS DE CET ÉLÈVE (source pédagogique de vérité — chapitre : ${notebookContext.chapterTitle || ''})
+═══════════════════════════════════════════════
+${notebookContext.contentText}
+
+RÈGLES DE CORRECTION AVEC LE COURS (obligatoires) :
+- Utilise les MOTS EXACTS et les TECHNIQUES du cours ci-dessus dans "explanation", "concept", "betterMethod" et "toReview".
+- Quand une question se rapporte à une notion du cours, cite la formulation du cours (« comme dans ton cours : … »).
+- Montre à l'élève COMMENT son cours répond à la question (définitions, formules, étapes telles qu'écrites dans sa leçon).
+- Ne contredis JAMAIS le cours de l'élève : s'il est approximatif, corrige en t'appuyant d'abord sur sa formulation.
+`
+    : '';
   return `Tu es un professeur correcteur expert du BAC en Afrique francophone. Ton rôle : corriger CHAQUE question avec une PÉDAGOGIE MAXIMALE, en attribuant une NOTE et une EXPLICATION à chaque question, sans exception.
 
-${CORRECTION_PEDAGOGY}
+${CORRECTION_PEDAGOGY}${courseBlock}
 
 MISSION DE CORRECTION :
 Pour CHAQUE question, tu dois produire une analyse pédagogique complète ET une note.
@@ -2361,7 +2379,7 @@ function correctQCMDeterministic(subject, subjectId, answers) {
   return exercises;
 }
 
-async function correctExamHybrid(exam, subjectId, answers, uid) {
+async function correctExamHybrid(exam, subjectId, answers, uid, notebookContext) {
   const subject = exam.subjects.find((s) => s.id === subjectId) || exam.subjects[0];
   if (!subject) throw new Error('subject_not_found');
 
@@ -2424,7 +2442,7 @@ async function correctExamHybrid(exam, subjectId, answers, uid) {
 
   if (hasTextQuestions) {
     try {
-      const prompt = correctionPrompt({ exam: { ...exam, subjects: [subject] }, subjectId, answers });
+      const prompt = correctionPrompt({ exam: { ...exam, subjects: [subject] }, subjectId, answers }, notebookContext);
       const aiResponse = await correctWithFallback(prompt);
       const aiResult = aiResponse.result;
       aiGlobalScore = aiResult ? aiResult.score : null;
@@ -2800,11 +2818,13 @@ module.exports = async function handler(request, response) {
 
     if (reservation.limitReached) {
       // ⚡ v1.1 — QUOTA DU JOUR ÉPUISÉ (2/jour) → tentative de 5 crédits Marketplace
+      // ⚡ v8.64a — CRÉDITS PAR PAGE : les épreuves consomment la réserve « exam »
+      // (aiCreditsExam) d'abord, puis l'ancienne réserve globale héritée.
       let creditUsed = false;
       let creditRemaining = 0;
       if (!reservation.premium) {
         try {
-          const creditResult = await consumeCredits(getAdminServices().db, verifiedUser.uid, COSTS.exam);
+          const creditResult = await consumeCredits(getAdminServices().db, verifiedUser.uid, COSTS.exam, 'exam');
           if (creditResult.allowed) {
             creditUsed = true;
             creditRemaining = creditResult.remaining;
@@ -2817,7 +2837,7 @@ module.exports = async function handler(request, response) {
       if (!creditUsed) {
         return response.status(429).json({
           success: false,
-          error: 'Limite du jour atteinte (2 examens gratuits). Recharge tes crédits ⚡ dans la Marketplace ou passe Premium.',
+          error: 'Limite du jour atteinte (2 examens gratuits). Recharge ta réserve d\'examens ⚡ dans l\'Abonnement ou passe Premium.',
           code: 'FREE_EXAM_LIMIT', used: reservation.used, limit: FREE_EXAM_LIMIT,
           creditsRemaining: creditRemaining
         });
@@ -2896,8 +2916,21 @@ module.exports = async function handler(request, response) {
     const validationError = validateCorrection(body);
     if (validationError) return jsonError(response, 400, validationError);
 
+    // ⚡ v8.64a — COURS DE L'ÉLÈVE : si le correct a été lancé en mode
+    // Entraînement (notebookContext présent), le serveur RELIT les sections
+    // du cahier et les donne au correcteur (mots/techniques de la leçon).
+    let correctionNotebook = null;
+    if (body.notebookContext && (body.notebookContext.chapterId || body.notebookContext.chapterTitle)) {
+      try {
+        correctionNotebook = await loadNotebookContext(
+          verifiedUser.uid, body.exam.subject,
+          body.notebookContext.chapterId, body.notebookContext.chapterTitle
+        );
+      } catch (e) { console.warn('[EXAM] Contexte cahier correction échoué:', e.message); }
+    }
+
     try {
-      const result = await correctExamHybrid(body.exam, body.subjectId, body.answers, verifiedUser.uid);
+      const result = await correctExamHybrid(body.exam, body.subjectId, body.answers, verifiedUser.uid, correctionNotebook);
       try { await saveExamResult(verifiedUser.uid, body, result); }
       catch (e) { console.error('Save exam result failed:', e.message); }
 

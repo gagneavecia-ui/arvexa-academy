@@ -2703,7 +2703,7 @@ async function reserveSectionQuota(uid) {
   const period = monthKey();
   const quotaRef = userRef.collection('notebookQuota').doc(`sections-${period}`);
 
-  return db.runTransaction(async (transaction) => {
+  const freeQuota = await db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
     if (!userSnap.exists) throw new Error('profile_missing');
     if (isPremiumUser(userSnap.data())) {
@@ -2723,6 +2723,47 @@ async function reserveSectionQuota(uid) {
 
     return { allowed: true, used: used + 1, limit: FREE_SECTION_LIMIT, premium: false, reserved: true };
   });
+
+  // ✅ v8.64a — CRÉDITS PAR PAGE (demande du propriétaire : « la page résumé
+  // aura son nombre de résumés qu'elle peut effectuer en fonction des frais ») :
+  // quota gratuit mensuel épuisé → la réserve DÉDIÉE « résumés » (packs
+  // aiCreditsResume) prend le relais, puis l'ancienne réserve globale héritée.
+  // HORS transaction Firestore (jamais de transaction imbriquée).
+  if (!freeQuota.allowed && !freeQuota.premium) {
+    try {
+      const { consumeCredits, COSTS } = require('./_credits');
+      const creditResult = await consumeCredits(db, uid, COSTS.resume, 'resume');
+      if (creditResult.allowed) {
+        return {
+          allowed: true, premium: false, used: freeQuota.used, limit: FREE_SECTION_LIMIT,
+          reserved: false, creditMode: true, creditRemaining: creditResult.remaining
+        };
+      }
+    } catch (creditError) {
+      console.error('[PROGRESS] resume credits error:', creditError.message);
+      throw { status: 503, message: 'Vérification des crédits temporairement indisponible.', code: 'CREDITS_CHECK_FAILED' };
+    }
+  }
+
+  return freeQuota;
+}
+
+// ✅ v8.64a — RELÂCHE UNIFIÉE : rembourse le quota mensuel (si réservé) ET le
+// crédit « résumés » (si consommé) sur tous les chemins d'échec / cache-hit.
+async function releaseSectionEntitlements(uid, quota) {
+  try {
+    if (quota && quota.reserved) await releaseSectionQuota(uid);
+  } catch (err) {
+    console.warn('[PROGRESS] releaseSectionQuota failed:', err.message);
+  }
+  try {
+    if (quota && quota.creditMode) {
+      const { refundCredits, COSTS } = require('./_credits');
+      await refundCredits(getAdminServices().db, uid, COSTS.resume, 'resume');
+    }
+  } catch (err) {
+    console.warn('[PROGRESS] refund crédit résumés failed:', err.message);
+  }
 }
 
 // ✅ CORRECTION : releaseSectionQuota protégé contre les erreurs Firebase Admin
@@ -3310,7 +3351,7 @@ async function createSection(uid, body) {
   if (!quota.allowed) {
     throw {
       status: 429,
-      message: `Limite gratuite atteinte (${quota.limit} sections/mois). Passe à Premium.`,
+      message: `Limite gratuite atteinte (${quota.limit} résumés/mois). Recharge ta réserve de résumés ⚡ dans l'Abonnement ou passe Premium.`,
       code: 'FREE_SECTION_LIMIT'
     };
   }
@@ -3324,7 +3365,7 @@ async function createSection(uid, body) {
 
   const chapterSnap = await chapterRef.get();
   if (!chapterSnap.exists) {
-    if (quota.reserved) await releaseSectionQuota(uid);
+    await releaseSectionEntitlements(uid, quota);
     throw { status: 404, message: 'Chapitre introuvable.' };
   }
 
@@ -3364,7 +3405,7 @@ async function finalizeSection(uid, { subject, chapterId, chapterRef, trimmed, q
   const providers = getProviders();
 
   if (!providers.length) {
-    if (quota.reserved) await releaseSectionQuota(uid);
+    await releaseSectionEntitlements(uid, quota);
     throw { status: 503, message: 'Aucun fournisseur IA disponible.' };
   }
 
@@ -3393,7 +3434,7 @@ async function finalizeSection(uid, { subject, chapterId, chapterRef, trimmed, q
   }
   const useCache = cachedAnalysis && cachedExplOk;
   if (useCache) {
-    if (quota.reserved) await releaseSectionQuota(uid);
+    await releaseSectionEntitlements(uid, quota);
     console.log(`[FAN-OUT] CACHE HIT ${cacheKey.slice(0, 18)}… — 0 appel IA`);
 
     const cachedRef = chapterRef.collection('sections').doc();
@@ -3468,7 +3509,7 @@ async function finalizeSection(uid, { subject, chapterId, chapterRef, trimmed, q
       analysis = buildFallbackAnalysis({ rawInput: normalizedInput, profile });
     }
   } catch (err) {
-    if (quota.reserved) await releaseSectionQuota(uid);
+    await releaseSectionEntitlements(uid, quota);
     throw err;
   }
 
@@ -3657,14 +3698,14 @@ async function autoAddSection(uid, body) {
   if (!quota.allowed) {
     throw {
       status: 429,
-      message: `Limite gratuite atteinte (${quota.limit} sections/mois). Passe à Premium.`,
+      message: `Limite gratuite atteinte (${quota.limit} résumés/mois). Recharge ta réserve de résumés ⚡ dans l'Abonnement ou passe Premium.`,
       code: 'FREE_SECTION_LIMIT'
     };
   }
 
   const providers = getProviders();
   if (!providers.length) {
-    if (quota.reserved) await releaseSectionQuota(uid);
+    await releaseSectionEntitlements(uid, quota);
     throw { status: 503, message: 'Aucun fournisseur IA disponible.' };
   }
 
@@ -3675,7 +3716,7 @@ async function autoAddSection(uid, body) {
     classification = await classifyLesson(trimmed, chapterMap, providers);
     chapterMapForMatch = chapterMap;
   } catch (err) {
-    if (quota.reserved) await releaseSectionQuota(uid);
+    await releaseSectionEntitlements(uid, quota);
     throw err;
   }
 

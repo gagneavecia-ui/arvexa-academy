@@ -39,19 +39,29 @@ export async function activateCheckout(db, pendingRef, pending, paidAmount, meta
   }
 
   const now = new Date();
+  // ⚡ v8.64a — réserve cible du pack (hoistée : utilisée aussi par l'avis Telegram)
+  let creditPage = null;
 
   if (pending.kind === 'credits') {
     // ═══ PACK DE CRÉDITS : créditer + purchase ═══
     const creditsAmount = Math.max(1, Math.floor(Number(pending.credits) || 0));
     const validityDays = Math.max(1, Math.floor(Number(pending.validityDays) || 30));
+    // ⚡ v8.64a — CRÉDITS PAR PAGE : pending.creditPage ('resume'|'chat'|'exam')
+    // désigne la réserve DÉDIÉE à créditer ; null = réserve globale héritée.
+    // La valeur vient du produit Firestore relu par creer-checkout — jamais
+    // du client.
+    creditPage = ['resume', 'chat', 'exam'].includes(String(pending.creditPage || ''))
+      ? String(pending.creditPage)
+      : null;
     const { addCredits } = await import('./_credits.js');
-    const creditResult = await addCredits(db, pending.uid, { credits: creditsAmount, validityDays });
+    const creditResult = await addCredits(db, pending.uid, { credits: creditsAmount, validityDays, page: creditPage });
 
     await userRef.collection('purchases').doc(pendingRef.id).set({
       kind: 'credits',
       productId: pending.productId || null,
       title: pending.productTitle || null,
       credits: creditsAmount,
+      creditPage: creditPage || 'global',
       validityDays,
       amount: paidAmount,
       status: 'granted',
@@ -64,7 +74,7 @@ export async function activateCheckout(db, pendingRef, pending, paidAmount, meta
       paidAmount,
       processedVia: meta.processedVia || 'webhook'
     });
-    console.log('✅ Crédits ajoutés pour', pending.uid, `(+${creditsAmount}, solde ${creditResult.credits}, ${paidAmount} XOF)`);
+    console.log('✅ Crédits ajoutés pour', pending.uid, `(+${creditsAmount}, réserve ${creditPage || 'globale'}, solde ${creditResult.credits}, ${paidAmount} XOF)`);
   } else {
     // ═══ ABONNEMENT (flux historique) + purchase ═══
     const endDate = new Date(now);
@@ -156,8 +166,9 @@ export async function activateCheckout(db, pendingRef, pending, paidAmount, meta
     const u = userSnap.data() || {};
     const nom = escapeMarkdown(u.fullName || u.firstName || 'Élève ARVEXA');
     const email = u.email ? escapeMarkdown(u.email) : '';
+    const PAGE_LABELS = { resume: 'Résumés', chat: 'Questionnaires / Discussion', exam: 'Examens' };
     const detail = pending.kind === 'credits'
-      ? `Pack de crédits \(+${Math.max(1, Math.floor(Number(pending.credits) || 0))} requêtes\)`
+      ? `Pack ${creditPage ? PAGE_LABELS[creditPage] : 'de requêtes'} \(+${Math.max(1, Math.floor(Number(pending.credits) || 0))} requêtes\)`
       : `Abonnement ${pending.plan === 'annual' ? 'annuel' : 'mensuel'}`;
     const texte = [
       '💰 *NOUVEAU PAIEMENT ARVEXA*',
@@ -196,6 +207,7 @@ export async function activateCheckout(db, pendingRef, pending, paidAmount, meta
         productId: pending.productId || null,
         productTitle: pending.productTitle || null,
         credits: pending.credits || null,
+        creditPage: pending.creditPage || null,
         amount: paidAmount,
         isoDate: now.toISOString(),
         processedVia: meta.processedVia || 'webhook',

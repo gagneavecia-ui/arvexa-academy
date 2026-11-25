@@ -155,6 +155,7 @@ function partsFor(mode, v) {
   const T = L === 'an' ? {
     describe: 'Describe this image in detail: content, visible text, context. Answer in English.',
     ocr: 'Transcribe FAITHFULLY all the text in this photo (handwritten notebook page, textbook or document), word for word, without inventing anything, without adding anything. Keep the structure: titles, headings, lists, numbering, formulas, captions. Write NO comment, NO description, NO prefix — return ONLY the transcribed text. Unreadable word → write [illegible].',
+    answer: 'Transcribe FAITHFULLY the answer the student wrote on this photo (exercise, calculation, essay, annotated diagram), word for word, without inventing anything. Keep the structure: calculation lines, sentences, steps. A diagram → describe it briefly in brackets [Diagram: ...]. If you CANNOT read the answer, transcribe NOTHING and reply ONLY with this JSON: {"readable": false, "reason": "precise explanation"} where reason says exactly why, chosen among: blurry photo, low light, bad angle, finger covering the text, text too small, page cut off, glare. Otherwise reply ONLY with {"readable": true, "text": "the transcription"}.',
     ask: v.question || 'What does this image show?',
     json: (v.question || 'Extract the key information from this image.') +
       ' Answer ONLY with a valid JSON object, no surrounding text, no code fences.' +
@@ -165,6 +166,7 @@ function partsFor(mode, v) {
   } : {
     describe: 'Décris cette image en détail et de façon utile : contenu, textes visibles, contexte. Réponds en français.',
     ocr: 'Transcris FIDÈLEMENT tout le texte de cette photo (page de cahier manuscrite, manuel ou document), mot à mot, sans rien inventer, sans rien ajouter. Garde la structure : titres, sous-titres, listes, numérotations, formules, légendes. N\'écris AUCUN commentaire, AUCUNE description, AUCUN préfixe (pas « Voici », pas « Voilà le texte ») — renvoie UNIQUEMENT le texte transcrit. Mot illisible → écris [illisible]. Ne traduis pas.',
+    answer: 'Transcris FIDÈLEMENT la réponse écrite par l\'élève sur cette photo (exercice, calcul, rédaction, schéma annoté), mot à mot, sans rien inventer. Garde la structure : lignes de calcul, phrases, étapes. Un schéma → décris-le brièvement entre crochets [Schéma : ...]. SI tu ne peux PAS lire la réponse, ne transcris RIEN et réponds UNIQUEMENT avec ce JSON : {"readable": false, "reason": "explication précise"} où reason dit exactement POURQUOI, choisi parmi : photo floue, luminosité trop faible, mauvais angle, doigt qui cache le texte, texte trop petit, page coupée, reflet. Sinon réponds UNIQUEMENT avec {"readable": true, "text": "la transcription"}. Ne traduis pas.',
     ask: v.question || 'Que montre cette image ?',
     json: (v.question || 'Extrais les informations importantes de cette image.') +
       ' Réponds UNIQUEMENT par un objet JSON valide, sans texte autour, sans balises de code.' +
@@ -190,7 +192,7 @@ function partsFor(mode, v) {
 async function generate(mode, v) {
   const started = Date.now();
   const parts = partsFor(mode, v);
-  const maxTok = mode === 'ocr' ? 3000 : 1600;
+  const maxTok = (mode === 'ocr' || mode === 'answer') ? 3000 : 1600;
   const attempt = async (fn) => {
     try { return await fn(); } catch (e) { return { status: 0, data: null }; }
   };
@@ -303,7 +305,7 @@ function sanitize(task, p) {
   const out = { lang: p.lang === 'an' ? 'an' : 'fr', isDoc: task === 'doc' };
   if (task === 'image' || task === 'doc') {
     const modes = task === 'image'
-      ? ['describe', 'ocr', 'ask', 'json']
+      ? ['describe', 'ocr', 'answer', 'ask', 'json']
       : ['summary', 'keypoints', 'ask', 'json'];
     out.mode = modes.indexOf(p.mode) !== -1 ? p.mode : (task === 'image' ? 'ask' : 'summary');
     const imgs = Array.isArray(p.images) ? p.images : [];

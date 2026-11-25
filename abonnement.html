@@ -1245,6 +1245,20 @@
     @media (max-width: 420px) { .credits-grid { grid-template-columns: 1fr; } }
     .credits-loading { grid-column: 1 / -1; text-align: center; padding: 26px 12px; color: var(--text-dim); font-size: 12.5px; }
     .credits-empty { grid-column: 1 / -1; text-align: center; padding: 26px 16px; color: var(--text-dim); font-size: 12.5px; border-radius: 16px; background: rgba(255,255,255,.02); border: 1px dashed rgba(184,134,11,.25); }
+    /* ⚡ v8.64a — lignes de solde par page + têtes de groupe de packs */
+    .credits-balance .cbp-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+    .credits-balance .cbp-row .cbp-ico { font-size: 15px; flex: 0 0 auto; }
+    .credits-balance .cbp-row .cbp-lbl { font-size: 12px; color: var(--text-dim); flex: 1; min-width: 0; }
+    .credits-balance .cbp-row .cbp-val { font-size: 15px; font-weight: 800; color: var(--accent-bright); }
+    .credits-balance .cb-body b { font-size: 20px; font-family: 'Playfair Display', serif; }
+    .credits-balance .cbp-expired { display: block; font-size: 11px; color: #d98a3d; margin-top: 6px; }
+    .credits-grid .cp-group-head {
+      grid-column: 1 / -1; display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 800; color: var(--accent-bright);
+      margin-top: 6px; padding-top: 4px;
+    }
+    .credits-grid .cp-group-head:first-child { margin-top: 0; }
+    .credits-grid .cp-group-head .cp-group-ico { font-size: 16px; }
     .credit-pack {
       position: relative; overflow: hidden;
       padding: 17px 15px; border-radius: 18px;
@@ -1470,21 +1484,24 @@
 <body>
 
 <!-- ⚡ v8.60a — cercle de chargement instantané (page jamais « coupée ») -->
+<!-- ⚡ v8.64a — CERCLE DE CHARGEMENT EXACT (image propriétaire) : anneau gris
+     clair parcouru par un ARC DORÉ qui tourne + libellé « Chargement... »
+     en dessous, placé JUSTE SOUS la barre du haut (jamais au milieu de l'écran).
+     HTML+CSS purs : peint avant tout JS, disparaît dès que le contenu est prêt,
+     filet de sécurité 10 s. -->
 <style>
-  /* ✅ v8.63a — CERCLE DE CHARGEMENT EXACT (demande propriétaire : « comme
-     sur l'image ») : UNIQUEMENT le petit cercle qui tourne, en haut au
-     centre, NU — sans pastille sombre, sans texte, sans effet pop-up.
-     La page s'affiche INSTANTANÉMENT derrière et le cercle disparaît dès
-     que le contenu est prêt. */
-  .boot-loader{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);left:50%;width:24px;height:24px;margin-left:-12px;z-index:99999;pointer-events:none;transition:opacity .25s ease,visibility .25s ease}
+  .boot-loader{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top, 0px) + 70px);z-index:99999;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:8px;transition:opacity .25s ease,visibility .25s ease}
   .boot-loader.gone{opacity:0;visibility:hidden;pointer-events:none}
-  .boot-spinner{width:24px;height:24px;border-radius:50%;border:3px solid rgba(224,184,74,.22);border-top-color:#E0B84A;animation:bootspin .7s linear infinite;box-sizing:border-box;display:block}
+  .boot-spinner{width:36px;height:36px;border-radius:50%;border:4px solid rgba(236,231,220,.30);border-top-color:#E0B84A;animation:bootspin .8s linear infinite;box-sizing:border-box;display:block}
+  .boot-label{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:rgba(236,231,220,.88)}
+  html[data-theme="light"] .boot-spinner{border-color:rgba(96,86,64,.20);border-top-color:#9A7209}
+  html[data-theme="light"] .boot-label{color:rgba(80,72,52,.80)}
   @keyframes bootspin{to{transform:rotate(360deg)}}
-  html[data-theme="light"] .boot-spinner{border-color:rgba(154,114,9,.20);border-top-color:#9A7209}
-  @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.5s}}
+  @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.6s}}
 </style>
-<div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de ton abonnement">
+<div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de la page">
   <div class="boot-spinner"></div>
+  <div class="boot-label">Chargement...</div>
 </div>
 <script>
 (function(){
@@ -1496,7 +1513,25 @@
     setTimeout(function(){ try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 380);
   }
   window.__arvexaBootHide = hideBoot;
+  /* ✅ Position précise : juste sous la barre du haut (mesurée après peinture,
+     l'estimation CSS safe-area+70px reste le filet avant mesure). */
+  function placeBoot(){
+    var el = document.getElementById('bootLoader');
+    if (!el) return;
+    try {
+      var hdr = document.querySelector('header');
+      if (hdr) {
+        var r = hdr.getBoundingClientRect();
+        if (r.height > 20 && r.height < 220) el.style.top = Math.round(r.bottom + 8) + 'px';
+      }
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(placeBoot, 0); });
+  } else { setTimeout(placeBoot, 0); }
+  // Filet de sécurité : jamais plus de 10 s, même si un module échoue.
   setTimeout(hideBoot, 10000);
+  // Retour bfcache : la page est déjà prête.
   window.addEventListener('pageshow', function(ev){ if (ev && ev.persisted) hideBoot(); });
 })();
 </script>
@@ -1637,7 +1672,7 @@
             <div class="item">
               <div class="icon purple"><i class="fas fa-stopwatch"></i></div>
               <div class="text">
-                <span class="name">Test moi illimité</span>
+                <span class="name">Épreuves illimitées</span>
                 <span class="desc">Épreuves à volonté (2/jour en gratuit)</span>
               </div>
             </div>
@@ -1691,12 +1726,14 @@
 
       </div>
 
-      <!-- ═══ v8.57a — VENTE DE REQUÊTES IA (packs) ═══ -->
+      <!-- ═══ v8.57a — VENTE DE REQUÊTES IA (packs) ═══
+           ⚡ v8.64a — REQUÊTES PAR PAGE : 3 réserves distinctes (résumés /
+           questionnaires / examens) + ancienne réserve globale héritée. -->
       <div class="credits-section" id="creditsSection">
         <div class="credits-balance" id="creditsBalanceCard">
           <div class="cb-left">
             <div class="cb-icon">⚡</div>
-            <div class="cb-body">
+            <div class="cb-body" id="creditsBalancesRows">
               <b id="creditsBalanceValue">—</b>
               <span id="creditsBalanceExpiry">Requêtes IA disponibles</span>
             </div>
@@ -1706,7 +1743,7 @@
 
         <div class="credits-title-row">
           <h2><i class="fas fa-bolt"></i> Recharges de requêtes</h2>
-          <p>Paye à la carte : chaque requête alimente le Chat ARV, les examens, le Résumé et le Planificateur. Sans abonnement, sans engagement.</p>
+          <p>Chaque page a sa réserve : résumés, questionnaires de discussion, examens. Paye à la carte la page que tu utilises le plus. Sans abonnement, sans engagement.</p>
         </div>
         <div class="credits-grid" id="creditsGrid">
           <div class="credits-loading"><i class="fas fa-circle-notch fa-spin"></i> Chargement des packs…</div>
@@ -1813,7 +1850,7 @@
           <div class="pb-list">
             <div class="pb-item"><i class="fas fa-check"></i> Tous les chapitres de toutes les matières</div>
             <div class="pb-item"><i class="fas fa-check"></i> Tous les exercices et leurs corrections</div>
-            <div class="pb-item"><i class="fas fa-check"></i> Test moi illimité (tests à volonté)</div>
+            <div class="pb-item"><i class="fas fa-check"></i> Épreuves illimitées (examens à volonté)</div>
             <div class="pb-item"><i class="fas fa-check"></i> ARV Assistant : 60 questions par jour</div>            <div class="pb-item"><i class="fas fa-check"></i> Planificateur IA : programme sur mesure</div>
             <div class="pb-item"><i class="fas fa-check"></i> Résumé sans limite</div>
             <div class="pb-item"><i class="fas fa-check"></i> Historiques d'épreuves et suivi de progression</div>
@@ -3053,34 +3090,48 @@ function loadUserData(user) {
 // le client n'envoie que l'identifiant du pack. Paiement SasPay identique
 // à l'abonnement : le webhook crédite automatiquement les requêtes.
 // ================================================================
+/* ⚡ v8.64a — REQUÊTES PAR PAGE (demande du propriétaire) : 3 réserves
+   distinctes — résumés (aiCreditsResume), questionnaires/discussion
+   (aiCreditsChat), examens (aiCreditsExam) — + l'ancienne réserve globale
+   héritée (aiCredits) consommée en secours après les réserves de page. */
 function renderCreditsBalance(data) {
-  const valEl = document.getElementById('creditsBalanceValue');
-  const expEl = document.getElementById('creditsBalanceExpiry');
+  const rowsEl = document.getElementById('creditsBalancesRows');
   const tagEl = document.getElementById('creditsBalanceTag');
-  if (!valEl) return;
-  const credits = Math.max(0, Number(data?.aiCredits || 0));
+  if (!rowsEl) return;
+  const premium = data?.premium === true || data?.isUnlocked === true;
+
   let expiryMs = 0;
   if (data?.creditsExpiry?.toDate) expiryMs = data.creditsExpiry.toDate().getTime();
   else if (data?.creditsExpiry?.seconds) expiryMs = data.creditsExpiry.seconds * 1000;
   const expired = expiryMs && expiryMs < Date.now();
-  const premium = data?.premium === true || data?.isUnlocked === true;
 
   if (premium) {
-    valEl.textContent = '∞';
-    expEl.textContent = 'Requêtes IA illimitées avec ton abonnement Premium';
+    rowsEl.innerHTML = '<b>∞</b><span>Requêtes IA illimitées sur toutes les pages avec ton abonnement Premium</span>';
     tagEl.textContent = 'Premium';
     return;
   }
-  valEl.textContent = String(credits);
-  if (credits > 0 && expiryMs && !expired) {
-    const d = new Date(expiryMs);
-    expEl.textContent = `requête${credits > 1 ? 's' : ''} restante${credits > 1 ? 's' : ''} · valables jusqu'au ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
-  } else if (credits > 0 && expired) {
-    expEl.textContent = 'Pack expiré — recharge-le pour retrouver tes requêtes.';
-  } else {
-    expEl.textContent = 'requête restante · recharge ci-dessous ou passe Premium';
+
+  const resume = Math.max(0, Number(data?.aiCreditsResume || 0));
+  const chat = Math.max(0, Number(data?.aiCreditsChat || 0));
+  const exam = Math.max(0, Number(data?.aiCreditsExam || 0));
+  const globalLegacy = expired ? 0 : Math.max(0, Number(data?.aiCredits || 0));
+  const total = resume + chat + exam + globalLegacy;
+
+  const rowHtml = (icon, label, value) =>
+    `<div class="cbp-row"><span class="cbp-ico">${icon}</span><span class="cbp-lbl">${label}</span><b class="cbp-val">${value}</b></div>`;
+
+  let html = '';
+  html += rowHtml('📄', 'Résumés', resume);
+  html += rowHtml('💬', 'Questionnaires', chat);
+  html += rowHtml('📝', 'Examens', exam);
+  if (globalLegacy > 0) html += rowHtml('⚡', 'Global (ancien pack)', globalLegacy);
+  rowsEl.innerHTML = html;
+
+  if (expired && total === 0) {
+    html += '';
+    rowsEl.insertAdjacentHTML('beforeend', '<span class="cbp-expired">Packs expirés — recharge ci-dessous pour retrouver tes requêtes.</span>');
   }
-  tagEl.textContent = credits > 0 ? 'À la carte' : 'Gratuit';
+  tagEl.textContent = total > 0 ? 'À la carte' : 'Gratuit';
 }
 
 async function loadCreditsPacks() {
@@ -3106,24 +3157,53 @@ async function loadCreditsPacks() {
       grid.appendChild(empty);
       return;
     }
+    // ⚡ v8.64a — packs groupés PAR PAGE : résumés / questionnaires / examens,
+    // puis (s'il en reste) les anciens packs globaux. L'ordre suit la vie de
+    // l'élève : résumer, discuter, s'évaluer.
+    const PAGE_ORDER = [
+      { key: 'resume', icon: '📄', label: 'Résumés — page Résumé' },
+      { key: 'chat',   icon: '💬', label: 'Questionnaires — discussion IA' },
+      { key: 'exam',   icon: '📝', label: 'Examens — page Épreuves' },
+      { key: null,     icon: '⚡', label: 'Global (anciens packs)' }
+    ];
+    const groups = new Map();
     products.forEach((p) => {
-      const featured = Number(p.credits) >= 100;
-      const validity = Number(p.validityDays) || 30;
-      const card = document.createElement('div');
-      card.className = 'credit-pack' + (featured ? ' featured' : '');
-      card.innerHTML = `
-        ${featured ? '<span class="cp-badge">Best-seller</span>' : ''}
-        <div class="cp-icon">⚡</div>
-        <div class="cp-name">${String(p.title || 'Pack').replace(/</g, '&lt;')}</div>
-        <div class="cp-credits">${Number(p.credits)} requêtes IA</div>
-        <div class="cp-validity">Valables ${validity} jours</div>
-        <div class="cp-price"><span class="amount">${Number(p.price).toLocaleString('fr-FR')}</span><span class="cur">FCFA</span></div>
-        <div class="pack-actions">
-          <button class="pk-auto" title="Paiement automatique"><i class="fas fa-bolt"></i> Auto</button>
-          <a class="pk-manual" title="Paiement manuel" target="_blank" rel="noopener" href="${manualWhatsApp(String(p.title || 'Pack'), Number(p.price).toLocaleString('fr-FR'))}"><i class="fab fa-whatsapp"></i> Manuel</a>
-        </div>`;
-      card.querySelector('.pk-auto').addEventListener('click', (e) => buyCreditsPack(p.id, e.currentTarget));
-      grid.appendChild(card);
+      const key = ['resume', 'chat', 'exam'].includes(String(p.creditPage || '')) ? String(p.creditPage) : null;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(p);
+    });
+    PAGE_ORDER.forEach(({ key, icon, label }) => {
+      const list = groups.get(key) || [];
+      if (!list.length) return;
+      const head = document.createElement('div');
+      head.className = 'cp-group-head';
+      head.innerHTML = `<span class="cp-group-ico">${icon}</span> ${label}`;
+      grid.appendChild(head);
+      list.forEach((p) => {
+        const featured = Number(p.credits) >= 100;
+        const validity = Number(p.validityDays) || 30;
+        // ⚡ v8.64a — unité naturelle du pack (résumés / questions / examens) ;
+        // les examens coûtent 5 crédits pièce → on affiche le NOMBRE d'examens.
+        const hasUnit = Boolean(p.unitLabel && Number(p.unitCount) > 0);
+        const unitText = hasUnit
+          ? `${Number(p.unitCount)} ${String(p.unitLabel).replace(/</g, '&lt;')}`
+          : `${Number(p.credits)} requêtes`;
+        const card = document.createElement('div');
+        card.className = 'credit-pack' + (featured ? ' featured' : '');
+        card.innerHTML = `
+          ${featured ? '<span class="cp-badge">Best-seller</span>' : ''}
+          <div class="cp-icon">${icon}</div>
+          <div class="cp-name">${String(p.title || 'Pack').replace(/</g, '&lt;')}</div>
+          <div class="cp-credits">${unitText}</div>
+          <div class="cp-validity">Valables ${validity} jours</div>
+          <div class="cp-price"><span class="amount">${Number(p.price).toLocaleString('fr-FR')}</span><span class="cur">FCFA</span></div>
+          <div class="pack-actions">
+            <button class="pk-auto" title="Paiement automatique"><i class="fas fa-bolt"></i> Auto</button>
+            <a class="pk-manual" title="Paiement manuel" target="_blank" rel="noopener" href="${manualWhatsApp(String(p.title || 'Pack'), Number(p.price).toLocaleString('fr-FR'))}"><i class="fab fa-whatsapp"></i> Manuel</a>
+          </div>`;
+        card.querySelector('.pk-auto').addEventListener('click', (e) => buyCreditsPack(p.id, e.currentTarget));
+        grid.appendChild(card);
+      });
     });
   } catch (e) {
     console.error('Chargement packs requêtes :', e);

@@ -748,7 +748,9 @@ module.exports = async function handler(request, response) {
     // ⚡ v8.56a — QUOTA DU JOUR ÉPUISÉ → tentative de consommation d'un crédit
     if (!reservation.premium) {
       try {
-        const creditResult = await consumeCredits(getAdminServices().db, uid, COSTS.chat);
+        // ⚡ v8.64a — CRÉDITS PAR PAGE : la discussion consomme la réserve « chat »
+        // (aiCreditsChat) d'abord, puis l'ancienne réserve globale héritée.
+        const creditResult = await consumeCredits(getAdminServices().db, uid, COSTS.chat, 'chat');
         if (creditResult.allowed) {
           reservation.limitReached = false;
           reservation.creditMode = true;
@@ -764,7 +766,7 @@ module.exports = async function handler(request, response) {
       let creditsRemaining = 0;
       try {
         const userSnap = await getAdminServices().db.collection('users').doc(uid).get();
-        creditsRemaining = readCreditsBalance(userSnap.data() || {}).credits;
+        creditsRemaining = readCreditsBalance(userSnap.data() || {}, 'chat').credits;
       } catch (_) {}
       return response.status(429).json({
         success: false,

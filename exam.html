@@ -2,12 +2,12 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-    <title>ARVEXA — Test moi</title>
+    <title>ARVEXA — Épreuves</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
 <script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié --><script src="arvexa-i18n.js" defer></script>
-  <meta name="description" content="ARVEXA School — Test moi : tests chronométrés adaptés à ton niveau, toutes matières, tous domaines.">
+  <meta name="description" content="ARVEXA School — Épreuves : examens blancs et entraînements tirés de ton cours, notés sur 20 et corrigés par l'IA.">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="apple-touch-icon" href="icon.png">
@@ -1954,11 +1954,183 @@
       outline-offset: 3px;
     }
 
+
+    /* ═══ v8.64a — DASHBOARD ÉPREUVES + MODALE PRÉPARER + BARRE 2 MODES ═══ */
+    .stat-card {
+      position: relative; overflow: hidden;
+      border: 1px solid rgba(224, 184, 74, 0.16);
+      background: linear-gradient(160deg, rgba(224,184,74,.05), rgba(224,184,74,.01));
+      border-radius: 16px; padding: 16px 15px 14px; margin: 14px 0 4px;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(120% 90% at 100% 0%, rgba(224,184,74,.09), transparent 55%);
+    }
+    .stat-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .stat-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-bright); }
+    .stat-period { font-size: 11px; color: var(--text-dim); }
+    .stat-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .stat-metric { text-align: center; padding: 10px 4px; border-radius: 12px; background: rgba(255,255,255,.02); border: 1px solid rgba(224,184,74,.07); }
+    .stat-num { display: block; font-size: 21px; font-weight: 800; color: var(--accent-bright); font-family: 'Playfair Display', Georgia, serif; }
+    .stat-lbl { display: block; font-size: 10.5px; color: var(--text-dim); margin-top: 2px; }
+    .stat-chart-wrap { margin-top: 13px; }
+    .stat-chart-title { font-size: 12px; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; }
+    .stat-chart { display: block; width: 100%; height: auto; }
+    .stat-chart .stat-area { opacity: 0; transition: opacity 1.1s ease .55s; }
+    .stat-chart .stat-dot { opacity: 0; transition: opacity .5s ease; }
+    .stat-chart.is-drawn .stat-area { opacity: 1; }
+    .stat-chart.is-drawn .stat-dot { opacity: 1; }
+    .stat-chart-days { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+    .stat-empty-hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+    .reserve-card {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      margin: 12px 0 0; padding: 12px 14px;
+      border: 1px solid rgba(224,184,74,.16); border-radius: 14px;
+      background: rgba(224,184,74,.05);
+    }
+    .reserve-card .rc-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .reserve-card .rc-ico { font-size: 20px; }
+    .reserve-card .rc-body b { display: block; font-size: 16px; color: var(--accent-bright); }
+    .reserve-card .rc-body span { font-size: 11px; color: var(--text-dim); }
+    .reserve-card .rc-btn {
+      flex: 0 0 auto; font-size: 12px; font-weight: 800; text-decoration: none;
+      color: #0A1A12; background: linear-gradient(135deg, #B8860B, #E0B84A);
+      padding: 8px 13px; border-radius: 10px;
+    }
+    .dash-recent { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .dash-recent .dr-title { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); }
+    .dr-row {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      border: 1px solid rgba(224,184,74,.10); border-radius: 12px; background: rgba(255,255,255,.02);
+    }
+    .dr-row .dr-score {
+      flex: 0 0 auto; min-width: 44px; text-align: center;
+      font-size: 13px; font-weight: 800; color: var(--accent-bright);
+      border: 1px solid rgba(224,184,74,.28); border-radius: 9px; padding: 5px 7px;
+      background: rgba(224,184,74,.08);
+    }
+    .dr-row .dr-body { flex: 1; min-width: 0; }
+    .dr-row .dr-body b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dr-row .dr-body span { font-size: 11px; color: var(--text-dim); }
+    .dr-empty { font-size: 12px; color: var(--text-muted); padding: 8px 2px; }
+    .btn-preparer { margin-top: 16px; width: 100%; }
+    .btn-history { margin-top: 9px; width: 100%; text-align: center; }
+
+    /* ── Modale Préparer (gabarit modales v1.1 du site) ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 11000;
+      display: none; align-items: flex-end; justify-content: center;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    .modal-backdrop.show { display: flex; animation: fadeIn 0.2s ease; }
+    .preparer-modal {
+      width: 100%; max-width: 560px; max-height: 88vh;
+      display: flex; flex-direction: column;
+      background: var(--panel-bg, #101B14);
+      border: 1px solid rgba(224,184,74,.14);
+      border-radius: 22px 22px 0 0;
+      padding: 18px 18px 16px; box-sizing: border-box;
+      overflow: hidden;
+    }
+    .preparer-modal .modal-head { flex: 0 0 auto; margin-bottom: 10px; padding: 0 2px; }
+    .preparer-modal .modal-head h2 { margin: 0 0 4px; font-size: 19px; }
+    .preparer-modal .modal-head p { margin: 0; font-size: 12.5px; color: var(--text-dim); }
+    .preparer-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .preparer-body::-webkit-scrollbar { display: none; }
+
+    /* ── Barre 2 modes : Examen blanc (gauche) / Entraînement+IA lit le cours (droite) ── */
+    .mode-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mode-seg {
+      display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px;
+      padding: 12px 8px; border-radius: 14px; cursor: pointer;
+      border: 1.6px solid rgba(224,184,74,.14); background: rgba(255,255,255,.02);
+      color: var(--text-dim); font: inherit;
+    }
+    .mode-seg .ms-ico { font-size: 19px; }
+    .mode-seg .ms-name { font-size: 13px; font-weight: 800; color: var(--text-muted); }
+    .mode-seg .ms-desc { font-size: 10.5px; line-height: 1.35; }
+    .mode-seg.active {
+      border-color: var(--accent-bright);
+      background: linear-gradient(160deg, rgba(224,184,74,.14), rgba(224,184,74,.05));
+      color: var(--accent-bright);
+    }
+    .mode-seg.active .ms-name { color: var(--accent-bright); }
+    .mode-hint { display: block; font-size: 11.5px; color: #d98a3d; margin-top: 7px; line-height: 1.45; }
+
+    /* ── Réponse par photo (épreuve en cours) ── */
+    .photo-answer-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+    .photo-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 700; font-family: inherit;
+      color: var(--accent-bright); background: rgba(224,184,74,.08);
+      border: 1px solid rgba(224,184,74,.25); border-radius: 9px;
+      padding: 7px 11px; cursor: pointer;
+    }
+    .photo-btn:disabled { opacity: .55; cursor: wait; }
+    .photo-status { font-size: 11.5px; color: var(--text-dim); flex: 1; min-width: 0; }
+    .photo-status.err { color: #d98a3d; }
+    .photo-status.ok { color: var(--success-light, #3AB67E); }
+
     </style>
 <script src="arvexa-applock.js" defer></script>
+<script src="arvexa-modal.js" defer></script>
+<script src="arvx-ai.js" defer></script>
 </head>
 
 <body>
+
+<!-- ⚡ v8.64a — CERCLE DE CHARGEMENT EXACT (image propriétaire) : anneau gris
+     clair parcouru par un ARC DORÉ qui tourne + libellé « Chargement... »
+     en dessous, placé JUSTE SOUS la barre du haut (jamais au milieu de l'écran).
+     HTML+CSS purs : peint avant tout JS, disparaît dès que le contenu est prêt,
+     filet de sécurité 10 s. -->
+<style>
+  .boot-loader{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top, 0px) + 70px);z-index:99999;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:8px;transition:opacity .25s ease,visibility .25s ease}
+  .boot-loader.gone{opacity:0;visibility:hidden;pointer-events:none}
+  .boot-spinner{width:36px;height:36px;border-radius:50%;border:4px solid rgba(236,231,220,.30);border-top-color:#E0B84A;animation:bootspin .8s linear infinite;box-sizing:border-box;display:block}
+  .boot-label{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:rgba(236,231,220,.88)}
+  html[data-theme="light"] .boot-spinner{border-color:rgba(96,86,64,.20);border-top-color:#9A7209}
+  html[data-theme="light"] .boot-label{color:rgba(80,72,52,.80)}
+  @keyframes bootspin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.6s}}
+</style>
+<div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de la page">
+  <div class="boot-spinner"></div>
+  <div class="boot-label">Chargement...</div>
+</div>
+<script>
+(function(){
+  function hideBoot(){
+    var el = document.getElementById('bootLoader');
+    if (!el || el.dataset.gone === '1') return;
+    el.dataset.gone = '1';
+    el.classList.add('gone');
+    setTimeout(function(){ try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 380);
+  }
+  window.__arvexaBootHide = hideBoot;
+  /* ✅ Position précise : juste sous la barre du haut (mesurée après peinture,
+     l'estimation CSS safe-area+70px reste le filet avant mesure). */
+  function placeBoot(){
+    var el = document.getElementById('bootLoader');
+    if (!el) return;
+    try {
+      var hdr = document.querySelector('header');
+      if (hdr) {
+        var r = hdr.getBoundingClientRect();
+        if (r.height > 20 && r.height < 220) el.style.top = Math.round(r.bottom + 8) + 'px';
+      }
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(placeBoot, 0); });
+  } else { setTimeout(placeBoot, 0); }
+  // Filet de sécurité : jamais plus de 10 s, même si un module échoue.
+  setTimeout(hideBoot, 10000);
+  // Retour bfcache : la page est déjà prête.
+  window.addEventListener('pageshow', function(ev){ if (ev && ev.persisted) hideBoot(); });
+})();
+</script>
   <main class="shell">
     <header>
       <div class="header-left">
@@ -1966,7 +2138,7 @@
           <i class="fas fa-bars"></i>
         </button>
         <span class="header-divider" aria-hidden="true"></span>
-        <h1 class="page-title"><i class="fas fa-file-circle-check"></i> Test moi</h1>
+        <h1 class="page-title"><i class="fas fa-file-circle-check"></i> Épreuves</h1>
       </div>
       <div class="header-actions">
         <a href="exam-history.html" class="top-btn" id="historyLink">
@@ -1980,16 +2152,66 @@
       </div>
     </header>
 
-    <!-- VUE 1 : CONFIGURATION -->
-    <section class="view active" id="configView" aria-labelledby="configTitle">
+    <!-- ⚡ v8.64a — VUE 0 : TABLEAU DE BORD ÉPREUVES (même gabarit que la page Résumé) -->
+    <section class="view active" id="dashboardView" aria-labelledby="dashTitle">
       <div class="panel">
-        <div class="eyebrow">Test moi</div>
-        <h1 id="configTitle">Prépare ton test dans les conditions de ton examen.</h1>
+        <div class="eyebrow">Épreuves</div>
+        <h1 id="dashTitle">Prépare-toi comme à l'examen.</h1>
         <p class="lead">
-          Choisis tes paramètres. Le serveur générera deux sujets de niveaux progressifs :
-          <strong style="color:var(--accent-bright)">Consolidation</strong> (facile à moyen) puis
-          <strong style="color:var(--accent-bright)">Approfondissement</strong> (moyen à difficile).
+          Examen blanc chronométré ou entraînement tiré de <strong style="color:var(--accent-bright)">ton cours</strong> —
+          noté sur 20, corrigé avec les mots et les techniques de ta leçon.
         </p>
+
+        <div class="stat-card" aria-label="Mes statistiques d'épreuves">
+          <div class="stat-head">
+            <span class="stat-eyebrow">📊 Mes épreuves</span>
+            <span class="stat-period">Notes sur 20</span>
+          </div>
+          <div class="stat-metrics">
+            <div class="stat-metric"><span class="stat-num" id="statExams">0</span><span class="stat-lbl">Épreuves</span></div>
+            <div class="stat-metric"><span class="stat-num" id="statAvg">—</span><span class="stat-lbl">Moyenne /20</span></div>
+            <div class="stat-metric"><span class="stat-num" id="statBest">—</span><span class="stat-lbl">Meilleure /20</span></div>
+          </div>
+          <div class="stat-chart-wrap">
+            <div class="stat-chart-title">Évolution de tes notes — 14 dernières épreuves</div>
+            <svg class="stat-chart" id="statChartSvg" viewBox="0 0 640 150" preserveAspectRatio="none" role="img" aria-label="Courbe d'évolution des notes sur 20"></svg>
+            <div class="stat-chart-days"><span id="statDayFirst"></span><span id="statDayMid"></span><span>Aujourd'hui</span></div>
+            <div class="stat-empty-hint" id="statEmptyHint" style="display:none;">Prépare ta première épreuve avec le bouton « Préparer » : chaque note viendra monter sur ta courbe.</div>
+          </div>
+        </div>
+
+        <div class="reserve-card" id="reserveCard">
+          <div class="rc-left">
+            <span class="rc-ico">📝</span>
+            <div class="rc-body">
+              <b id="reserveExamValue">—</b>
+              <span id="reserveExamLabel">Réserve d'examens + 2 gratuits/jour</span>
+            </div>
+          </div>
+          <a class="rc-btn" href="abonnement.html">Recharger</a>
+        </div>
+
+        <div class="dash-recent" id="dashRecent"></div>
+
+        <button class="btn primary btn-preparer" id="preparerButton" type="button">
+          <i class="fas fa-file-circle-plus"></i>&nbsp; Préparer
+        </button>
+        <a class="btn secondary btn-history" href="exam-history.html"><i class="fas fa-history"></i>&nbsp; Voir tout l'historique</a>
+
+        <div class="status" id="dashStatus" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- ⚡ v8.64a — MODALE « PRÉPARER » (même gabarit que « Ajouter » du Résumé :
+         feuille du bas, ligne du haut cliquable, fermeture animée v1.1) -->
+    <div class="modal-backdrop" id="preparerBackdrop">
+      <div class="modal preparer-modal" role="dialog" aria-modal="true" aria-labelledby="prepTitle">
+        <button class="modal-close" id="preparerClose" aria-label="Fermer"><i class="fas fa-times"></i></button>
+        <div class="modal-head">
+          <h2 id="prepTitle">Préparer une épreuve</h2>
+          <p id="prepSubtitle">Matière, chapitre, durée — puis choisis ton mode</p>
+        </div>
+        <div class="preparer-body">
 
         <div class="notebook-banner" id="notebookBanner">
           <i class="fas fa-book-open"></i>
@@ -2089,8 +2311,25 @@
           </div>
 
           <div class="field full">
+            <label>Mode de l'épreuve</label>
+            <div class="mode-bar" id="modeBar" role="tablist" aria-label="Choix du mode">
+              <button type="button" class="mode-seg active" data-mode="blanc" role="tab" aria-selected="true">
+                <span class="ms-ico">🎯</span>
+                <span class="ms-name">Examen blanc</span>
+                <span class="ms-desc">Conditions réelles d'examen, sans aide</span>
+              </button>
+              <button type="button" class="mode-seg" data-mode="entrainement" role="tab" aria-selected="false">
+                <span class="ms-ico">📖</span>
+                <span class="ms-name">Entraînement</span>
+                <span class="ms-desc">L'IA lit ton cours (Résumé) et t'évalue dessus — noté sur 20</span>
+              </button>
+            </div>
+            <small class="mode-hint" id="modeHint" style="display:none;"></small>
+          </div>
+
+          <div class="field full">
             <button class="btn primary" id="generateButton" type="submit">
-              <span class="btn-text">Générer mon test</span>
+              <span class="btn-text">Lancer l'épreuve</span>
               <span class="loader"></span>
             </button>
           </div>
@@ -2098,7 +2337,8 @@
 
         <div class="status" id="configStatus" role="status" aria-live="polite"></div>
       </div>
-    </section>
+    </div>
+  </div>
 
     <!-- VUE 2 : CHARGEMENT -->
     <section class="view" id="loadingView" aria-labelledby="loadingTitle">
@@ -2304,7 +2544,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, getIdToken, signOut } from 'firebase/auth';
 import {
-  doc, getDoc, setDoc, deleteDoc, serverTimestamp, getFirestore
+  doc, getDoc, setDoc, deleteDoc, serverTimestamp, getFirestore,
+  collection, getDocs, query, orderBy, limit
 } from 'firebase/firestore';
 import { readCacheDoc, docSWR } from './arvexa-cache.js';
 import { requireAuth } from './auth-guard.js';
@@ -2467,7 +2708,9 @@ var state = {
   timerId: null,
   submitting: false,
   lastResult: null,
-  notebookContext: null
+  notebookContext: null,
+  prepMode: 'blanc',
+  notebookChapters: []
 };
 
 var $ = function (id) { return document.getElementById(id); };
@@ -2505,7 +2748,7 @@ function setStatus(id, message, type) {
 }
 
 function showView(id) {
-  ['configView', 'loadingView', 'subjectsView', 'examView', 'loadingCorrectionView', 'resultsView']
+  ['dashboardView', 'configView', 'loadingView', 'subjectsView', 'examView', 'loadingCorrectionView', 'resultsView']
     .forEach(function (v) {
       var el = $(v);
       if (el) el.classList.toggle('active', v === id);
@@ -2514,8 +2757,306 @@ function showView(id) {
   // configuration : jamais pendant une épreuve (le rechargement
   // perdrait le test en cours).
   var refreshHeaderBtn = document.getElementById('refreshBtn');
-  if (refreshHeaderBtn) refreshHeaderBtn.style.display = (id === 'configView') ? '' : 'none';
+  if (refreshHeaderBtn) refreshHeaderBtn.style.display = (id === 'dashboardView') ? '' : 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// ⚡ v8.64a — TABLEAU DE BORD ÉPREUVES (même gabarit que le Résumé) :
+// compteurs + courbe d'évolution des notes /20 + réserve d'examens +
+// dernières épreuves. Connecté au Résumé : les chapitres du cahier
+// alimentent le mode « Entraînement ».
+// ═══════════════════════════════════════════════════════════════
+function dayLabel(dateKey) {
+  if (!dateKey) return '';
+  try {
+    var d = new Date(dateKey + 'T12:00:00');
+    return ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][d.getDay()] + ' ' + d.getDate();
+  } catch (e) { return ''; }
+}
+
+function niceMax(v) {
+  if (v <= 5) return 5;
+  var pow = Math.pow(10, Math.floor(Math.log10(v)));
+  var multipliers = [1, 2, 5, 10];
+  for (var i = 0; i < multipliers.length; i++) {
+    if (multipliers[i] * pow >= v) return multipliers[i] * pow;
+  }
+  return 10 * pow;
+}
+
+/* Spline MONOTONE (Fritsch–Carlson) — la même « vague douce » que le Résumé. */
+function monotonePath(pts) {
+  var n = pts.length;
+  if (!n) return '';
+  if (n === 1) return 'M' + pts[0][0] + ',' + pts[0][1];
+  var xs = pts.map(function (p) { return p[0]; });
+  var ys = pts.map(function (p) { return p[1]; });
+  var dx = [], slop = [];
+  for (var i = 0; i < n - 1; i++) {
+    var h = (xs[i + 1] - xs[i]) || 1;
+    dx.push(h); slop.push((ys[i + 1] - ys[i]) / h);
+  }
+  var tang = [slop[0]];
+  for (var j = 1; j < n - 1; j++) {
+    if (slop[j - 1] * slop[j] <= 0) tang.push(0);
+    else {
+      var w1 = 2 * dx[j] + dx[j - 1], w2 = dx[j] + 2 * dx[j - 1];
+      tang.push((w1 + w2) / (w1 / slop[j - 1] + w2 / slop[j]));
+    }
+  }
+  tang.push(slop[n - 2]);
+  var r2 = function (v) { return Math.round(v * 100) / 100; };
+  var d = 'M' + r2(xs[0]) + ',' + r2(ys[0]);
+  for (var k = 0; k < n - 1; k++) {
+    var c1x = r2(xs[k] + dx[k] / 3), c1y = r2(ys[k] + (tang[k] * dx[k]) / 3);
+    var c2x = r2(xs[k + 1] - dx[k] / 3), c2y = r2(ys[k + 1] - (tang[k + 1] * dx[k]) / 3);
+    d += ' C' + c1x + ',' + c1y + ' ' + c2x + ',' + c2y + ' ' + r2(xs[k + 1]) + ',' + r2(ys[k + 1]);
+  }
+  return d;
+}
+
+function renderScoreChart(scores, labels) {
+  var svg = $('statChartSvg');
+  if (!svg) return;
+  var W = 640, H = 150, PAD_L = 10, PAD_R = 10, PAD_T = 16, PAD_B = 10;
+  var innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+  var n = scores.length;
+  if (!n) { svg.innerHTML = ''; return; }
+  var maxVal = niceMax(Math.max(1, Math.max.apply(null, scores)));
+  var stepX = n > 1 ? innerW / (n - 1) : innerW;
+  var yFor = function (v) { return PAD_T + innerH - (v / maxVal) * (innerH - 6) - 3; };
+  var pts = scores.map(function (v, i) {
+    return [Math.round((PAD_L + i * stepX) * 100) / 100, Math.round(yFor(v) * 100) / 100];
+  });
+  var linePath = monotonePath(pts);
+  var areaPath = linePath + ' L' + pts[n - 1][0] + ',' + (PAD_T + innerH) + ' L' + pts[0][0] + ',' + (PAD_T + innerH) + ' Z';
+  var dots = pts.map(function (p, i) {
+    return '<circle class="stat-dot" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (scores[i] > 0 ? 3.4 : 1.6) +
+      '" fill="' + (scores[i] > 0 ? 'var(--accent-bright)' : 'rgba(160,160,144,0.5)') + '"></circle>';
+  }).join('');
+  var grid = [0.5, 1].map(function (g) {
+    var y = Math.round(yFor(maxVal * g) * 100) / 100;
+    return '<line x1="' + PAD_L + '" y1="' + y + '" x2="' + (W - PAD_R) + '" y2="' + y +
+      '" stroke="rgba(160,160,144,0.12)" stroke-width="1" stroke-dasharray="3 5"></line>';
+  }).join('');
+  svg.innerHTML =
+    '<defs><linearGradient id="exArea" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="rgba(224, 184, 74, 0.38)"></stop>' +
+    '<stop offset="100%" stop-color="rgba(224, 184, 74, 0.02)"></stop>' +
+    '</linearGradient></defs>' +
+    grid +
+    '<line x1="' + PAD_L + '" y1="' + (PAD_T + innerH) + '" x2="' + (W - PAD_R) + '" y2="' + (PAD_T + innerH) + '" stroke="rgba(160,160,144,0.25)" stroke-width="1"></line>' +
+    '<path class="stat-area" d="' + areaPath + '" fill="url(#exArea)" stroke="none"></path>' +
+    '<path class="stat-line" d="' + linePath + '" fill="none" stroke="var(--accent-bright)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>' +
+    dots;
+  svg.classList.remove('is-drawn');
+  try {
+    var line = svg.querySelector('.stat-line');
+    if (line && line.getTotalLength && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      var L = line.getTotalLength();
+      line.style.transition = 'none';
+      line.style.strokeDasharray = L + ' ' + L;
+      line.style.strokeDashoffset = String(L);
+      line.getBoundingClientRect();
+      line.style.transition = 'stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1)';
+      line.style.strokeDashoffset = '0';
+      setTimeout(function () { svg.classList.add('is-drawn'); }, 1150);
+      setTimeout(function () { line.style.strokeDasharray = 'none'; line.style.strokeDashoffset = '0'; }, 2400);
+    } else {
+      svg.classList.add('is-drawn');
+    }
+  } catch (e) { svg.classList.add('is-drawn'); }
+}
+
+function fmtDate(ts) {
+  try {
+    var d = ts && ts.toDate ? ts.toDate() : (ts instanceof Date ? ts : null);
+    if (!d) return '';
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  } catch (e) { return ''; }
+}
+
+async function loadDashboard() {
+  if (!state.user) return;
+  try {
+    var results = [];
+    try {
+      var snap = await getDocs(query(
+        collection(db, 'users', state.user.uid, 'examResults'),
+        orderBy('createdAt', 'desc'), limit(30)
+      ));
+      snap.forEach(function (d) {
+        var v = d.data();
+        results.push({
+          score: Number(v.score || 0),
+          subject: v.subject || '',
+          chapterTitle: v.chapterTitle || '',
+          fromNotebook: Boolean(v.fromNotebook),
+          createdAt: v.createdAt
+        });
+      });
+    } catch (e) {
+      console.warn('[EXAM] lecture examResults :', e.code || e.message);
+    }
+
+    var count = results.length;
+    var avg = count ? results.reduce(function (a, r) { return a + r.score; }, 0) / count : null;
+    var best = count ? Math.max.apply(null, results.map(function (r) { return r.score; })) : null;
+    $('statExams').textContent = String(count);
+    $('statAvg').textContent = avg === null ? '—' : (Math.round(avg * 10) / 10).toLocaleString('fr-FR');
+    $('statBest').textContent = best === null ? '—' : (Math.round(best * 10) / 10).toLocaleString('fr-FR');
+
+    // Courbe : les 14 épreuves les PLUS RÉCENTES dans l'ordre chronologique
+    var last14 = results.slice(0, 14).reverse();
+    var scores = last14.map(function (r) { return Math.max(0, r.score); });
+    renderScoreChart(scores, last14.map(function (r) { return fmtDate(r.createdAt); }));
+    $('statEmptyHint').style.display = count ? 'none' : 'block';
+    if (last14.length) {
+      $('statDayFirst').textContent = fmtDate(last14[0].createdAt) || '';
+      $('statDayMid').textContent = fmtDate(last14[Math.floor(last14.length / 2)].createdAt) || '';
+    }
+
+    // Dernières épreuves (5)
+    var recent = $('dashRecent');
+    if (count) {
+      var rows = results.slice(0, 5).map(function (r) {
+        return '<div class="dr-row">' +
+          '<span class="dr-score">' + (Math.round(r.score * 10) / 10).toLocaleString('fr-FR') + '/20</span>' +
+          '<div class="dr-body"><b>' + escapeHtml((r.subject || 'Épreuve') + (r.chapterTitle ? ' · ' + r.chapterTitle : '')) + '</b>' +
+          '<span>' + (r.fromNotebook ? '📖 Entraînement · ' : '🎯 Examen blanc · ') + escapeHtml(fmtDate(r.createdAt)) + '</span></div>' +
+          '</div>';
+      }).join('');
+      recent.innerHTML = '<div class="dr-title">Dernières épreuves</div>' + rows;
+    } else {
+      recent.innerHTML = '<div class="dr-title">Dernières épreuves</div><div class="dr-empty">Aucune épreuve pour le moment — lance ta première avec « Préparer ».</div>';
+    }
+  } catch (e) {
+    console.warn('[EXAM] dashboard error:', e.message);
+  }
+
+  // Réserve d'examens (crédits par page v8.64a) : aiCreditsExam + aiCredits hérités
+  try {
+    var userSnap = await getDoc(doc(db, 'users', state.user.uid));
+    var ud = userSnap.exists() ? userSnap.data() : {};
+    var examCredits = Math.max(0, Number(ud.aiCreditsExam || 0)) + Math.max(0, Number(ud.aiCredits || 0));
+    var premium = ud.premium === true || ud.isUnlocked === true;
+    if (premium) {
+      $('reserveExamValue').textContent = '∞';
+      $('reserveExamLabel').textContent = 'Examens illimités avec ton abonnement Premium';
+    } else {
+      $('reserveExamValue').textContent = String(Math.floor(examCredits / 5)) + ' examen' + (Math.floor(examCredits / 5) > 1 ? 's' : '');
+      $('reserveExamLabel').textContent = 'Réserve d\'examens + 2 gratuits/jour';
+    }
+  } catch (e) { console.warn('[EXAM] réserve :', e.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ⚡ v8.64a — MODALE « PRÉPARER » + BARRE 2 MODES
+// ═══════════════════════════════════════════════════════════════
+function openPreparer() {
+  var bd = $('preparerBackdrop');
+  if (!bd) return;
+  bd.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  var first = bd.querySelector('.custom-select-trigger');
+  try { if (first && window.innerWidth > 700) first.blur(); } catch (e) {}
+}
+function closePreparer() {
+  var bd = $('preparerBackdrop');
+  if (!bd) return;
+  bd.classList.remove('show');
+  document.body.style.overflow = '';
+}
+function bindPreparer() {
+  var bd = $('preparerBackdrop');
+  if (!bd) return;
+  $('preparerButton') && $('preparerButton').addEventListener('click', openPreparer);
+  $('preparerClose') && $('preparerClose').addEventListener('click', closePreparer);
+  bd.addEventListener('click', function (e) { if (e.target === bd) closePreparer(); });
+  // Barre 2 modes
+  var bar = $('modeBar');
+  if (bar) {
+    bar.querySelectorAll('.mode-seg').forEach(function (seg) {
+      seg.addEventListener('click', function () {
+        setPrepMode(seg.dataset.mode);
+      });
+    });
+  }
+}
+function setPrepMode(mode) {
+  state.prepMode = (mode === 'entrainement') ? 'entrainement' : 'blanc';
+  var bar = $('modeBar');
+  if (bar) {
+    bar.querySelectorAll('.mode-seg').forEach(function (seg) {
+      var on = seg.dataset.mode === state.prepMode;
+      seg.classList.toggle('active', on);
+      seg.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  }
+  updateModeHint();
+  // Bannière cahier : visible en mode entraînement
+  var banner = $('notebookBanner');
+  if (banner) {
+    if (state.prepMode === 'entrainement') {
+      banner.classList.add('show');
+      $('notebookBannerTitle').textContent = '📖 Entraînement sur ton cours';
+      $('notebookBannerSub').textContent = 'L\'IA lit les sections que tu as résumées et te notera sur 20 avec les mots de ta leçon.';
+    } else if (!state.notebookContext) {
+      banner.classList.remove('show');
+    }
+  }
+}
+function updateModeHint() {
+  var hint = $('modeHint');
+  if (!hint) return;
+  if (state.prepMode !== 'entrainement') { hint.style.display = 'none'; hint.textContent = ''; return; }
+  var subject = selects.subject.getValue();
+  var chapters = (state.notebookChapters[subject] || []);
+  if (!subject) {
+    hint.textContent = 'Choisis d\'abord une matière.';
+    hint.style.display = 'block';
+  } else if (!chapters.length) {
+    hint.textContent = 'Tu n\'as pas encore de chapitre résumé en ' + (SUBJECT_LABELS[subject] || subject) + '. Ouvre la page Résumé, ajoute ton cours, puis reviens — l\'IA lira ta leçon pour préparer l\'épreuve.';
+    hint.style.display = 'block';
+  } else {
+    hint.textContent = chapters.length + ' chapitre' + (chapters.length > 1 ? 's' : '') + ' de ton cahier disponible' + (chapters.length > 1 ? 's' : '') + ' — choisis-en un dans la liste 📚.';
+    hint.style.display = 'block';
+  }
+}
+
+// ── Chapitres du CAHIER de l'élève (connecté à la page Résumé) ──
+async function loadNotebookChapters(subject) {
+  if (!state.user || !subject) return [];
+  try {
+    var snap = await getDocs(collection(db, 'users', state.user.uid, 'notebooks', subject, 'chapters'));
+    var list = [];
+    snap.forEach(function (d) {
+      var v = d.data();
+      list.push({ id: d.id, title: v.title || 'Chapitre' });
+    });
+    list.sort(function (a, b) { return a.title.localeCompare(b.title, 'fr'); });
+    state.notebookChapters[subject] = list;
+    return list;
+  } catch (e) {
+    console.warn('[EXAM] chapitres cahier :', e.code || e.message);
+    state.notebookChapters[subject] = [];
+    return [];
+  }
+}
+
+// Option cahier actuellement sélectionnée (dataset.notebookId)
+function selectedNotebookOption() {
+  var value = selects.chapter.getValue();
+  if (!value) return null;
+  var options = selects.chapter.options || [];
+  for (var i = 0; i < options.length; i++) {
+    if (options[i].dataset.value === String(value) && options[i].dataset.notebookId) {
+      return { value: options[i].dataset.value, notebookId: options[i].dataset.notebookId };
+    }
+  }
+  return null;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2563,6 +3104,7 @@ CustomSelect.prototype.setOptions = function (options) {
     var div = document.createElement('div');
     div.className = 'custom-select-option';
     div.dataset.value = opt.value;
+    if (opt.notebookId) div.dataset.notebookId = opt.notebookId;
     div.setAttribute('role', 'option');
     if (opt.prefix) {
       div.innerHTML = '<span class="option-prefix">' + escapeHtml(opt.prefix) + '</span> ' + escapeHtml(opt.label);
@@ -2643,9 +3185,17 @@ function updateChapters() {
   // ✅ v8.9 — littéraire + pays ≠ Niger → chapitres remplis progressivement
   // par les élèves du pays ; sinon programme intégré (toutes scientifiques).
   var chapters = axChaptersFor(subject);
-  var opts = [{ value: 'all', label: 'Tous les chapitres', prefix: '📚' }];
-  chapters.forEach(function (ch) { opts.push({ value: ch, label: ch, prefix: '📖' }); });
-  selects.chapter.setOptions(opts);
+  // ⚡ v8.64a — CHAPITRES DU CAHIER (connecté à la page Résumé) en tête de
+  // liste, marqués 📚 : ce sont eux que le mode « Entraînement » utilisera.
+  loadNotebookChapters(subject).then(function (nbChapters) {
+    var opts = [{ value: 'all', label: 'Tous les chapitres', prefix: '🌍' }];
+    nbChapters.forEach(function (c) {
+      opts.push({ value: c.title, label: c.title, prefix: '📚', notebookId: c.id });
+    });
+    chapters.forEach(function (ch) { opts.push({ value: ch, label: ch, prefix: '📖' }); });
+    selects.chapter.setOptions(opts);
+    updateModeHint();
+  });
   axUpdateExtra(subject, chapters);
 }
 
@@ -2716,6 +3266,8 @@ function prefillFromUrl() {
         chapterTitle: preChapter || '',
         useNotebook: true
       };
+      // ⚡ v8.64a — arrivée depuis le Résumé : le mode Entraînement est présélectionné
+      setPrepMode('entrainement');
       $('notebookBanner').classList.add('show');
       if (preChapter) {
         $('notebookBannerTitle').textContent = '📖 Basé sur ton cahier : ' + preChapter;
@@ -3033,9 +3585,23 @@ async function generateExam(event) {
     activateStep('genStep2', statusEl, 'Génération des deux sujets...');
     if (window.ARVEXAWakeLock) ARVEXAWakeLock.acquire('exam-gen');
 
-    var notebookContextPayload = state.notebookContext
-      ? { subject: config.subject, chapterId: state.notebookContext.chapterId, chapterTitle: state.notebookContext.chapterTitle }
-      : null;
+    // ⚡ v8.64a — MODES : « blanc » = conditions réelles (pas de contexte cahier)
+    // ; « entraînement » = l'IA lit le chapitre du cahier choisi (connecté au
+    // Résumé) et notera sur 20 avec les mots du cours.
+    var notebookContextPayload = null;
+    if (state.prepMode === 'entrainement') {
+      var nbOpt = selectedNotebookOption();
+      if (nbOpt) {
+        notebookContextPayload = { subject: config.subject, chapterId: nbOpt.notebookId, chapterTitle: nbOpt.value };
+      } else if (state.notebookContext && state.notebookContext.useNotebook && state.notebookContext.chapterId) {
+        notebookContextPayload = { subject: config.subject, chapterId: state.notebookContext.chapterId, chapterTitle: state.notebookContext.chapterTitle };
+      } else {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+        setStatus('configStatus', 'Le mode Entraînement lit TON cours : choisis un chapitre marqué 📚 (résumé dans la page Résumé) ou passe en Examen blanc.', 'error');
+        return;
+      }
+    }
 
     var responsePromise = examFetch(
       Object.assign({}, config, { notebookContext: notebookContextPayload, avoidStatements: buildAvoidList(config.subject) }),
@@ -3055,7 +3621,8 @@ async function generateExam(event) {
     }
 
     if (payload && payload.unavailable) {
-      showView('configView');
+      showView('dashboardView');
+      openPreparer();
       setStatus('configStatus', payload.exam && payload.exam.message || 'Service temporairement indisponible.', 'error');
       return;
     }
@@ -3074,14 +3641,17 @@ async function generateExam(event) {
     finishAllSteps(GENERATION_STEPS, statusEl, '✅ Tes deux sujets sont prêts !');
     await sleep(400);
     displaySubjects();
+    // ✅ v8.64a — la modale « Préparer » se ferme dès que les sujets sont prêts
+    closePreparer();
     showView('subjectsView');
   } catch (error) {
     console.error('Génération échouée:', error);
     if (error.message === 'FREE_EXAM_LIMIT') {
-      showView('configView');
+      showView('dashboardView');
+      openPreparer();
       showPremiumPopup();
-      // ⚡ v8.56a — orienter aussi vers les crédits Marketplace
-      setStatus('configStatus', 'Limite du jour (2 examens gratuits). Recharge tes crédits ⚡ dans la Marketplace ou passe Premium.', 'error');
+      // ⚡ v8.64a — la réserve d'examens se recharge dans l'Abonnement
+      setStatus('configStatus', 'Limite du jour (2 examens gratuits). Recharge ta réserve d\'examens ⚡ dans l\'Abonnement ou passe Premium.', 'error');
     } else if (error.message === 'AUTH_REQUIRED') {
       setStatus('configStatus', 'Connecte-toi pour générer un test.', 'error');
     } else if (error.message === 'RATE_LIMIT') {
@@ -3089,7 +3659,8 @@ async function generateExam(event) {
     } else {
       setStatus('configStatus', error.message || 'Impossible de générer le test.', 'error');
     }
-    showView('configView');
+    showView('dashboardView');
+    openPreparer();
   } finally {
     if (window.ARVEXAWakeLock) ARVEXAWakeLock.release('exam-gen');
     btn.disabled = false;
@@ -3188,8 +3759,9 @@ function renderExercise() {
       drawingBox.style.cssText = 'border: 2px dashed #B8860B; padding: 20px; text-align: center; color: var(--text-dim); border-radius: 10px; margin-top: 12px; background: rgba(184, 134, 11, 0.05);';
       drawingBox.innerHTML = '<i class="fas fa-pencil-alt" style="font-size: 24px; margin-bottom: 10px; color: var(--accent-bright);"></i><br>' +
         '<strong style="color: var(--accent-bright);">Fais ce schéma sur ton cahier.</strong><br>' +
-        '<span style="font-size: 13px;">Tu pourras vérifier avec la correction à la fin.</span>';
+        '<span style="font-size: 13px;">Photographie-le ci-dessous : l\'IA le lira et le corrigera avec ta copie.</span>';
       wrapper.appendChild(drawingBox);
+      wrapper.appendChild(buildPhotoAnswerRow(key, 'schéma'));
     }
     else if (Array.isArray(question.options) && question.options.length === 4) {
       var options = document.createElement('div');
@@ -3229,8 +3801,12 @@ function renderExercise() {
         input.placeholder = 'Rédige ta réponse ici...';
       }
       input.value = state.answers[key] || '';
+      input.dataset.arvKey = key;
       input.addEventListener('input', function () { saveAnswer(key, input.value); });
       wrapper.appendChild(input);
+      // ⚡ v8.64a — RÉPONSE PAR PHOTO : l'élève photographie sa copie manuscrite,
+      // l'IA la transcrit ; si elle n'arrive pas à lire, elle explique POURQUOI.
+      wrapper.appendChild(buildPhotoAnswerRow(key, isNumber ? 'réponse' : 'réponse rédigée'));
     }
     list.appendChild(wrapper);
   });
@@ -3240,6 +3816,92 @@ function renderExercise() {
   $('progressBar').style.width = (((state.exerciseIndex + 1) / EXAM_CONSTANTS.REQUIRED_EXERCISES) * 100) + '%';
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ⚡ v8.64a — RÉPONSE PAR PHOTO (kit IA arvx-ai.js, mode « answer »)
+// Transcription fidèle + SI illisible → raison précise affichée pour que
+// l'élève règle le problème (flou, luminosité, angle, doigt, page coupée…).
+// ═══════════════════════════════════════════════════════════════
+function buildPhotoAnswerRow(key, label) {
+  var row = document.createElement('div');
+  row.className = 'photo-answer-row';
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'photo-btn';
+  btn.innerHTML = '<i class="fas fa-camera"></i> Répondre par photo';
+  var status = document.createElement('span');
+  status.className = 'photo-status';
+  status.textContent = 'Photographie ta ' + label + ' manuscrite — l\'IA la transcrira.';
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.capture = 'environment';
+  input.style.display = 'none';
+  btn.addEventListener('click', function () { input.click(); });
+  input.addEventListener('change', async function () {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    input.value = '';
+    btn.disabled = true;
+    status.classList.remove('err', 'ok');
+    status.textContent = 'Lecture de ta photo...';
+    try {
+      if (!window.ARVX_AI) throw { reason: 'Kit IA non chargé — réessaie dans un instant.' };
+      var dataUrl = await ARVX_AI.compressImageFile(file);
+      status.textContent = 'Transcription par l\'IA...';
+      var r = await ARVX_AI.ask('image', { mode: 'answer', images: [dataUrl] });
+      var raw = (r && r.data && r.data.text) || '';
+      var parsed = tryParseJsonLoose(raw);
+      if (parsed && parsed.readable === false) {
+        status.classList.add('err');
+        status.textContent = '❌ Impossible de lire : ' + (parsed.reason || 'photo illisible') +
+          ' — rapproche-toi, éclaire mieux et recadre la feuille, puis réessaie.';
+        return;
+      }
+      var text = parsed && parsed.text ? parsed.text : String(raw || '').trim();
+      if (!text) {
+        status.classList.add('err');
+        status.textContent = '❌ Rien de lisible sur cette photo — prends-la bien droite, à la lumière, la feuille entière dans le cadre.';
+        return;
+      }
+      // La transcription remplit (et s\'ajoute à) la réponse
+      var existing = String(state.answers[key] || '');
+      state.answers[key] = (existing && existing.indexOf('[Photo] ') !== 0 ? existing + '\n\n' : '') + '[Photo] ' + text;
+      saveAnswer(key, state.answers[key]);
+      // Renseigne le champ de saisie s'il existe encore dans le DOM
+      var field = document.querySelector('.question .answer[data-arv-key="' + key + '"]');
+      if (field) {
+        field.value = state.answers[key];
+        if (field.tagName === 'TEXTAREA') field.style.height = 'auto', field.style.height = field.scrollHeight + 'px';
+      }
+      status.classList.add('ok');
+      status.textContent = '✅ Réponse lue et ajoutée à ta copie.';
+    } catch (err) {
+      status.classList.add('err');
+      var why = (err && err.reason) ? String(err.reason)
+        : (window.ARVX_AI && window.ARVX_AI.errMessage && err && err.code) ? ARVX_AI.errMessage(err.code)
+        : 'Impossible de lire cette photo pour le moment.';
+      status.textContent = '❌ ' + why;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  row.appendChild(btn);
+  row.appendChild(status);
+  row.appendChild(input);
+  return row;
+}
+
+function tryParseJsonLoose(t) {
+  t = String(t || '').trim().replace(/^```(?:json)?|```$/g, '').trim();
+  try { return JSON.parse(t); } catch (e) {}
+  var start = t.indexOf('{');
+  var end = t.lastIndexOf('}');
+  if (start !== -1 && end > start) {
+    try { return JSON.parse(t.slice(start, end + 1)); } catch (e) {}
+  }
+  return null;
 }
 
 function goNext() {
@@ -3326,7 +3988,10 @@ async function submitExam(auto) {
       action: 'correct',
       exam: state.exam,
       subjectId: state.selectedSubject.id,
-      answers: state.answers
+      answers: state.answers,
+      // ⚡ v8.64a — en mode Entraînement, le correcteur reçoit TON cours :
+      // il corrige avec les mots et les techniques de ta leçon.
+      notebookContext: state.notebookContext || null
     }, headers, function (msg) { statusEl.textContent = msg; });
     await sleep(1500);
 
@@ -3702,14 +4367,15 @@ async function checkActiveSession() {
       $('resumeModal').classList.remove('show');
       state.exam = null;
       state.selectedSubject = null;
-      showView('configView');
+      showView('dashboardView');
+      openPreparer();
     };
   } catch (e) {
     console.warn('[EXAM] checkActiveSession error:', e.message);
   }
 }
 
-$('backConfigButton').addEventListener('click', function () { showView('configView'); });
+$('backConfigButton').addEventListener('click', function () { showView('dashboardView'); openPreparer(); });
 $('previousButton').addEventListener('click', goPrevious);
 $('nextButton').addEventListener('click', goNext);
 $('finishButton').addEventListener('click', askFinish);
@@ -3739,7 +4405,9 @@ $('newExamButton').addEventListener('click', async function () {
   state.submitting = false;
   state.lastResult = null;
   state.notebookContext = null;
-  showView('configView');
+  showView('dashboardView');
+  loadDashboard();
+  openPreparer();
 });
 
 window.addEventListener('online', function () {
@@ -3797,6 +4465,10 @@ requireAuth({
     $('connectionState').textContent = 'connecté';
     $('connectionState').classList.add('online');
     prefillFromUrl();
+    bindPreparer();
+    loadDashboard();
+    // ✅ v8.64a — cercle « Chargement... » sous la barre : le dashboard est prêt.
+    try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {}
     await checkActiveSession();
 
     // ✅ v8.9 — POP-UP FORCÉ du choix de pays (nouvel utilisateur seulement) :
@@ -3815,6 +4487,8 @@ requireAuth({
     window.addEventListener('arvexa-country-change', function () { updateChapters(); });
   },
   onNoUser: () => {
+    // ✅ v8.64a — le cercle de chargement ne doit jamais rester bloqué
+    try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {}
     // ✅ C3 — préserver l'URL de retour après login
     try {
       var existing = sessionStorage.getItem('redirectAfterLogin')

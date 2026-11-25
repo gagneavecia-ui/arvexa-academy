@@ -117,7 +117,13 @@ export default async function handler(req, res) {
         productId,
         title: String(product.title || 'Pack').substring(0, 80),
         credits: Math.max(1, Math.floor(Number(product.credits) || 0)),
-        validityDays: Math.max(1, Math.floor(Number(product.validityDays) || 30))
+        validityDays: Math.max(1, Math.floor(Number(product.validityDays) || 30)),
+        // ⚡ v8.64a — CRÉDITS PAR PAGE : la page cible du pack ('resume' | 'chat'
+        // | 'exam') vient du produit Firestore, jamais du client. null = réserve
+        // globale héritée (anciens packs Marketplace).
+        creditPage: ['resume', 'chat', 'exam'].includes(String(product.creditPage || ''))
+          ? String(product.creditPage)
+          : null
       };
     } else {
       if (!plan) return res.status(400).json({ error: 'Champs manquants' });
@@ -205,6 +211,8 @@ export default async function handler(req, res) {
         productTitle: productInfo ? productInfo.title : null,
         credits: productInfo ? productInfo.credits : null,
         validityDays: productInfo ? productInfo.validityDays : null,
+        // ⚡ v8.64a — réserve cible du pack (resume/chat/exam/null)
+        creditPage: productInfo ? (productInfo.creditPage || null) : null,
         amount,
         // ⚡ v8.59a — id de session SasPay : permet à /api/verifier-paiement
         // de relire le statut de paiement côté serveur (canal de secours)

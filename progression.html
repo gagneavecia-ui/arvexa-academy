@@ -289,21 +289,24 @@
 </head>
 <body>
 <!-- ⚡ v8.63a — petit cercle de chargement haut-centre (cercle nu, aucune pop-up) -->
+<!-- ⚡ v8.64a — CERCLE DE CHARGEMENT EXACT (image propriétaire) : anneau gris
+     clair parcouru par un ARC DORÉ qui tourne + libellé « Chargement... »
+     en dessous, placé JUSTE SOUS la barre du haut (jamais au milieu de l'écran).
+     HTML+CSS purs : peint avant tout JS, disparaît dès que le contenu est prêt,
+     filet de sécurité 10 s. -->
 <style>
-  /* ✅ v8.63a — CERCLE DE CHARGEMENT EXACT (demande propriétaire : « comme
-     sur l'image ») : UNIQUEMENT le petit cercle qui tourne, en haut au
-     centre, NU — sans pastille sombre, sans texte, sans effet pop-up.
-     La page s'affiche INSTANTANÉMENT derrière et le cercle disparaît dès
-     que le contenu est prêt. */
-  .boot-loader{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);left:50%;width:24px;height:24px;margin-left:-12px;z-index:99999;pointer-events:none;transition:opacity .25s ease,visibility .25s ease}
+  .boot-loader{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top, 0px) + 70px);z-index:99999;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:8px;transition:opacity .25s ease,visibility .25s ease}
   .boot-loader.gone{opacity:0;visibility:hidden;pointer-events:none}
-  .boot-spinner{width:24px;height:24px;border-radius:50%;border:3px solid rgba(224,184,74,.22);border-top-color:#E0B84A;animation:bootspin .7s linear infinite;box-sizing:border-box;display:block}
+  .boot-spinner{width:36px;height:36px;border-radius:50%;border:4px solid rgba(236,231,220,.30);border-top-color:#E0B84A;animation:bootspin .8s linear infinite;box-sizing:border-box;display:block}
+  .boot-label{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:rgba(236,231,220,.88)}
+  html[data-theme="light"] .boot-spinner{border-color:rgba(96,86,64,.20);border-top-color:#9A7209}
+  html[data-theme="light"] .boot-label{color:rgba(80,72,52,.80)}
   @keyframes bootspin{to{transform:rotate(360deg)}}
-  html[data-theme="light"] .boot-spinner{border-color:rgba(154,114,9,.20);border-top-color:#9A7209}
-  @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.5s}}
+  @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.6s}}
 </style>
-<div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de ta progression">
+<div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de la page">
   <div class="boot-spinner"></div>
+  <div class="boot-label">Chargement...</div>
 </div>
 <script>
 (function(){
@@ -312,12 +315,28 @@
     if (!el || el.dataset.gone === '1') return;
     el.dataset.gone = '1';
     el.classList.add('gone');
-    setTimeout(function(){ try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 300);
+    setTimeout(function(){ try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 380);
   }
   window.__arvexaBootHide = hideBoot;
-  if (document.readyState === 'complete') setTimeout(hideBoot, 400);
-  else window.addEventListener('load', function(){ setTimeout(hideBoot, 400); });
+  /* ✅ Position précise : juste sous la barre du haut (mesurée après peinture,
+     l'estimation CSS safe-area+70px reste le filet avant mesure). */
+  function placeBoot(){
+    var el = document.getElementById('bootLoader');
+    if (!el) return;
+    try {
+      var hdr = document.querySelector('header');
+      if (hdr) {
+        var r = hdr.getBoundingClientRect();
+        if (r.height > 20 && r.height < 220) el.style.top = Math.round(r.bottom + 8) + 'px';
+      }
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(placeBoot, 0); });
+  } else { setTimeout(placeBoot, 0); }
+  // Filet de sécurité : jamais plus de 10 s, même si un module échoue.
   setTimeout(hideBoot, 10000);
+  // Retour bfcache : la page est déjà prête.
   window.addEventListener('pageshow', function(ev){ if (ev && ev.persisted) hideBoot(); });
 })();
 </script>
