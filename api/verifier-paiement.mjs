@@ -22,8 +22,9 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { activateCheckout } from './_activation.mjs';
+import { notifyTelegramBestEffort } from './_telegram.mjs'; /* ✅ v8.69a — alertes rattrapage */
 
 const SASPAY_BASE = 'https://api.saspay.me/api/v1';
 
@@ -94,9 +95,19 @@ async function saspayGet(path) {
 export default async function handler(req, res) {
   const ORIGIN = resolveOrigin(req);
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  /* ✅ v8.69a — RATTRAPAGE AUTOMATIQUE des paiements (audit P2) : le webhook
+     ET le poll navigateur peuvent tous deux manquer un paiement (confirmation
+     mobile money lente + webhook perdu). Le cron Vercel quotidien appelle
+     GET /api/verifier-paiement → rescan de tous les checkouts « pending »
+     côté SasPay (serveur → serveur) et active ce qui est payé.
+     Fusionné DANS ce fichier : la limite Hobby de 12 Serverless Functions
+     interdit un 13ᵉ fichier d'API. Configurer CRON_SECRET dans Vercel pour
+     verrouiller ce endpoint (le cron l'envoie en Authorization: Bearer). */
+  if (req.method === 'GET') return rescanPaiements(req, res);
 
   const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'ip').split(',')[0].trim();
   if (rateLimited(ip)) {
@@ -199,6 +210,114 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('Erreur verifier-paiement :', err);
+    return res.status(500).json({ ok: false, error: 'Erreur serveur', detail: err.message });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ✅ v8.69a — RESCAN QUOTIDIEN (cron Vercel → GET)
+   Même fail-closed que le POST : référence serveur obligatoire, statut
+   PAID relu chez SasPay, montant relu et comparé, idempotence totale.
+   CRON_SECRET configurée dans Vercel → exigée en Bearer ; sinon ouvert
+   (aucune donnée client exposée, activations légitimes seulement).
+   ═══════════════════════════════════════════════════════════════════ */
+const RESCAN_MAX = 50; // garde-fou : jamais plus de 50 checkouts par passage
+
+async function rescanPaiements(req, res) {
+  const cronSecret = (process.env.CRON_SECRET || '').trim();
+  if (cronSecret) {
+    const auth = String(req.headers.authorization || '');
+    if (auth !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ ok: false, error: 'unauthorized' });
+    }
+  }
+
+  try {
+    let db;
+    try {
+      db = ensureFirebase();
+    } catch (cfgErr) {
+      console.error('🔴 Config Firebase admin invalide (rescan) :', cfgErr.message);
+      return res.status(500).json({ ok: false, error: 'server_config' });
+    }
+
+    const pendingSnap = await db.collection('saspayPendingCheckouts')
+      .where('status', '==', 'pending')
+      .limit(RESCAN_MAX)
+      .get();
+
+    let activated = 0;
+    let stillPending = 0;
+    let failed = 0;
+
+    for (const doc of pendingSnap.docs) {
+      const pending = doc.data();
+      const ref = doc.id;
+      try {
+        const fresh = await doc.ref.get();
+        if (fresh.exists && fresh.data().status !== 'pending') { continue; }
+
+        const sessionId = pending.saspaySessionId || null;
+        if (!sessionId) { failed++; continue; }
+
+        const statusRes = await saspayGet(`/checkout-sessions/${encodeURIComponent(sessionId)}/status/`);
+        if (statusRes.status !== 200 || !statusRes.json) { stillPending++; continue; }
+        const s = statusRes.json.data || statusRes.json;
+        const sessionStatus = String(s.status || '').toUpperCase();
+        const txStatus = String(s.transaction_status || '').toUpperCase();
+
+        if (!PAID_STATUS.has(sessionStatus) && !PAID_STATUS.has(txStatus)) {
+          // Session expirée/annulée depuis longtemps → on la ferme pour
+          // arrêter de la rescanner ; sinon elle reste « pending ».
+          if (['EXPIRED', 'CANCELLED', 'FAILED', 'CANCELED'].includes(sessionStatus) ||
+              ['EXPIRED', 'CANCELLED', 'FAILED', 'CANCELED'].includes(txStatus)) {
+            await doc.ref.update({ status: 'failed', processedAt: FieldValue.serverTimestamp(), rescanClosedAt: new Date() });
+            failed++;
+          } else {
+            stillPending++;
+          }
+          continue;
+        }
+
+        // Payé → montant réel relu depuis le détail SasPay
+        let paidAmount = 0;
+        const detailRes = await saspayGet(`/checkout-sessions/${encodeURIComponent(sessionId)}/`);
+        if (detailRes.status === 200 && detailRes.json) {
+          const d = detailRes.json.data || detailRes.json;
+          paidAmount = parseFloat(d.amount || '0');
+        }
+        const expectedAmount = Number(pending.amount || 0);
+        if (!paidAmount || paidAmount < expectedAmount) {
+          console.error(`🚫 rescan montant : payé=${paidAmount}, attendu=${expectedAmount} (${ref})`);
+          await notifyTelegramBestEffort(`🚨 ARVEXA — RESCAN : montant illisible/insuffisant ${ref} (payé=${paidAmount}, attendu=${expectedAmount}). À activer manuellement.`);
+          failed++;
+          continue;
+        }
+
+        const result = await activateCheckout(db, doc.ref, pending, paidAmount, {
+          transactionId: s.transaction_id || null,
+          processedVia: 'rescan'
+        });
+        if (result.activated) activated++;
+        else {
+          failed++;
+          await notifyTelegramBestEffort(`🚨 ARVEXA — RESCAN : activation échouée ${ref} (${result.reason || 'raison inconnue'}).`);
+        }
+      } catch (itemErr) {
+        console.error('rescan item error:', ref, itemErr.message);
+        failed++;
+      }
+    }
+
+    if (pendingSnap.size > 0) {
+      await notifyTelegramBestEffort(`🔍 ARVEXA — RESCAN paiements : ${pendingSnap.size} pending scanné(s), ${activated} activé(s), ${stillPending} toujours pending, ${failed} fermé(s)/échec(s).`);
+    }
+
+    return res.status(200).json({
+      ok: true, scanned: pendingSnap.size, activated, stillPending, failed
+    });
+  } catch (err) {
+    console.error('Erreur rescan-paiements :', err);
     return res.status(500).json({ ok: false, error: 'Erreur serveur', detail: err.message });
   }
 }

@@ -76,7 +76,7 @@
   ],
   "crons": [
     {
-      "path": "/api/rescan-paiements",
+      "path": "/api/verifier-paiement",
       "schedule": "0 4 * * *"
     }
   ]
