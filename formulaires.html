@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#0A0A0A">
 
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié --><script src="arvexa-i18n.js" defer></script>
 
   <meta name="description" content="ARVEXA School - Formulaires BAC Terminale D">
 
@@ -128,6 +128,25 @@
       border-bottom:1px solid rgba(184,134,11,.06);gap:12px;min-height:56px}
 
     .header-left{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+
+    /* ✅ v8.62a — barre du haut unifiée : bouton menu ☰ */
+    .menu-toggle{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;
+
+      border:1px solid rgba(var(--rgb-soft), .05);background:transparent;color:var(--text-dim);cursor:pointer;
+
+      transition:var(--transition);font-size:16px;flex-shrink:0}
+
+    .menu-toggle:hover{border-color:rgba(184,134,11,.14);color:var(--text-light)}
+
+    .header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+    .header-right button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;
+
+      border:1px solid rgba(var(--rgb-soft), .05);background:transparent;color:var(--text-dim);cursor:pointer;
+
+      transition:var(--transition);font-size:14px;flex-shrink:0}
+
+    .header-right button:hover{border-color:rgba(184,134,11,.14);color:var(--text-light)}
 
     .back-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;
 
@@ -765,7 +784,7 @@
 
   <div class="header-left">
 
-    <a href="index.html" class="back-btn" aria-label="Retour"><i class="fas fa-arrow-left"></i></a>
+    <button class="menu-toggle" id="menuToggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="arvxSidebar"><i class="fas fa-bars"></i></button>
 
     <div class="page-title">
 
@@ -776,6 +795,12 @@
       <span class="fav-count" id="favCount">0</span>
 
     </div>
+
+  </div>
+
+  <div class="header-right">
+
+    <button id="refreshBtn" aria-label="Rafraîchir" title="Rafraîchir" onclick="window.location.reload()"><i class="fas fa-sync-alt"></i></button>
 
   </div>
 

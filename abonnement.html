@@ -1551,6 +1551,9 @@
       <button id="profileBtn" aria-label="Profil">
         <i class="fas fa-user"></i>
       </button>
+      <button id="refreshBtn" aria-label="Rafraîchir" title="Rafraîchir">
+        <i class="fas fa-sync-alt"></i>
+      </button>
     </div>
   </header>
 
@@ -2995,6 +2998,11 @@ document.getElementById('notifBtn').addEventListener('click', () => {
 
 document.getElementById('profileBtn').addEventListener('click', () => {
   window.location.href = 'profil.html';
+});
+
+// ✅ v8.62a — barre du haut unifiée : bouton rafraîchir (comme l'accueil)
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  window.location.reload();
 });
 
 // ================================================================

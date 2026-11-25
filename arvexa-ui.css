@@ -430,6 +430,88 @@ dialog, dialog * {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   BARRE DU HAUT UNIFIÉE (v8.62a) — défauts à spécificité ZÉRO
+   Demande du propriétaire : « On va unifier la barre du haut dans
+   chaque page — ajoute le bouton menu à côté du nom de la page et le
+   bouton de rafraîchissement, comme la page abonnement. »
+   Modèle = abonnement.html : [☰ menu] | [titre de la page] ··· [actions ↻]
+   Ces valeurs ne s'appliquent qu'aux pages qui ne définissent pas leur
+   propre style : toute page qui stylise déjà .header garde le sien.
+   Les tokens (--rgb-veil, --text-dim, …) suivent le mode clair/sombre.
+   ═══════════════════════════════════════════════════════════════════ */
+:where(header.header) {
+  position: sticky; top: 0; z-index: 50; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; min-height: 60px;
+  padding: calc(10px + var(--safe-top, 0px)) 16px 10px;
+  background: rgba(var(--rgb-veil), 0.92);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(224, 184, 74, 0.10);
+}
+:where(header.header)::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(224, 184, 74, 0.35), transparent);
+  pointer-events: none;
+}
+:where(.header .header-left) {
+  display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;
+}
+:where(.header .menu-toggle) {
+  display: flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 10px;
+  border: 1px solid rgba(var(--rgb-soft), 0.06); background: transparent;
+  color: var(--text-dim); cursor: pointer;
+  transition: all 0.18s ease; font-size: 15px; flex-shrink: 0;
+}
+:where(.header .menu-toggle:hover) {
+  border-color: rgba(224, 184, 74, 0.30);
+  color: var(--accent-bright);
+  background: rgba(224, 184, 74, 0.05);
+}
+:where(.header .header-divider) {
+  width: 1px; height: 20px;
+  background: rgba(var(--rgb-soft), 0.08);
+  flex-shrink: 0;
+}
+:where(.header .page-title) {
+  font-size: clamp(13px, 1.6vw, 15px); font-weight: 600; color: var(--text-light);
+  font-family: 'Playfair Display', Georgia, serif;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-width: 0; letter-spacing: -0.01em; margin: 0;
+}
+:where(.header .page-title i) {
+  color: var(--accent-bright); margin-right: 6px; font-size: 13px;
+}
+:where(.header .header-actions, .header .header-right) {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+:where(.header .header-actions button, .header .header-right button) {
+  width: 38px; height: 38px; border-radius: 10px;
+  border: 1px solid rgba(var(--rgb-soft), 0.06);
+  background: transparent; color: var(--text-dim);
+  cursor: pointer; transition: all 0.18s ease; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+:where(.header .header-actions button:hover, .header .header-right button:hover) {
+  color: var(--accent-bright);
+  border-color: rgba(224, 184, 74, 0.30);
+  background: rgba(224, 184, 74, 0.05);
+}
+:where(.header .back-btn) {
+  display: flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 10px;
+  border: 1px solid rgba(var(--rgb-soft), 0.06); background: transparent;
+  color: var(--text-dim); text-decoration: none; cursor: pointer;
+  transition: all 0.18s ease; font-size: 14px; flex-shrink: 0;
+}
+:where(.header .back-btn:hover) {
+  border-color: rgba(224, 184, 74, 0.30);
+  color: var(--accent-bright);
+  background: rgba(224, 184, 74, 0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    ACCESSIBILITÉ — respect des préférences de mouvement réduit
    ═══════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié --><script src="arvexa-i18n.js" defer></script>
 <script src="arvexa-sync.js" defer></script><!-- ✅ v8.0 sync Firebase des progressions (par compte) -->
   <meta name="description" content="ARVEXA School - Lecture">
   <link rel="manifest" href="manifest.json">
@@ -2059,6 +2059,9 @@
 
   <header class="header" id="appHeader">
     <div class="header-left">
+      <button class="icon-btn" id="menuToggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="arvxSidebar">
+        <i class="fas fa-bars"></i>
+      </button>
       <button class="icon-btn" id="backBtn" aria-label="Retour au chapitre">
         <i class="fas fa-arrow-left"></i>
       </button>
@@ -2068,6 +2071,9 @@
       </div>
     </div>
     <div class="header-right">
+      <button class="icon-btn" id="refreshBtn" aria-label="Rafraîchir" title="Rafraîchir">
+        <i class="fas fa-sync-alt"></i>
+      </button>
       <button class="icon-btn" id="themeBtn" aria-label="Changer de thème">
         <i class="fas fa-moon" id="themeIcon"></i>
       </button>
@@ -2217,6 +2223,11 @@ function initTheme() {
 }
 
 initTheme();
+
+// ✅ v8.62a — barre du haut unifiée : bouton rafraîchir
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  window.location.reload();
+});
 
 document.getElementById('themeBtn').addEventListener('click', () => {
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';

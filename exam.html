@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié --><script src="arvexa-i18n.js" defer></script>
   <meta name="description" content="ARVEXA School — Test moi : tests chronométrés adaptés à ton niveau, toutes matières, tous domaines.">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.png" type="image/png">
@@ -92,28 +92,57 @@
 
     .shell { width: min(100% - 28px, 980px); margin: auto; padding: 18px 0 46px; }
 
+    /* ✅ v8.62a — BARRE DU HAUT UNIFIÉE (menu ☰ + titre + actions ↻) */
     header {
+      position: sticky; top: 0; z-index: 50;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
-      margin-bottom: 24px;
       flex-wrap: wrap;
+      margin-bottom: 18px;
+      padding: calc(10px + var(--safe-top, 0px)) 18px 10px;
+      background: rgba(var(--rgb-veil), 0.92);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(224, 184, 74, 0.10);
     }
-
-    .brand {
-      color: var(--text-light);
-      text-decoration: none;
-      font: 700 22px var(--font-serif);
-      letter-spacing: 0.05em;
+    .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+    .menu-toggle {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 10px;
+      border: 1px solid rgba(var(--rgb-soft), 0.06); background: transparent;
+      color: var(--text-dim); cursor: pointer; transition: all 0.18s ease;
+      font-size: 15px; flex-shrink: 0;
     }
-    .brand span { color: var(--accent-bright); font-style: italic; }
+    .menu-toggle:hover {
+      border-color: rgba(224, 184, 74, 0.30); color: var(--accent-bright);
+      background: rgba(224, 184, 74, 0.05);
+    }
+    .header-divider { width: 1px; height: 20px; background: rgba(var(--rgb-soft), 0.08); flex-shrink: 0; }
+    .page-title {
+      font: 600 clamp(13px, 1.6vw, 15px) var(--font-serif);
+      color: var(--text-light); white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; min-width: 0; margin: 0;
+    }
+    .page-title i { color: var(--accent-bright); margin-right: 6px; font-size: 13px; }
 
     .header-actions {
       display: flex;
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
+    }
+    /* ✅ v8.62a — boutons icônes de la barre (rafraîchir) */
+    .header-actions button {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 10px;
+      border: 1px solid rgba(var(--rgb-soft), 0.06); background: transparent;
+      color: var(--text-dim); cursor: pointer; transition: all 0.18s ease;
+      font-size: 14px;
+    }
+    .header-actions button:hover {
+      border-color: rgba(224, 184, 74, 0.30); color: var(--accent-bright);
+      background: rgba(224, 184, 74, 0.05);
     }
 
     .connection {
@@ -1501,6 +1530,11 @@
 
     @media (max-width: 480px) {
       .shell { width: min(100% - 16px, 980px); padding: 12px 0 32px; }
+      /* ✅ v8.62a — barre du haut : sur mobile le statut de connexion
+         passe sous la barre (via wrap) pour laisser le titre respirer */
+      .connection { display: none; }
+      .header-actions { gap: 6px; }
+      .header-actions button, .menu-toggle { width: 34px; height: 34px; font-size: 13px; }
       .panel { padding: 16px; }
       h1 { font-size: 24px; }
       h2 { font-size: 20px; }
@@ -1926,13 +1960,22 @@
 <body>
   <main class="shell">
     <header>
-      <a class="brand" href="index.html">ARVEX<span>A School</span></a>
+      <div class="header-left">
+        <button class="menu-toggle" id="menuToggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="arvxSidebar">
+          <i class="fas fa-bars"></i>
+        </button>
+        <span class="header-divider" aria-hidden="true"></span>
+        <h1 class="page-title"><i class="fas fa-file-circle-check"></i> Test moi</h1>
+      </div>
       <div class="header-actions">
         <a href="exam-history.html" class="top-btn" id="historyLink">
           <i class="fas fa-history"></i>
           Historique
         </a>
         <div class="connection" id="connectionState">Vérification...</div>
+        <button id="refreshBtn" aria-label="Rafraîchir" title="Rafraîchir">
+          <i class="fas fa-sync-alt"></i>
+        </button>
       </div>
     </header>
 
@@ -2260,7 +2303,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, getIdToken, signOut } from 'firebase/auth';
 import {
-  doc, getDoc, setDoc, deleteDoc, serverTimestamp
+  doc, getDoc, setDoc, deleteDoc, serverTimestamp, getFirestore
 } from 'firebase/firestore';
 import { readCacheDoc, docSWR } from './arvexa-cache.js';
 import { requireAuth } from './auth-guard.js';
@@ -2466,6 +2509,11 @@ function showView(id) {
       var el = $(v);
       if (el) el.classList.toggle('active', v === id);
     });
+  // ✅ v8.62a — le bouton rafraîchir n'est proposé QUE sur l'écran de
+  // configuration : jamais pendant une épreuve (le rechargement
+  // perdrait le test en cours).
+  var refreshHeaderBtn = document.getElementById('refreshBtn');
+  if (refreshHeaderBtn) refreshHeaderBtn.style.display = (id === 'configView') ? '' : 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 

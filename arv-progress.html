@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié (barre du haut identique partout) --><script src="arvexa-i18n.js" defer></script>
 <script src="arvx-ai.js" defer></script><!-- ✅ v8.38 — kit IA (OCR photos, pages PDF) pour le bouton Ajouter -->
 <script src="arvexa-sync.js" defer></script><!-- ✅ v8.0 sync Firebase des progressions (par compte) -->
 <title>ARVEXA — Résumé</title>
@@ -107,6 +107,17 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   position: sticky;
 }
 .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+/* ✅ v8.62a — barre du haut unifiée : bouton menu ☰ (même style que le back) */
+.menu-toggle {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid rgba(var(--rgb-soft), 0.05); background: transparent;
+  color: var(--text-dim); transition: var(--transition); font-size: 14px; flex-shrink: 0;
+}
+.menu-toggle:hover {
+  border-color: rgba(184, 134, 11, 0.14);
+  color: var(--text-light);
+}
 .back-btn {
   display: flex; align-items: center; justify-content: center;
   width: 36px; height: 36px; border-radius: 10px;
@@ -2020,6 +2031,7 @@ main, .content-section, .block, .part, .qa-item, .qcm-item, .formula-block,
   .brand-mark { display: none; }
   .header-divider { display: none; }
   .back-btn { width: 34px; height: 34px; font-size: 13px; }
+  .menu-toggle { width: 34px; height: 34px; font-size: 13px; }
   .page-title { font-size: 14px; }
   .icon-btn { width: 34px; height: 34px; font-size: 13px; }
   .home-btn { padding: 7px 10px; font-size: 12px; }
@@ -3009,10 +3021,12 @@ select:focus-visible,
 
 <header class="header">
   <div class="header-left">
+    <button class="menu-toggle" id="menuToggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="arvxSidebar">
+      <i class="fas fa-bars"></i>
+    </button>
     <button class="back-btn hidden" id="backBtn" aria-label="Retour">
       <i class="fas fa-arrow-left"></i>
     </button>
-    <span class="brand-mark" aria-hidden="true">ARVEX<span>A School</span></span>
     <span class="header-divider" aria-hidden="true"></span>
     <h1 class="page-title" id="pageTitle">
       <span class="emoji">📓</span>

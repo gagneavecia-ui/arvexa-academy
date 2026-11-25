@@ -1205,6 +1205,9 @@
         <button id="notifBtn" aria-label="Notifications">
           <i class="fas fa-bell"></i>
         </button>
+        <button id="refreshBtn" aria-label="Rafraîchir" title="Rafraîchir">
+          <i class="fas fa-sync-alt"></i>
+        </button>
       </div>
     </header>
 
@@ -2186,6 +2189,11 @@
 
   document.getElementById('notifBtn').addEventListener('click', () => {
     window.location.href = 'notifications.html';
+  });
+
+  // ✅ v8.62a — barre du haut unifiée : bouton rafraîchir
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    window.location.reload();
   });
 
     // ═══════════════════════════════════════════════════════════════

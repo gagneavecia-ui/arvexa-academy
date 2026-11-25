@@ -1219,6 +1219,9 @@
           <svg class="icon" id="soundOnIcon"><use href="#i-volume"></use></svg>
           <svg class="icon" id="soundOffIcon" hidden><use href="#i-mute"></use></svg>
         </button>
+        <button class="header-icon" id="refreshBtn" type="button" aria-label="Rafraîchir" title="Rafraîchir">
+          <svg class="icon"><use href="#i-refresh"></use></svg>
+        </button>
         <button class="header-avatar" type="button" data-nav="progress" aria-label="Voir ma progression">∑</button>
       </div>
     </header>
@@ -3942,6 +3945,8 @@
     els.sidebarClose.addEventListener('click', closeSidebar);
     els.sidebarOverlay.addEventListener('click', closeSidebar);
     els.soundBtn.addEventListener('click', toggleSound);
+    // ✅ v8.62a — barre du haut unifiée : bouton rafraîchir
+    byId('refreshBtn').addEventListener('click', function () { window.location.reload(); });
 
     els.continueBtn.addEventListener('click', () => {
       const next = recommendedChapter();

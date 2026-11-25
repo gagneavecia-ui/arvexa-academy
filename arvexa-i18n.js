@@ -600,6 +600,7 @@
     "Toute la période": "All time",
     "Effacer tout l'historique": "Clear all history",
     "Historique": "History",
+    "Historique des tests": "Test history",
     "Historique complet": "Full history",
     "meilleure série": "best streak",
     "Il te reste": "You have",
@@ -1702,6 +1703,7 @@
 
     /* ── Ambassadeur (v8.61a — page traduite) ── */
     "ARVEXA — Ambassadeur": "ARVEXA — Ambassador",
+    "Ambassadeur": "Ambassador",
     "Ambassadeur ARVEXA": "ARVEXA Ambassador",
     "Deviens Ambassadeur": "Become an Ambassador",
     "Le programme des élèves qui font grandir l'école": "The program for students who grow the school",

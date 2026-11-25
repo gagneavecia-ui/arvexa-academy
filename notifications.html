@@ -769,6 +769,9 @@
           <span>Tout lire</span>
           <span class="count" id="unreadCountHeader">0</span>
         </button>
+        <button id="refreshBtn" aria-label="Rafraîchir" title="Rafraîchir">
+          <i class="fas fa-sync-alt"></i>
+        </button>
       </div>
     </header>
 
@@ -959,6 +962,11 @@ const markAllReadBtn = document.getElementById('markAllReadBtn');
 
 const modal = document.getElementById('notifModal');
 const modalContent = document.getElementById('notifModalContent');
+
+// ✅ v8.62a — barre du haut unifiée : bouton rafraîchir
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  window.location.reload();
+});
 
 const toastContainer = document.getElementById('toastContainer');
 

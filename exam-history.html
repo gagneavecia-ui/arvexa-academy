@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié --><script src="arvexa-i18n.js" defer></script>
   <meta name="description" content="ARVEXA School — Historique des tests">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.png" type="image/png">
@@ -83,14 +83,39 @@
 
     .shell { width: min(100% - 28px, 980px); margin: auto; padding: 18px 0 46px; }
 
+    /* ✅ v8.62a — BARRE DU HAUT UNIFIÉE (menu ☰ + titre + actions ↻) */
     header {
+      position: sticky; top: 0; z-index: 50;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
-      margin-bottom: 24px;
       flex-wrap: wrap;
+      margin-bottom: 18px;
+      padding: calc(10px + var(--safe-top, 0px)) 18px 10px;
+      background: rgba(var(--rgb-veil), 0.92);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(224, 184, 74, 0.10);
     }
+    .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+    .menu-toggle {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 10px;
+      border: 1px solid rgba(var(--rgb-soft), 0.06); background: transparent;
+      color: var(--text-dim); cursor: pointer; transition: all 0.18s ease;
+      font-size: 15px; flex-shrink: 0;
+    }
+    .menu-toggle:hover {
+      border-color: rgba(224, 184, 74, 0.30); color: var(--accent-bright);
+      background: rgba(224, 184, 74, 0.05);
+    }
+    .header-divider { width: 1px; height: 20px; background: rgba(var(--rgb-soft), 0.08); flex-shrink: 0; }
+    .page-title {
+      font: 600 clamp(13px, 1.6vw, 15px) var(--font-serif);
+      color: var(--text-light); white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; min-width: 0; margin: 0;
+    }
+    .page-title i { color: var(--accent-bright); margin-right: 6px; font-size: 13px; }
 
     .brand {
       color: var(--text-light);
@@ -105,6 +130,18 @@
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
+    }
+    /* ✅ v8.62a — boutons icônes de la barre (rafraîchir) */
+    .header-actions button {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 10px;
+      border: 1px solid rgba(var(--rgb-soft), 0.06); background: transparent;
+      color: var(--text-dim); cursor: pointer; transition: all 0.18s ease;
+      font-size: 14px;
+    }
+    .header-actions button:hover {
+      border-color: rgba(224, 184, 74, 0.30); color: var(--accent-bright);
+      background: rgba(224, 184, 74, 0.05);
     }
 
     .top-btn {
@@ -1217,12 +1254,21 @@
 
   <main class="shell">
     <header>
-      <a class="brand" href="index.html">ARVEX<span>A School</span></a>
+      <div class="header-left">
+        <button class="menu-toggle" id="menuToggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="arvxSidebar">
+          <i class="fas fa-bars"></i>
+        </button>
+        <span class="header-divider" aria-hidden="true"></span>
+        <h1 class="page-title"><i class="fas fa-clock-rotate-left"></i> Historique des tests</h1>
+      </div>
       <div class="header-actions">
         <a href="exam.html" class="top-btn">
           <i class="fas fa-file-circle-check"></i>
           Nouveau test
         </a>
+        <button id="refreshBtn" aria-label="Rafraîchir" title="Rafraîchir">
+          <i class="fas fa-sync-alt"></i>
+        </button>
       </div>
     </header>
 
@@ -1374,6 +1420,11 @@
   import { getAuth, onAuthStateChanged, getIdToken } from 'firebase/auth';
   import { getFirestore, doc, getDoc } from 'firebase/firestore';
   import { readCacheDoc, docSWR } from './arvexa-cache.js';
+
+  // ✅ v8.62a — barre du haut unifiée : bouton rafraîchir
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    window.location.reload();
+  });
 
   var firebaseConfig = {
     apiKey: 'AIzaSyDHscOXw3rLuhV6z1Cny-bdYCumqpnG7QE',

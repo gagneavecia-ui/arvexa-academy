@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-soon.js" defer></script><script src="arvexa-contact.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié --><script src="arvexa-soon.js" defer></script><script src="arvexa-contact.js"></script><script src="arvexa-i18n.js" defer></script>
   <meta name="description" content="ARVEXA School - Marketplace : packs de requêtes IA et contenus premium">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -47,30 +47,48 @@
       padding-bottom: 40px;
     }
 
-    /* ===== HEADER ===== */
-    .page-header {
+    /* ===== HEADER — UNIFIÉ v8.62a (menu ☰ + titre + actions ↻, modèle abonnement) ===== */
+    .header {
       position: sticky; top: 0; z-index: 100;
-      display: flex; align-items: center; gap: 14px;
-      padding: calc(env(safe-area-inset-top, 0px) + 14px) 18px 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
       background: rgba(10, 10, 10, 0.92);
       backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid rgba(224,184,74,.10);
+      min-height: 60px;
     }
-    .back-btn {
-      width: 40px; height: 40px; border-radius: 12px;
+    .header .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+    .header .menu-toggle {
+      width: 38px; height: 38px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      background: rgba(255,255,255,0.05); color: var(--text-light);
-      border: 1px solid rgba(255,255,255,0.08);
-      text-decoration: none; font-size: 16px; flex-shrink: 0;
-      transition: background .2s;
+      background: transparent; color: var(--text-dim);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 15px; flex-shrink: 0; transition: all .18s ease;
     }
-    .back-btn:active { background: rgba(255,255,255,0.12); }
-    .page-title { flex: 1; min-width: 0; }
-    .page-title h1 {
+    .header .menu-toggle:hover {
+      border-color: rgba(224,184,74,.30); color: var(--accent-bright);
+      background: rgba(224,184,74,.05);
+    }
+    .header .header-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.08); flex-shrink: 0; }
+    .header .page-title {
       font-family: 'Playfair Display', serif;
-      font-size: 21px; font-weight: 700; letter-spacing: .3px;
+      font-size: clamp(14px, 1.8vw, 16px); font-weight: 700; letter-spacing: -.01em;
+      color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      min-width: 0; margin: 0;
     }
-    .page-title p { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; }
+    .header .page-title i { color: var(--accent-bright); margin-right: 6px; font-size: 13px; }
+    .header .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .header .header-actions button {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; color: var(--text-dim);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 14px; transition: all .18s ease;
+    }
+    .header .header-actions button:hover {
+      border-color: rgba(224,184,74,.30); color: var(--accent-bright);
+      background: rgba(224,184,74,.05);
+    }
     .credits-chip {
       display: flex; align-items: center; gap: 6px;
       padding: 8px 13px; border-radius: 999px;
@@ -298,8 +316,9 @@
        Les éléments pilotés par variables s'adaptent déjà via arvexa-ui.css.
        ═══════════════════════════════════════════════════════════════ */
     html[data-theme="light"] body { background: radial-gradient(ellipse at top, #FFFFFF 0%, #F5F1E8 58%); }
-    html[data-theme="light"] .page-header { background: rgba(255,255,255,.94); border-bottom: 1px solid rgba(184,134,11,.24); box-shadow: 0 4px 18px rgba(122,90,8,.08); }
-    html[data-theme="light"] .back-btn { background: rgba(184,134,11,.09); border: 1px solid rgba(184,134,11,.30); color: #5A4A10; }
+    html[data-theme="light"] .header { background: rgba(255,255,255,.94); border-bottom: 1px solid rgba(184,134,11,.24); box-shadow: 0 4px 18px rgba(122,90,8,.08); }
+    html[data-theme="light"] .header .menu-toggle, html[data-theme="light"] .header .header-actions button { background: transparent; border: 1px solid rgba(184,134,11,.30); color: #5A4A10; }
+    html[data-theme="light"] .header .header-divider { background: rgba(184,134,11,.22); }
     html[data-theme="light"] .credits-chip { background: rgba(184,134,11,.10); border: 1px solid rgba(184,134,11,.32); color: #5A4A10; }
     html[data-theme="light"] .status-banner.success { background: rgba(46,125,50,.10); border: 1px solid rgba(46,125,50,.38); color: #1B5E20; }
     html[data-theme="light"] .status-banner.cancel { background: rgba(192,57,43,.08); border: 1px solid rgba(192,57,43,.32); color: #8C2318; }
@@ -360,13 +379,20 @@
 })();
 </script>
 
-  <header class="page-header">
-    <a href="index.html" class="back-btn" aria-label="Retour"><i class="fas fa-arrow-left"></i></a>
-    <div class="page-title">
-      <h1>Marketplace</h1>
-      <p>Recharge tes requêtes IA ⚡</p>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-toggle" id="menuToggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="arvxSidebar">
+        <i class="fas fa-bars"></i>
+      </button>
+      <span class="header-divider" aria-hidden="true"></span>
+      <h1 class="page-title"><i class="fas fa-store"></i> Marketplace</h1>
     </div>
-    <div class="credits-chip" id="creditsChip">⚡ <span id="creditsChipValue">—</span></div>
+    <div class="header-actions">
+      <div class="credits-chip" id="creditsChip">⚡ <span id="creditsChipValue">—</span></div>
+      <button id="refreshBtn" aria-label="Rafraîchir" title="Rafraîchir">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
   </header>
 
   <div class="container">
