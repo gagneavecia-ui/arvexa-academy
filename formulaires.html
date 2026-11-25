@@ -805,6 +805,20 @@
 (function(){
   var t0 = Date.now();
   var MIN_MS = 350; /* jamais de clignotement sur une page très rapide */
+  /* ✅ v8.67a — VÉRIFICATION AVANT DISPARITION (demande du propriétaire) :
+     le cache ne se lève que si le contenu à voir est réellement peint.
+     __arvexaBootReady(fn) : la page déclare son test de complétude ;
+     sinon test générique (texte visible + éléments structurants). */
+  var readyFn = null;
+  window.__arvexaBootReady = function (fn) { readyFn = typeof fn === 'function' ? fn : null; };
+  function pageLooksReady(){
+    if (readyFn) { try { return !!readyFn(); } catch (e) { return true; } }
+    try {
+      var txt = (document.body.innerText || '').replace(/\s+/g, ' ').trim();
+      var n = document.querySelectorAll('button,a,section,article,ul,ol,li,img,input,select,textarea,h1,h2,h3,p').length;
+      return txt.length >= 80 && n >= 12;
+    } catch (e) { return true; }
+  }
   function hideBoot(){
     var el = document.getElementById('bootLoader');
     if (!el || el.dataset.gone === '1') return;
@@ -814,7 +828,20 @@
       setTimeout(function(){ try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {} }, 500);
     }, Math.max(0, MIN_MS - (Date.now() - t0)));
   }
-  window.__arvexaBootHide = hideBoot;
+  var liftTimer = null;
+  function verifiedHide(){
+    var el = document.getElementById('bootLoader');
+    if (!el || el.dataset.gone === '1') return;
+    if (pageLooksReady()) { hideBoot(); return; }
+    if (liftTimer) return;
+    var tries = 0;
+    liftTimer = setInterval(function(){
+      tries++;
+      if (pageLooksReady() || tries >= 36) { clearInterval(liftTimer); liftTimer = null; hideBoot(); }
+    }, 250);
+  }
+  window.__arvexaBootHide = verifiedHide; /* sortie demandée par la page = VÉRIFIÉE */
+  window.__arvexaBootForce = hideBoot;    /* sortie immédiate (filets) */
   /* Filet : jamais enfermé plus de 10 s (page lente, module en échec). */
   setTimeout(hideBoot, 10000);
   /* Une modale qui s'ouvre pendant l'amorçage lève le cache immédiatement —
