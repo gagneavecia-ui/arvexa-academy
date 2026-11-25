@@ -3407,7 +3407,20 @@ function showToast(message, type = 'info', duration = 3000) {
 }
 
 function showLoadingState(el, text = 'Chargement...') {
-  el.innerHTML = `<div class="loading-state"><div class="loading-spinner"></div><p>${escapeHtml(text)}</p></div>`;
+  /* ✅ v8.71a — plus aucun spinner : un squelette fidèle inline (la vraie
+     structure de la vue) pendant que les données arrivent. */
+  const ligne = '<span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:11px;width:58%"></span><span class="b" style="height:9px;width:38%"></span></span>';
+  const carte = '<span class="ico" style="width:38px;height:38px;border-radius:12px"></span>' + ligne;
+  let html = '<div class="arv-sk arv-sk-arvp" style="max-width:none;padding:0;gap:10px">';
+  if (String(el.id || '').indexOf('notebooks') !== -1) {
+    html += '<div class="c stat"><span class="b" style="height:12px;width:40%"></span><div class="metrics"><span class="b"></span><span class="b"></span><span class="b"></span></div><span class="b" style="height:90px;border-radius:10px"></span></div>'
+      + '<span class="b" style="height:46px;border-radius:14px"></span>'
+      + '<div class="subjects">' + ('<div class="c scard">' + carte + '</div>').repeat(3) + '</div>';
+  } else {
+    html += ('<div class="c row">' + carte + '</div>').repeat(4);
+  }
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 function showGeneratingState(el, profile) {

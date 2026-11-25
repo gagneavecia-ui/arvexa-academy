@@ -691,7 +691,7 @@
   </header>
 
   <div class="container" id="mainArea">
-    <div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement du programme…</div>
+    <div class="arv-sk arv-sk-amb" style="max-width:none;padding:0;gap:10px"><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:55%"></span><span class="b" style="height:9px;width:35%"></span></span></div><span class="b" style="height:9px;width:80%"></span></div><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:60%"></span><span class="b" style="height:9px;width:32%"></span></span></div><span class="b" style="height:9px;width:76%"></span></div><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:26px;height:26px;border-radius:8px"></span><span class="b" style="height:9px;flex:1"></span></div></div>
   </div>
 
 <script type="importmap">
@@ -1233,7 +1233,7 @@
       </div>
       <div class="promo-section">
         <div class="promo-sec-title"><i class="fas fa-people-group"></i> Gérer ma promo</div>
-        <div id="promoBody"><div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement de ton espace…</div></div>
+        <div id="promoBody"><div class="arv-sk arv-sk-amb" style="max-width:none;padding:0;gap:10px"><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:55%"></span><span class="b" style="height:9px;width:35%"></span></span></div><span class="b" style="height:9px;width:80%"></span></div><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:60%"></span><span class="b" style="height:9px;width:32%"></span></span></div><span class="b" style="height:9px;width:76%"></span></div><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:26px;height:26px;border-radius:8px"></span><span class="b" style="height:9px;flex:1"></span></div></div></div>
       </div>
       <a href="marketplace.html" class="amb-cta" style="margin-top:22px">
         <i class="fas fa-bolt crown"></i>
@@ -1273,7 +1273,7 @@
   async function loadPromoSection(user) {
     const body = $('promoBody');
     if (!body) return;
-    body.innerHTML = '<div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement de ton espace…</div>';
+    body.innerHTML = '<div class="arv-sk arv-sk-amb" style="max-width:none;padding:0;gap:10px"><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:55%"></span><span class="b" style="height:9px;width:35%"></span></span></div><span class="b" style="height:9px;width:80%"></span></div><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:60%"></span><span class="b" style="height:9px;width:32%"></span></span></div><span class="b" style="height:9px;width:76%"></span></div><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:26px;height:26px;border-radius:8px"></span><span class="b" style="height:9px;flex:1"></span></div></div>';
     let uData = {};
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
@@ -1487,7 +1487,7 @@
   let promoMode = 'message';
 
   async function renderPromoOwner(body, user, promoId) {
-    body.innerHTML = '<div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement de ton espace…</div>';
+    body.innerHTML = '<div class="arv-sk arv-sk-amb" style="max-width:none;padding:0;gap:10px"><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:55%"></span><span class="b" style="height:9px;width:35%"></span></span></div><span class="b" style="height:9px;width:80%"></span></div><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:60%"></span><span class="b" style="height:9px;width:32%"></span></span></div><span class="b" style="height:9px;width:76%"></span></div><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:26px;height:26px;border-radius:8px"></span><span class="b" style="height:9px;flex:1"></span></div></div>';
     let promoSnap;
     try {
       promoSnap = await getDoc(doc(db, 'promos', promoId));
@@ -1572,12 +1572,12 @@
 
       <div class="promo-feed">
         <div class="promo-sec-h"><i class="fas fa-stream"></i> Fil de la promo</div>
-        <div id="feedArea"><div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement…</div></div>
+        <div id="feedArea"><div class="arv-sk arv-sk-amb" style="max-width:none;padding:0;gap:10px"><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:55%"></span><span class="b" style="height:9px;width:35%"></span></span></div><span class="b" style="height:9px;width:80%"></span></div><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:60%"></span><span class="b" style="height:9px;width:32%"></span></span></div><span class="b" style="height:9px;width:76%"></span></div><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:26px;height:26px;border-radius:8px"></span><span class="b" style="height:9px;flex:1"></span></div></div></div>
       </div>
 
       <div class="promo-feed">
         <div class="promo-sec-h"><i class="fas fa-user-group"></i> Membres (<span id="memberCountLbl">${members}</span>)</div>
-        <div id="memberArea"><div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement…</div></div>
+        <div id="memberArea"><div class="arv-sk arv-sk-amb" style="max-width:none;padding:0;gap:10px"><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:55%"></span><span class="b" style="height:9px;width:35%"></span></span></div><span class="b" style="height:9px;width:80%"></span></div><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:60%"></span><span class="b" style="height:9px;width:32%"></span></span></div><span class="b" style="height:9px;width:76%"></span></div><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:26px;height:26px;border-radius:8px"></span><span class="b" style="height:9px;flex:1"></span></div></div></div>
       </div>
 
       <button class="ghost-btn danger" id="leavePromo" style="margin-top:14px"><i class="fas fa-door-open"></i> Dissoudre cette promo</button>`;
@@ -1877,7 +1877,7 @@
 
   // ─── Vue membre INLINE (ambassadeur membre d'une autre promo) ───
   async function renderPromoMemberInline(body, user, promoId, userName) {
-    body.innerHTML = '<div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement du fil…</div>';
+    body.innerHTML = '<div class="arv-sk arv-sk-amb" style="max-width:none;padding:0;gap:10px"><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:55%"></span><span class="b" style="height:9px;width:35%"></span></span></div><span class="b" style="height:9px;width:80%"></span></div><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:60%"></span><span class="b" style="height:9px;width:32%"></span></span></div><span class="b" style="height:9px;width:76%"></span></div><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:26px;height:26px;border-radius:8px"></span><span class="b" style="height:9px;flex:1"></span></div></div>';
     let promo = null;
     try {
       const snap = await getDoc(doc(db, 'promos', promoId));
@@ -1891,7 +1891,7 @@
       </div>
       <div class="promo-feed">
         <div class="promo-sec-h"><i class="fas fa-stream"></i> Fil de la promo</div>
-        <div id="feedArea"><div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement…</div></div>
+        <div id="feedArea"><div class="arv-sk arv-sk-amb" style="max-width:none;padding:0;gap:10px"><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:55%"></span><span class="b" style="height:9px;width:35%"></span></span></div><span class="b" style="height:9px;width:80%"></span></div><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:60%"></span><span class="b" style="height:9px;width:32%"></span></span></div><span class="b" style="height:9px;width:76%"></span></div><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:26px;height:26px;border-radius:8px"></span><span class="b" style="height:9px;flex:1"></span></div></div></div>
       </div>
       <div class="card">
         <h3>Invite tes camarades</h3>
@@ -2037,7 +2037,7 @@
       </div>
       <div class="promo-feed">
         <div class="promo-sec-h"><i class="fas fa-stream"></i> Fil de la promo</div>
-        <div id="feedArea"><div class="loading-block"><i class="fas fa-circle-notch"></i><br>Chargement…</div></div>
+        <div id="feedArea"><div class="arv-sk arv-sk-amb" style="max-width:none;padding:0;gap:10px"><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:55%"></span><span class="b" style="height:9px;width:35%"></span></span></div><span class="b" style="height:9px;width:80%"></span></div><div class="c" style="border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="b" style="height:10px;width:60%"></span><span class="b" style="height:9px;width:32%"></span></span></div><span class="b" style="height:9px;width:76%"></span></div><div style="display:flex;gap:10px;align-items:center"><span class="ico" style="width:26px;height:26px;border-radius:8px"></span><span class="b" style="height:9px;flex:1"></span></div></div></div>
       </div>
       <div class="card">
         <h3>Invite tes camarades</h3>

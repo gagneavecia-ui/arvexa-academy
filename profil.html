@@ -737,25 +737,6 @@
     /* ============================================================
        SKELETON
        ============================================================ */
-    .skeleton {
-      background: linear-gradient(
-        90deg,
-        rgba(var(--rgb-soft), 0.03) 25%,
-        rgba(var(--rgb-soft), 0.06) 50%,
-        rgba(var(--rgb-soft), 0.03) 75%
-      );
-      background-size: 200% 100%;
-      animation: skeletonShimmer 1.6s infinite;
-      border-radius: 10px;
-    }
-    @keyframes skeletonShimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-    .skeleton-avatar { width: 110px; height: 110px; border-radius: 50%; }
-    .skeleton-text { height: 16px; border-radius: 8px; margin: 6px 0; }
-    .skeleton-row { height: 50px; border-radius: 12px; }
-    .skeleton-badge { height: 70px; border-radius: 12px; }
 
     /* ============================================================
        MODALE DE CONFIRMATION — statique (plus d'animation)
@@ -1422,26 +1403,7 @@
     <div class="container">
 
       <!-- SKELETON -->
-      <div id="skeletonLoading">
-        <div class="profile-card">
-          <div class="profile-cover" style="background:rgba(var(--rgb-soft), 0.02);"></div>
-          <div class="profile-avatar-section">
-            <div class="skeleton skeleton-avatar"></div>
-            <div class="skeleton skeleton-text" style="width:150px;margin-top:10px;"></div>
-            <div class="skeleton skeleton-text" style="width:200px;"></div>
-          </div>
-          <div style="padding:0 20px 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-            <div class="skeleton skeleton-row"></div>
-            <div class="skeleton skeleton-row"></div>
-            <div class="skeleton skeleton-row"></div>
-          </div>
-          <div style="padding:0 20px 12px;display:flex;gap:6px;flex-wrap:wrap;">
-            <div class="skeleton skeleton-badge" style="width:80px;"></div>
-            <div class="skeleton skeleton-badge" style="width:80px;"></div>
-            <div class="skeleton skeleton-badge" style="width:80px;"></div>
-          </div>
-        </div>
-      </div>
+      
 
       <!-- CONTENU -->
       <div id="dynamicContent" style="display:none;">
@@ -1700,7 +1662,6 @@
   // ================================================================
   // DOM
   // ================================================================
-  const skeletonLoading = document.getElementById('skeletonLoading');
   const dynamicContent = document.getElementById('dynamicContent');
 
   const userAvatar = document.getElementById('userAvatar');
@@ -2066,7 +2027,6 @@
     // Badges (remplis par paintResumeStats — mêmes seuils que l'accueil)
 
     // Afficher
-    skeletonLoading.style.display = 'none';
     dynamicContent.style.display = 'block';
     // ✅ v8.66a — le profil est peint → le cache de chargement se lève.
     try { if (window.ARVSkel) ARVSkel.settled('profil-user'); } catch (e) {}
@@ -2114,8 +2074,7 @@
         if (cached) {
           renderProfile(cached);
         } else {
-          skeletonLoading.style.display = 'none';
-          dynamicContent.style.display = 'block';
+                dynamicContent.style.display = 'block';
         }
       }
     );

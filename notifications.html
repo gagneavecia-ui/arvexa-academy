@@ -1561,7 +1561,17 @@ filtersEl.querySelectorAll('.filter-btn').forEach(btn => {
    (première peinture incluse, liste vide comprise). */
 (function () {
   const _rn = renderNotifications;
-  renderNotifications = function () { _rn(); try { if (window.ARVSkel) ARVSkel.settled('notifs'); } catch (e) {} try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {} };
+  renderNotifications = function () {
+    /* ✅ v8.71a — un seul changement visuel : si le re-rendu (onSnapshot) porte
+       EXACTEMENT les mêmes données que ce qui est déjà peint, on ne touche à
+       RIEN — plus de seconde « passe de squelette » ni de re-animation. */
+    try {
+      const sig = allNotifications.map(function (n) { return n.id + ':' + (n.read ? 1 : 0); }).join('|') + '#' + currentFilter;
+      const el = document.getElementById('notifList');
+      if (window.__ARV_notifSig === sig && el && el.children.length) return;
+      window.__ARV_notifSig = sig;
+    } catch (e) {}
+    _rn(); try { if (window.ARVSkel) ARVSkel.settled('notifs'); } catch (e) {} try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {} };
 })();
 
 // ================================================================

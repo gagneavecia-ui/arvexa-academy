@@ -1177,7 +1177,7 @@
 
     <!-- ===== CARDS VIEW ===== -->
     <div class="cards-view" id="cardsView">
-      <div class="loading-state"><div class="spinner"></div><p>Chargement...</p></div>
+      <div class="arv-sk arv-sk-chap" style="max-width:none;padding:0;gap:10px"><div class="c part"><span class="ico"></span><span style="flex:1;display:flex;flex-direction:column;gap:7px"><span class="b" style="height:12px;width:58%"></span><span class="b" style="height:9px;width:42%"></span></span></div><div class="c part"><span class="ico"></span><span style="flex:1;display:flex;flex-direction:column;gap:7px"><span class="b" style="height:12px;width:52%"></span><span class="b" style="height:9px;width:46%"></span></span></div><div class="c part"><span class="ico"></span><span style="flex:1;display:flex;flex-direction:column;gap:7px"><span class="b" style="height:12px;width:60%"></span><span class="b" style="height:9px;width:38%"></span></span></div><div class="c part"><span class="ico"></span><span style="flex:1;display:flex;flex-direction:column;gap:7px"><span class="b" style="height:12px;width:48%"></span><span class="b" style="height:9px;width:44%"></span></span></div></div>
     </div>
 
   </main>
@@ -1573,7 +1573,9 @@
 function loadManifest() {
   window.ARVSkel && ARVSkel.gate('manifest');
   const container = document.getElementById('cardsView');
-  container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Chargement...</p></div>';
+container.innerHTML = '<div class="arv-sk arv-sk-chap" style="max-width:none;padding:0;gap:10px">'
+    + '<div class="c part"><span class="ico"></span><span style="flex:1;display:flex;flex-direction:column;gap:7px"><span class="b" style="height:12px;width:58%"></span><span class="b" style="height:9px;width:42%"></span></span></div>'.repeat(4)
+    + '</div>';
 
   // ⚡ Charger le fichier unique de la matière
   const manifestPath = 'cours/' + subjectKey + '.json';

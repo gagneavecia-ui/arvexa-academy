@@ -307,6 +307,15 @@
     /* ============================================================
        ÉTATS — chargement
        ============================================================ */
+    /* ✅ v8.71a — squelette de contenu inline (remplace le spinner) */
+    .arv-lsk { display: flex; flex-direction: column; gap: 12px; padding: 8px 0 30px; }
+    .arv-lsk-t { position: relative; overflow: hidden; height: 12px; border-radius: 7px; background: rgba(212,175,55,.10); }
+    .arv-lsk-img { position: relative; overflow: hidden; height: 180px; border-radius: 14px; background: rgba(212,175,55,.06); border: 1px solid rgba(212,175,55,.10); }
+    .arv-lsk-t::after, .arv-lsk-img::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(224,184,74,.15), transparent); animation: arvLskShimmer 1.5s ease-in-out infinite; }
+    @keyframes arvLskShimmer { to { transform: translateX(100%); } }
+    html[data-theme="light"] .arv-lsk-t { background: rgba(184,134,11,.13); }
+    html[data-theme="light"] .arv-lsk-img { background: rgba(184,134,11,.06); border-color: rgba(184,134,11,.15); }
+    @media (prefers-reduced-motion: reduce) { .arv-lsk-t::after, .arv-lsk-img::after { animation: none; } }
     .loading-state {
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
@@ -2100,10 +2109,7 @@
 
   <div class="content-wrapper" id="contentWrapper">
     <div id="contentBody">
-      <div class="loading-state">
-        <div class="spinner"></div>
-        <p>Chargement du contenu...</p>
-      </div>
+<div class="arv-lsk"><span class="arv-lsk-t" style="width:60%"></span><span class="arv-lsk-t" style="width:92%"></span><span class="arv-lsk-t" style="width:85%"></span><span class="arv-lsk-t" style="width:88%"></span><span class="arv-lsk-img"></span><span class="arv-lsk-t" style="width:90%"></span><span class="arv-lsk-t" style="width:78%"></span><span class="arv-lsk-t" style="width:64%"></span></div>
     </div>
 
     <div class="nav-bar" id="navBar">
@@ -2803,10 +2809,7 @@ function loadContent() {
   const manifestPath = `cours/${subject}.json`;
 
   contentBody.innerHTML = `
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <p>Chargement du contenu...</p>
-    </div>
+<div class="arv-lsk"><span class="arv-lsk-t" style="width:60%"></span><span class="arv-lsk-t" style="width:92%"></span><span class="arv-lsk-t" style="width:85%"></span><span class="arv-lsk-t" style="width:88%"></span><span class="arv-lsk-img"></span><span class="arv-lsk-t" style="width:90%"></span><span class="arv-lsk-t" style="width:78%"></span><span class="arv-lsk-t" style="width:64%"></span></div>
   `;
 
   fetch(manifestPath)

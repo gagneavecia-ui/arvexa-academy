@@ -1344,44 +1344,30 @@
     }
     #appSplash.on { opacity: 1; }
     #appSplash.hide { opacity: 0; pointer-events: none; }
-    .splash-inner { display: flex; flex-direction: column; align-items: center; gap: 18px; }
-    .splash-ring {
-      position: relative; width: 72px; height: 72px; border-radius: 50%;
-      border: 2px solid rgba(212, 175, 55, 0.15);
-      border-top-color: var(--accent-bright);
-      animation: splashSpin 1s linear infinite;
-    }
-    .splash-word {
-      font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700;
-      color: #F5EFE0; letter-spacing: 2px;
-    }
-    .splash-word em { color: var(--accent-bright); font-style: italic; }
-    /* ✅ v8.67a — modèle UNIFORME avec les 19 pages (cache arv-boot v8.66a) :
-       contre-anneau doré + barre shimmer + libellé, mêmes valeurs. */
-    .splash-ring::after {
-      content: ''; position: absolute; inset: 9px; border-radius: 50%;
-      border: 2px solid rgba(212, 175, 55, 0.08);
-      border-bottom-color: rgba(212, 175, 55, 0.45);
-      animation: splashSpinRev 1.4s linear infinite;
-    }
-    @keyframes splashSpinRev { to { transform: rotate(-360deg); } }
-    .splash-bar {
-      width: 130px; height: 2px; border-radius: 2px;
-      background: rgba(212, 175, 55, 0.14); overflow: hidden; position: relative;
-    }
-    .splash-bar::after {
-      content: ''; position: absolute; top: 0; left: -40%; width: 40%; height: 100%;
-      background: linear-gradient(90deg, transparent, #D4AF37, transparent);
-      animation: splashShimmer 1.3s ease-in-out infinite;
-    }
-    @keyframes splashShimmer { to { left: 100%; } }
-    .splash-label { font-size: 12.5px; font-weight: 600; letter-spacing: .02em; color: rgba(236, 231, 220, 0.85); }
-    html[data-theme="light"] .splash-word { color: #3A3428; }
+    /* ✅ v8.71a — SQUELETTE FIDÈLE DE L'ACCUEIL (inline, implanté dans la page) :
+       miroir de la structure réelle (header, héros compte à rebours, parcours,
+       outils 3×2, réalisations 9 badges, ambassadeur, avis ; sidebar ≥768px).
+       Portes de données v8.51a conservées : le squelette reste tant que les
+       données ne sont pas peintes ; retour dans la session = instantané. */
+    .splash-inner { display: flex; align-items: flex-start; justify-content: center; width: 100%; height: 100%; overflow: hidden; }
+    .splash-skel { display: flex; align-items: flex-start; gap: 22px; width: min(100% - 24px, 1240px); margin: auto; padding: 14px 0 40px; box-sizing: border-box; }
+    .sk-side { display: none; }
+    .sk-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+    .sk-bar { position: relative; overflow: hidden; border-radius: 8px; background: rgba(212,175,55,.10); }
+    .sk-card { position: relative; overflow: hidden; border: 1px solid rgba(212,175,55,.10); background: rgba(212,175,55,.05); border-radius: 20px; }
+    .sk-bar::after, .sk-card::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(224,184,74,.15), transparent); animation: splashShimmer 1.5s ease-in-out infinite; }
+    @keyframes splashShimmer { to { transform: translateX(100%); } }
+    .splash-label { font-size: 12.5px; font-weight: 600; letter-spacing: .02em; color: rgba(236, 231, 220, 0.85); text-align: center; margin-top: 4px; }
+    html[data-theme="light"] .sk-bar { background: rgba(184,134,11,.13); }
+    html[data-theme="light"] .sk-card { background: rgba(184,134,11,.06); border-color: rgba(184,134,11,.15); }
     html[data-theme="light"] .splash-label { color: rgba(80, 72, 52, 0.8); }
+    @media (min-width: 768px) {
+      .sk-side { display: flex; flex-direction: column; gap: 12px; width: 248px; flex-shrink: 0; padding: 18px 14px; border-radius: 18px; border: 1px solid rgba(212,175,55,.10); background: rgba(212,175,55,.05); box-sizing: border-box; }
+    }
     /* ✅ v8.67a — retours dans la session : JAMAIS d'écran de chargement
        (la marque .arv-return est posée avant la 1ʳᵉ peinture par le <head>). */
     html.arv-return #appSplash { opacity: 0; visibility: hidden; pointer-events: none; animation: none; }
-    @media (prefers-reduced-motion: reduce) { .splash-ring, .splash-ring::after { animation-duration: 1.8s; } .splash-bar::after { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .sk-bar::after, .sk-card::after { animation: none; } }
     @keyframes splashSpin { to { transform: rotate(360deg); } }
 
     /* Contenu « en dur » : caché jusqu'à la restauration instantanée
@@ -1435,10 +1421,94 @@
        ============================================================ -->
   <div id="appSplash" aria-hidden="true">
     <div class="splash-inner">
-      <span class="splash-ring"></span>
-      <div class="splash-word">ARVEXA <em>School</em></div>
-      <span class="splash-bar" aria-hidden="true"></span>
-      <div class="splash-label">Chargement...</div>
+      <div class="splash-skel">
+        <aside class="sk-side">
+          <span class="sk-bar" style="height:20px;width:55%;border-radius:8px;"></span>
+          <span class="sk-bar" style="height:12px;width:88%;"></span>
+          <span class="sk-bar" style="height:12px;width:80%;"></span>
+          <span class="sk-bar" style="height:12px;width:84%;"></span>
+          <span class="sk-bar" style="height:12px;width:76%;"></span>
+          <span class="sk-bar" style="height:12px;width:82%;"></span>
+          <span class="sk-bar" style="height:12px;width:70%;"></span>
+          <div style="margin-top:auto;display:flex;gap:10px;align-items:center;">
+            <span class="sk-bar" style="width:40px;height:40px;border-radius:50%;flex-shrink:0;"></span>
+            <span style="flex:1;display:flex;flex-direction:column;gap:6px;">
+              <span class="sk-bar" style="height:10px;width:70%;"></span>
+              <span class="sk-bar" style="height:9px;width:50%;"></span>
+            </span>
+          </div>
+        </aside>
+        <div class="sk-main">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="sk-bar" style="width:36px;height:36px;border-radius:11px;flex-shrink:0;"></span>
+            <span class="sk-bar" style="height:14px;width:42%;"></span>
+            <span style="margin-left:auto;display:flex;gap:8px;">
+              <span class="sk-bar" style="width:36px;height:36px;border-radius:50%;"></span>
+              <span class="sk-bar" style="width:36px;height:36px;border-radius:50%;"></span>
+              <span class="sk-bar" style="width:36px;height:36px;border-radius:50%;"></span>
+            </span>
+          </div>
+          <div class="sk-card" style="padding:24px 20px;display:flex;flex-direction:column;gap:10px;">
+            <span class="sk-bar" style="height:10px;width:30%;"></span>
+            <span class="sk-bar" style="height:26px;width:55%;border-radius:10px;"></span>
+            <span class="sk-bar" style="height:10px;width:18%;"></span>
+            <span class="sk-bar" style="height:12px;width:40%;margin-top:6px;"></span>
+            <span class="sk-bar" style="height:10px;width:60%;"></span>
+            <span class="sk-bar" style="height:8px;width:100%;border-radius:99px;margin-top:4px;"></span>
+            <span class="sk-bar" style="height:10px;width:78%;margin-top:4px;"></span>
+            <span class="sk-bar" style="height:10px;width:55%;"></span>
+          </div>
+          <div class="sk-card" style="padding:18px 20px;display:flex;flex-direction:column;gap:9px;">
+            <span class="sk-bar" style="height:12px;width:38%;"></span>
+            <span class="sk-bar" style="height:11px;width:70%;"></span>
+            <div style="display:flex;gap:8px;">
+              <span class="sk-bar" style="height:46px;flex:1;border-radius:12px;"></span>
+              <span class="sk-bar" style="height:46px;flex:1;border-radius:12px;"></span>
+              <span class="sk-bar" style="height:46px;flex:1;border-radius:12px;"></span>
+            </div>
+            <span class="sk-bar" style="height:8px;width:100%;border-radius:99px;"></span>
+            <span class="sk-bar" style="height:9px;width:50%;"></span>
+            <span class="sk-bar" style="height:9px;width:48%;"></span>
+            <span class="sk-bar" style="height:32px;width:42%;border-radius:999px;"></span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <span class="sk-bar" style="height:12px;width:35%;"></span>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+              <span class="sk-card" style="height:88px;"></span><span class="sk-card" style="height:88px;"></span><span class="sk-card" style="height:88px;"></span>
+              <span class="sk-card" style="height:88px;"></span><span class="sk-card" style="height:88px;"></span><span class="sk-card" style="height:88px;"></span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <span class="sk-bar" style="height:12px;width:30%;"></span>
+            <div style="display:flex;gap:10px;overflow:hidden;">
+              <span class="sk-bar" style="width:58px;height:58px;border-radius:50%;flex-shrink:0;"></span>
+              <span class="sk-bar" style="width:58px;height:58px;border-radius:50%;flex-shrink:0;"></span>
+              <span class="sk-bar" style="width:58px;height:58px;border-radius:50%;flex-shrink:0;"></span>
+              <span class="sk-bar" style="width:58px;height:58px;border-radius:50%;flex-shrink:0;"></span>
+              <span class="sk-bar" style="width:58px;height:58px;border-radius:50%;flex-shrink:0;"></span>
+              <span class="sk-bar" style="width:58px;height:58px;border-radius:50%;flex-shrink:0;"></span>
+              <span class="sk-bar" style="width:58px;height:58px;border-radius:50%;flex-shrink:0;"></span>
+              <span class="sk-bar" style="width:58px;height:58px;border-radius:50%;flex-shrink:0;"></span>
+              <span class="sk-bar" style="width:58px;height:58px;border-radius:50%;flex-shrink:0;"></span>
+            </div>
+          </div>
+          <div class="sk-card" style="padding:16px 18px;display:flex;gap:14px;align-items:center;">
+            <span class="sk-bar" style="width:46px;height:46px;border-radius:14px;flex-shrink:0;"></span>
+            <span style="flex:1;display:flex;flex-direction:column;gap:7px;">
+              <span class="sk-bar" style="height:12px;width:55%;"></span>
+              <span class="sk-bar" style="height:10px;width:80%;"></span>
+            </span>
+            <span class="sk-bar" style="height:34px;width:110px;border-radius:999px;flex-shrink:0;"></span>
+          </div>
+          <div class="sk-card" style="padding:16px 18px;display:flex;flex-direction:column;gap:8px;">
+            <span class="sk-bar" style="height:22px;width:96px;border-radius:999px;"></span>
+            <span class="sk-bar" style="height:14px;width:50%;"></span>
+            <span class="sk-bar" style="height:10px;width:85%;"></span>
+            <span class="sk-bar" style="height:36px;width:60%;border-radius:999px;margin-top:4px;"></span>
+          </div>
+          <div class="splash-label">Chargement…</div>
+        </div>
+      </div>
     </div>
   </div>
   <script>

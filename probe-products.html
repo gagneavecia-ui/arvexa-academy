@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Sonde</title></head><body>
+<pre id="out">etape 0</pre>
+<script type="module">
+const out = document.getElementById('out');
+try {
+  const appMod = await import('https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js');
+  const fsMod = await import('https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js');
+  const app = appMod.initializeApp({ apiKey: "AIzaSyBhHd5ZwRpPXGsPnJBBJnKVzpfLQghfG-A", authDomain: "arvexa-academy.firebaseapp.com", projectId: "arvexa-academy", storageBucket: "arvexa-academy.appspot.com", messagingSenderId: "685051406477", appId: "1:685051406477:web:9bfb8dcdb22bcfbd2e5f21" });
+  const db = fsMod.getFirestore(app);
+  const lines = [];
+  try {
+    const s1 = await fsMod.getDocs(fsMod.query(fsMod.collection(db,'products'), fsMod.where('type','==','credits'), fsMod.where('status','==','approved')));
+    lines.push('FILTRÉE: ' + s1.size + ' docs');
+    s1.forEach(d => lines.push('  ' + d.id + ' | ' + (d.data().creditPage||'-') + ' | ' + (d.data().name||'').slice(0,30)));
+  } catch (e) { lines.push('FILTRÉE ERREUR: ' + (e.code||e.message)); }
+  try {
+    const s2 = await fsMod.getDocs(fsMod.collection(db,'products'));
+    lines.push('BRUTE: ' + s2.size + ' docs');
+    s2.forEach(d => lines.push('  ' + d.id + ' | ' + d.data().type + ' | ' + d.data().status));
+  } catch (e) { lines.push('BRUTE ERREUR: ' + (e.code||e.message)); }
+  out.textContent = lines.join('\n');
+} catch (e) { out.textContent = 'ERREUR: ' + (e && e.message || e); }
+</script></body></html>
