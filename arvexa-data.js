@@ -34,6 +34,9 @@
       || document.getElementById('mainArea')
       || document.getElementById('content')
       || document.querySelector('.shell')
+      /* ✅ v8.68a — marketplace & co. : contenu dans un .container enfant
+         direct de <body> (relevé sur le DOM réel de production) */
+      || (document.body && document.body.querySelector(':scope > .container'))
       || null;
   }
 
