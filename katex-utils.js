@@ -950,6 +950,68 @@
   }
 
   /* ═══ SANITISATION D'UNE FORMULE (contenu déjà délimité $…$ / $$…$$) ═══ */
+  /* ═══════════════════════════════════════════════════════════════
+     ✅ v8.63a — COUCHE v7 : erreurs récurrentes de GÉNÉRATION IA.
+     Les modèles francophones produisent encore : polices TeX héritées
+     (\bf, \cal…), \label/\tag, emojis dans les formules, degré « ° »
+     nu, et surtout des MOTS FRANÇAIS accentués posés nus dans le mode
+     math (caractère Unicode interdit hors \text → erreur rouge).
+     Ces réparations s'appliquent AVANT le rendu ET au re-rendu des
+     .katex-error (passage dans sanitizeFormulaTex, partagé). ═══ */
+  function fixAiLegacyFontCommands(r) {
+    r = r.replace(/\\bold(?![a-zA-Z])/g, '\\mathbf');
+    r = r.replace(/\\bf(?![a-zA-Z])/g, '\\mathbf');
+    r = r.replace(/\\it(?![a-zA-Z])/g, '\\mathit');
+    r = r.replace(/\\rm(?![a-zA-Z])/g, '\\mathrm');
+    r = r.replace(/\\cal(?![a-zA-Z])/g, '\\mathcal');
+    r = r.replace(/\\Bbb(?![a-zA-Z])/g, '\\mathbb');
+    r = r.replace(/\\tt(?![a-zA-Z])/g, '\\mathtt');
+    return r;
+  }
+
+  function stripLatexMetadata(r) {
+    r = r.replace(/\\label\s*\{[^{}]*\}/g, '');
+    r = r.replace(/\\tag\s*\{[^{}]*\}/g, '');
+    r = r.replace(/\\(?:nonumber|notag)(?![a-zA-Z])/g, '');
+    r = r.replace(/\\(?:hfill|vfill|noindent|newline|clearpage)(?![a-zA-Z])/g, '');
+    r = r.replace(/\\par(?![a-zA-Z])/g, '');
+    r = r.replace(/\\displaystyle/g, '');
+    return r;
+  }
+
+  function removeEmojiInMath(r) {
+    /* emoji, pictogrammes, symboles de modificateurs : jamais dans une formule */
+    r = r.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}\u{2B00}-\u{2BFF}]/gu, ' ');
+    return r.replace(/[ \t]{2,}/g, ' ');
+  }
+
+  function fixDegreeInMath(r) {
+    /* « 30° » → « 30^{\circ} » ; « ° » isolé → « ^{\circ} » */
+    r = r.replace(/(\d)\s*°/g, '$1^{\\circ}');
+    r = r.replace(/°/g, '^\\circ');
+    return r;
+  }
+
+  function fixAccentedWordsInMath(r) {
+    /* MOTS FRANÇAIS NUS dans le mode math (é, è, à, ç, œ, apostrophes…)
+       → enveloppés dans \text{…}. Les \text{…} existants et les mots
+       sans accent (variables, sin, cos…) ne sont jamais touchés. */
+    var texts = [];
+    r = r.replace(/\\text\s*\{[^{}]*\}/g, function (m) {
+      texts.push(m);
+      return '\u0000T' + (texts.length - 1) + '\u0000';
+    });
+    r = r.replace(/[A-Za-zÀ-ÖØ-öø-ÿ'’][A-Za-zÀ-ÖØ-öø-ÿ'’\-]*/g, function (m) {
+      if (!/[àâäéèêëîïôöùûüÿçœæÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇŒÆ'’]/.test(m)) return m;
+      if (/^(?:sin|cos|tan|ln|log|exp|min|max|det|arg|gcd|lcm|cot|sec|csc|deg)$/i.test(m)) return m;
+      return '\\text{' + m + '}';
+    });
+    r = r.replace(/\u0000T(\d+)\u0000/g, function (m, i) {
+      return texts[Number(i)] || '';
+    });
+    return r;
+  }
+
   function sanitizeFormulaTex(tex) {
     if (!tex || typeof tex !== 'string') return tex;
     let r = tex;
@@ -963,6 +1025,13 @@
     if (!/\\begin\s*\{/.test(r)) r = r.replace(/(?<!\\)&/g, '\\&');
 
     for (const [re, rep] of LEGACY_CMD_MAP) r = r.replace(re, rep);
+
+    /* ✅ v8.63a — couche v7 : erreurs récurrentes de génération IA */
+    r = fixAiLegacyFontCommands(r);
+    r = stripLatexMetadata(r);
+    r = removeEmojiInMath(r);
+    r = fixDegreeInMath(r);
+    r = fixAccentedWordsInMath(r);
 
     for (const [glyph, lat] of Object.entries(VULGAR_FRACTIONS)) {
       r = r.split(glyph).join(lat);

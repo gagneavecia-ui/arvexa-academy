@@ -39,7 +39,6 @@
     { href: 'notifications.html', icon: 'fa-bell',          label: 'Notifications' },
     { href: 'arv-progress.html', icon: 'fa-graduation-cap', label: 'Résumé' },
     { href: 'outils.html',       icon: 'fa-toolbox',        label: 'Outils' },
-    { href: 'localisation.html', icon: 'fa-location-dot',   label: 'À proximité' },
     { href: 'marketplace.html',  icon: 'fa-store',          label: 'Marketplace' }
   ];
 

@@ -177,25 +177,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   background: rgba(var(--rgb-soft), 0.07);
 }
 
-.home-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(var(--rgb-soft), 0.04);
-  color: var(--text-dim);
-  font-size: 15px;
-  text-decoration: none;
-  transition: var(--transition);
-  flex-shrink: 0;
-}
-.home-btn:hover {
-  color: var(--text-light);
-  background: rgba(var(--rgb-soft), 0.07);
-}
-.home-btn i { font-size: 14px; }
 
 .premium-badge {
   display: none;
@@ -2034,8 +2015,6 @@ main, .content-section, .block, .part, .qa-item, .qcm-item, .formula-block,
   .menu-toggle { width: 34px; height: 34px; font-size: 13px; }
   .page-title { font-size: 14px; }
   .icon-btn { width: 34px; height: 34px; font-size: 13px; }
-  .home-btn { padding: 7px 10px; font-size: 12px; }
-  .home-btn span { display: none; }
   .premium-badge { font-size: 10px; padding: 4px 10px; }
 }
 
@@ -2045,7 +2024,6 @@ main, .content-section, .block, .part, .qa-item, .qcm-item, .formula-block,
   .greeting h1 { font-size: 20px; }
   .page-title { font-size: 13px; }
   .icon-btn, .back-btn { width: 32px; height: 32px; font-size: 12px; }
-  .home-btn { padding: 6px 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2975,6 +2953,7 @@ select:focus-visible,
 </style>
   <script src="analytics.js"></script>
   <script src="register-sw.js" defer></script>
+<script src="arvexa-applock.js" defer></script>
 </head>
 
 <body>
@@ -2985,22 +2964,20 @@ select:focus-visible,
      peint AVANT tout JS, disparaît dès que le cahier est affiché (cache
      local ou données fraîches), avec filet de sécurité à 10 s. -->
 <style>
-  /* ✅ v8.61a — PETIT cercle en haut au centre (demande du propriétaire :
-     « pas le gros au milieu, celui qui est en haut au centre, simple »).
-     La page s'affiche INSTANTANÉMENT derrière : l'indicateur ne bloque
-     rien (pointer-events:none) et disparaît dès que le contenu est prêt. */
-  .boot-loader{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 10px);left:50%;transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:8px;background:rgba(10,10,10,.92);border:1px solid rgba(224,184,74,.35);border-radius:999px;padding:7px 14px;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4);transition:opacity .3s ease,visibility .3s ease}
+  /* ✅ v8.63a — CERCLE DE CHARGEMENT EXACT (demande propriétaire : « comme
+     sur l'image ») : UNIQUEMENT le petit cercle qui tourne, en haut au
+     centre, NU — sans pastille sombre, sans texte, sans effet pop-up.
+     La page s'affiche INSTANTANÉMENT derrière et le cercle disparaît dès
+     que le contenu est prêt. */
+  .boot-loader{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);left:50%;width:24px;height:24px;margin-left:-12px;z-index:99999;pointer-events:none;transition:opacity .25s ease,visibility .25s ease}
   .boot-loader.gone{opacity:0;visibility:hidden;pointer-events:none}
-  .boot-spinner{width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(224,184,74,.2);border-top-color:#E0B84A;animation:bootspin .8s linear infinite;flex-shrink:0}
+  .boot-spinner{width:24px;height:24px;border-radius:50%;border:3px solid rgba(224,184,74,.22);border-top-color:#E0B84A;animation:bootspin .7s linear infinite;box-sizing:border-box;display:block}
   @keyframes bootspin{to{transform:rotate(360deg)}}
-  .boot-text{font-family:Inter,sans-serif;font-size:11.5px;font-weight:600;color:#E0B84A;letter-spacing:.4px;white-space:nowrap}
-  html[data-theme="light"] .boot-loader{background:rgba(255,255,255,.96);border-color:rgba(184,134,11,.45)}
-  html[data-theme="light"] .boot-text{color:#9A7209}
-  @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.6s}}
+  html[data-theme="light"] .boot-spinner{border-color:rgba(154,114,9,.20);border-top-color:#9A7209}
+  @media (prefers-reduced-motion:reduce){.boot-spinner{animation-duration:1.5s}}
 </style>
 <div class="boot-loader" id="bootLoader" role="status" aria-label="Chargement de ton cahier">
   <div class="boot-spinner"></div>
-  <div class="boot-text">Préparation de ton cahier…</div>
 </div>
 <script>
 (function(){
@@ -3034,9 +3011,6 @@ select:focus-visible,
     </h1>
   </div>
   <div class="header-right">
-    <a href="index.html" class="home-btn" aria-label="Retour à l'accueil" title="Accueil">
-      <i class="fas fa-home"></i>
-    </a>
     <div class="premium-badge" id="premiumBadge">
       <i class="fas fa-crown"></i>
       <span>Premium</span>
@@ -3111,6 +3085,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+/* ✅ v8.63a — exposition de l'instance Auth : le cache du dashboard est
+   estampillé par uid (garde anti-croisement entre comptes). */
+window.firebaseAuth = auth;
 
 const MIN_CONTENT_LENGTH = 40;
 const MAX_CONTENT_LENGTH = 2500; // calibré IA : taille que l'analyse traite sans problème
@@ -3837,11 +3814,26 @@ const DASH_CACHE_KEY = 'arvexa_dash_cache_v1';
 function dashCacheRead() {
   try {
     const v = JSON.parse(localStorage.getItem(DASH_CACHE_KEY) || 'null');
-    return (v && typeof v === 'object') ? v : null;
+    if (!(v && typeof v === 'object')) return null;
+    /* ✅ v8.63a — GARDE ANTI-CROISEMENT : un cache d'un AUTRE compte n'est
+       jamais adopté (réalisations = Firebase uniquement). */
+    try {
+      const cur = (window.firebaseAuth && window.firebaseAuth.currentUser && window.firebaseAuth.currentUser.uid) || '';
+      if (cur && v._uid && v._uid !== cur) return null;
+    } catch (e) {}
+    return v;
   } catch (e) { return null; }
 }
 function dashCacheWrite(data) {
-  try { localStorage.setItem(DASH_CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+  try {
+    /* ✅ v8.63a — le cache est estampillé par uid : au changement de compte,
+       l'autre compte n'hérite jamais de ces données. */
+    let uid = '';
+    try {
+      uid = (window.firebaseAuth && window.firebaseAuth.currentUser && window.firebaseAuth.currentUser.uid) || '';
+    } catch (e) {}
+    localStorage.setItem(DASH_CACHE_KEY, JSON.stringify(Object.assign({}, data, uid ? { _uid: uid } : {})));
+  } catch (e) {}
 }
 
 /* ✅ v8.53a — UNE SEULE ACTUALISATION (demande propriétaire : « la courbe

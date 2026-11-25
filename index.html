@@ -1365,6 +1365,7 @@
     #bgSyncPill.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #bgSyncPill i { color: var(--accent-bright); animation: splashSpin 1.6s linear infinite; }
   </style>
+<script src="arvexa-applock.js" defer></script>
 </head>
 <body>
 
@@ -1555,8 +1556,26 @@
     streak7:   { check: function (st) { return st.streak >= 7; } }
   };
   window.__arvexaBadgeStats = function () {
+    /* ✅ v8.63a — RÉALISATIONS 100 % FIREBASE (demande propriétaire : « les
+       réalisations doivent être stockées sur Firebase comme ça même si tu
+       changes de compte les vrais réalisations sont mis à jour directement
+       sans faire appel au cache ») : les stats viennent d'abord du dashboard
+       FRAIS récupéré depuis Firestore pour le compte CONNECTÉ
+       (__arvexaFbDash, estampillé uid par fetchBadgeDashboard). Le cache
+       local ne sert qu'au tout premier rendu (avant la réponse Firebase) et
+       SEULEMENT s'il appartient au même compte — jamais de mélange. */
     var dash = null;
-    try { dash = JSON.parse(localStorage.getItem('arvexa_dash_cache_v1') || 'null'); } catch (e) { dash = null; }
+    var curUid = '';
+    try { curUid = window.__ARVEXA_CURRENT_UID || ''; } catch (e) { curUid = ''; }
+    var fb = window.__arvexaFbDash || null;
+    if (fb && fb.summary && (!fb._uid || (curUid && fb._uid === curUid))) {
+      dash = fb;
+    }
+    if (!dash) {
+      try { dash = JSON.parse(localStorage.getItem('arvexa_dash_cache_v1') || 'null'); } catch (e) { dash = null; }
+      if (dash && dash._uid && curUid && dash._uid !== curUid) dash = null;
+    }
+    var fromFb = !!(dash && dash === fb);
     var summary = (dash && dash.summary) || {};
     var studyTime = (dash && dash.studyTime) || {};
     var dashStreak = (dash && dash.streak && Number(dash.streak.current || 0)) || 0;
@@ -1576,7 +1595,7 @@
       sections: Number(summary.totalSections || 0) || 0,
       subjects: Number(summary.subjectsCount || 0) || 0,
       minutes: Number(studyTime.totalMinutes || 0) || 0,
-      streak: Math.max(dashStreak, streak)
+      streak: fromFb ? dashStreak : Math.max(dashStreak, streak)
     };
   };
   window.__arvexaPaintBadges = function () {
@@ -1617,7 +1636,6 @@
       <a href="notifications.html"><i class="fas fa-bell"></i> Notifications</a>
       <a href="arv-progress.html"><i class="fas fa-graduation-cap"></i> Résumé</a>
       <a href="outils.html"><i class="fas fa-toolbox"></i> Outils</a>
-      <a href="localisation.html"><i class="fas fa-location-dot"></i> À proximité</a>
       <a href="marketplace.html"><i class="fas fa-store"></i> Marketplace</a>
       <div class="nav-divider"></div>
       <a href="#" class="avis-link" id="avisLinkSidebar">
@@ -2484,6 +2502,13 @@
       localStorage.removeItem(USER_DATA_KEY);
       localStorage.removeItem(LAST_UID_KEY);
       localStorage.removeItem('arvexa_index_snapshot_persist'); /* ✅ v5.4 */
+      /* ✅ v8.63a — caches de réalisations / carte intelligente PURGÉS à la
+         déconnexion : le prochain compte ne doit JAMAIS voir les données
+         du précédent (réalisations = Firebase uniquement). */
+      localStorage.removeItem('arvexa_dash_cache_v1');
+      localStorage.removeItem('arv_smart_cache_v1');
+      try { window.__arvexaFbDash = null; } catch (e) {}
+      try { window.__ARVEXA_CURRENT_UID = null; } catch (e) {}
       sessionStorage.removeItem(SESSION_KEY);
       sessionStorage.removeItem('redirectAfterLogin');
       sessionStorage.removeItem(INDEX_SNAPSHOT_KEY);
@@ -2982,7 +3007,7 @@
     tt.textContent = 'Installe ARVEXA';
     const td = document.createElement('div');
     td.className = 'install-desc';
-    td.textContent = "Accès hors ligne + icône sur ton écran d'accueil, comme une vraie app.";
+    td.textContent = "Icône sur ton écran d'accueil, comme une vraie app — 100 % en ligne.";
     txt.appendChild(tt);
     txt.appendChild(td);
     const btn = document.createElement('button');
@@ -3708,8 +3733,12 @@
           }
 
           saveUserDataToCache(userData, user.uid);
+          /* ✅ v8.63a — réalisations FRAÎCHES depuis Firebase à chaque
+             snapshot (aucun cache entre les comptes). */
+          try { window.__ARVEXA_CURRENT_UID = user.uid; } catch (e) {}
           renderUserData(userData);
           showDashboard();
+          fetchBadgeDashboard();
           checkUnreadNotifications(user.uid);
           hideSyncPill();
         } else if (cached) {
@@ -3741,6 +3770,58 @@
         console.warn('[Firestore] onSnapshot users:', error.code || error.message);
       }
     );
+  }
+
+  /* ✅ v8.63a — RÉALISATIONS FRAÎCHES DEPUIS FIREBASE (demande propriétaire :
+     « doivent être stockées sur Firebase… sans faire appel au cache »).
+     À chaque snapshot du compte, le dashboard SERVEUR est récupéré
+     (sections créées, matières, temps d'étude, série) puis les réalisations
+     sont re-peintes avec les vraies données du compte connecté. Le cache
+     local est ré-estampillé par uid — jamais de mélange entre comptes. */
+  let badgeFetchInFlight = false;
+  let badgeFetchAt = 0;
+  async function fetchBadgeDashboard() {
+    const u = (typeof auth !== 'undefined' && auth && auth.currentUser) ? auth.currentUser : null;
+    if (!u) return;
+    if (badgeFetchInFlight) return;
+    /* Au plus une requête toutes les 15 s — les snapshots Firestore arrivent
+       souvent en rafale au démarrage. */
+    if (Date.now() - badgeFetchAt < 15000) return;
+    badgeFetchInFlight = true;
+    badgeFetchAt = Date.now();
+    try {
+      const token = await window.__arvexaGetIdToken();
+      if (!token) return;
+      const res = await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ action: 'getDashboard' })
+      });
+      const data = await res.json();
+      if (data && data.success && data.summary) {
+        data._uid = u.uid;
+        window.__arvexaFbDash = data;
+        try { window.__ARVEXA_CURRENT_UID = u.uid; } catch (e) {}
+        if (typeof window.__arvexaPaintBadges === 'function') {
+          try { window.__arvexaPaintBadges(); } catch (e) {}
+        }
+        try {
+          localStorage.setItem('arvexa_dash_cache_v1', JSON.stringify(Object.assign({}, data, { _uid: u.uid })));
+          localStorage.setItem('arv_smart_cache_v1', JSON.stringify({
+            at: Date.now(), success: true, _uid: u.uid,
+            study: (data.smart && data.smart.study) || data.studyTime,
+            summary: data.summary,
+            subjects: data.subjects,
+            lacune: (data.smart && data.smart.lacune) || null
+          }));
+          window.dispatchEvent(new Event('arvexa-progress-updated'));
+        } catch (e) {}
+      }
+    } catch (e) {
+      /* silencieux : hors ligne le cache du MÊME compte reste affiché */
+    } finally {
+      badgeFetchInFlight = false;
+    }
   }
 
   // ✅ CORRIGÉ — pas de redirection automatique vers register.html

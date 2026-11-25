@@ -236,13 +236,26 @@
   var SMART_CACHE_KEY = 'arv_smart_cache_v1';
   var DASH_CACHE_KEY = 'arvexa_dash_cache_v1'; // écrit par la page Résumé (bloc smart v8.43)
 
+  /* ✅ v8.63a — garde anti-croisement par compte : le cache de la carte
+     intelligente est estampillé uid ; un cache d'un AUTRE compte n'est
+     jamais adopté (les vraies données arrivent de Firebase). */
+  function __smartUid() {
+    try {
+      if (window.__ARVEXA_CURRENT_UID) return window.__ARVEXA_CURRENT_UID;
+      var s = JSON.parse(localStorage.getItem('arvexa_session') || 'null');
+      return (s && s.uid) || '';
+    } catch (e) { return ''; }
+  }
+
   function readSmartCache() {
+    var uid = __smartUid();
     try {
       var d = JSON.parse(localStorage.getItem(SMART_CACHE_KEY) || 'null');
-      if (d && d.success && d.study) return d;
+      if (d && d.success && d.study && (!uid || !d._uid || d._uid === uid)) return d;
     } catch (e) {}
     try {
       var dash = JSON.parse(localStorage.getItem(DASH_CACHE_KEY) || 'null');
+      if (dash && dash._uid && uid && dash._uid !== uid) dash = null;
       if (dash && dash.smart && dash.subjects) {
         return { success: true, study: dash.smart.study || dash.studyTime, summary: dash.summary, subjects: dash.subjects, lacune: dash.smart.lacune || null };
       }
@@ -267,7 +280,7 @@
         if (data && data.success && data.study) {
           try {
             localStorage.setItem(SMART_CACHE_KEY, JSON.stringify({
-              at: Date.now(), success: true,
+              at: Date.now(), success: true, _uid: __smartUid(),
               study: data.study, summary: data.summary,
               subjects: data.subjects, lacune: data.lacune
             }));

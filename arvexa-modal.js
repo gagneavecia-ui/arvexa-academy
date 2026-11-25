@@ -1,22 +1,32 @@
 /* ================================================================
-   ARVEXA MODAL v1.0 — v8.54a
-   Poignée « trait du milieu » + glisser vers le bas pour fermer.
-   Demande du propriétaire (v8.54a) : « sur chaque modale tu supprimes
-   la croix à droite, à la place tu mets le trait du milieu, et quand
-   on appuie et glisse vers le bas ça ferme la modale — tu le rends
-   uniforme à toutes les autres, chaque petit trait du milieu doit se
-   ressembler dans chaque page qui en contient ».
+   ARVEXA MODAL v1.1 — v8.63a
+   Poignée « trait du milieu » + ligne entière cliquable + fermeture
+   animée fluide.
 
-   Fonctionnement :
+   Demandes du propriétaire :
+   (v8.54a) « sur chaque modale tu supprimes la croix à droite, à la
+   place tu mets le trait du milieu, et quand on appuie et glisse vers
+   le bas ça ferme la modale — tu le rends uniforme à toutes les autres ».
+   (v8.63a) « c'est uniquement lorsque tu appuies sur la barre et tu
+   tires que le modèle se ferme alors que non normalement toute la ligne
+   de la barre doit fermer le modèle » + « la fermeture que tu as
+   utilisée pour les modèles sont brutales, ne sont pas animées
+   fluidement comme dans les autres pages ».
+
+   Fonctionnement v1.1 :
    1. Les croix (.modal-close / .arvexa-confirm-close / .picker-close)
       sont MASQUÉES (display:none) mais restent dans le DOM : un clic
       programmatique conserve TOUTE la logique de fermeture propre à
       chaque page (nettoyage, libération de garde, reset de formulaire…).
-   2. Une poignée 44×4 (visuel identique au sélecteur de pays de
-      l'inscription) est ajoutée en tête de CHAQUE modale.
-   3. La faire glisser vers le bas — doigt ou souris — ferme la modale
-      au-delà du seuil de distance ou d'un coup de vitesse ; sinon elle
-      revient se reposer en douceur.
+   2. Une poignée 44×4 + une ZONE DE PRISE pleine largeur (38 px de
+      haut) sont ajoutées en tête de CHAQUE modale : un SIMPLE TAP
+      n'importe où sur la ligne du haut ferme la modale, et le
+      glisser vers le bas fonctionne depuis toute la ligne.
+   3. FERMETURE ANIMÉE : glissement libéré au-delà du seuil de distance
+      ou d'un coup de vitesse ; sinon retour en douceur. Toute fermeture
+      (tap, glisser, ArvexaModal.close) joue d'abord une animation de
+      sortie douce (descente + fondu 220 ms) AVANT d'appeler la logique
+      de la page — plus aucune disparition brutale.
    4. Détection automatique : modales présentes au chargement ET celles
       injectées plus tard (MutationObserver), sur toutes les pages qui
       chargent ce fichier.
@@ -26,7 +36,7 @@
 
   if (window.__arvexaModalInit) return;
   window.__arvexaModalInit = true;
-  window.ARVEXA_MODAL_VERSION = '1.0';
+  window.ARVEXA_MODAL_VERSION = '1.1';
 
   var REDUCED = false;
   try { REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
@@ -45,7 +55,7 @@
   var CLOSE_BTN_SELECTOR = '.modal-close, .arvexa-confirm-close, .picker-close';
 
   var CSS = [
-    '/* ARVEXA MODAL v1.0 — croix supprimée + poignée de glissement (v8.54a) */',
+    '/* ARVEXA MODAL v1.1 — poignée + ligne entière + fermeture animée (v8.63a) */',
     '.modal-close, .arvexa-confirm-close, .picker-close { display: none !important; }',
     '.arvexa-modal-handle {',
     '  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);',
@@ -56,12 +66,30 @@
     '}',
     '.arvexa-modal-handle.arvexa-flow { position: static; transform: none; margin: 12px auto 2px; }',
     '.arvexa-modal-handle:active { cursor: grabbing; }',
-    '.arvexa-modal-handle::after { content: ""; position: absolute; inset: -14px -30px; }',
+    '/* ✅ v8.63a — zone de prise pleine largeur : TOUTE la ligne du haut',
+    '   ferme la modale (tap) et accepte le glisser vers le bas. */',
+    '.arvexa-modal-tapzone {',
+    '  position: absolute; top: 0; left: 0; right: 0; height: 38px;',
+    '  cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none;',
+    '  z-index: 5; background: transparent; border: none; padding: 0; margin: 0;',
+    '}',
+    '.arvexa-modal-tapzone:active { cursor: grabbing; }',
     '.arvexa-modal-pos { position: relative !important; }',
     '.arvexa-modal-dragging { transition: none !important; }',
     '.arvexa-modal-releasing { transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.28s ease !important; }',
+    '/* ✅ v8.63a — animation de SORTIE douce, identique sur tout le site :',
+    '   la modale descend légèrement et s\u2019estompe AVANT que la page ne la',
+    '   referme — plus aucune disparition brutale. */',
+    '.arvexa-modal-closing {',
+    '  transition: transform 0.22s cubic-bezier(0.4, 0, 1, 1), opacity 0.22s ease !important;',
+    '  transform: translateY(18px) scale(0.98) !important;',
+    '  opacity: 0 !important;',
+    '  pointer-events: none !important;',
+    '}',
     'html[data-theme="light"] .arvexa-modal-handle { background: rgba(154, 114, 9, 0.30); }',
-    '@media (prefers-reduced-motion: reduce) { .arvexa-modal-releasing { transition: none !important; } }'
+    '@media (prefers-reduced-motion: reduce) {',
+    '  .arvexa-modal-releasing, .arvexa-modal-closing { transition: none !important; }',
+    '}'
   ].join('\n');
 
   function injectCss() {
@@ -72,47 +100,62 @@
     (document.head || document.documentElement).appendChild(style);
   }
 
-  /* ── Fermeture : 1) croix cachée de la page, 2) clic de l'overlay,
-        3) Échap — l'ordre préserve toujours la logique de la page ── */
+  /* ── Fermeture ANIMÉE : 1) animation de sortie, 2) logique de la page
+        (croix cachée, clic overlay, ou Échap). Idempotent. ── */
   function closeModal(root) {
-    var btn = root.querySelector(CLOSE_BTN_SELECTOR);
-    if (btn && document.contains(btn)) {
-      btn.click();
+    if (!root || root.__arvexaClosing) return;
+    root.__arvexaClosing = true;
+
+    var finish = function () {
+      root.__arvexaClosing = false;
+      var btn = root.querySelector(CLOSE_BTN_SELECTOR);
+      if (btn && document.contains(btn)) {
+        btn.click();
+        resetInline(root);
+        return;
+      }
+      var overlay = root.parentElement;
+      if (overlay && /modal-overlay|modal-backdrop|arvexa-confirm-overlay|arvexa-popup-overlay|picker-overlay/.test(overlay.className || '')) {
+        overlay.click();
+        resetInline(root);
+        return;
+      }
+      try {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      } catch (e) {}
       resetInline(root);
-      return;
-    }
-    var overlay = root.parentElement;
-    if (overlay && /modal-overlay|modal-backdrop|arvexa-confirm-overlay|arvexa-popup-overlay|picker-overlay/.test(overlay.className || '')) {
-      overlay.click();
-      resetInline(root);
-      return;
-    }
-    try {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-    } catch (e) {}
-    resetInline(root);
+    };
+
+    if (REDUCED) { finish(); return; }
+    root.classList.add('arvexa-modal-closing');
+    setTimeout(finish, 230);
   }
 
   function resetInline(root) {
     setTimeout(function () {
       root.style.transform = '';
       root.style.opacity = '';
-      root.classList.remove('arvexa-modal-dragging', 'arvexa-modal-releasing');
+      root.classList.remove('arvexa-modal-dragging', 'arvexa-modal-releasing', 'arvexa-modal-closing');
     }, 60);
   }
 
-  /* ── Glisser vers le bas = fermer ── */
+  /* ── Glisser vers le bas = fermer · Tap sur la ligne = fermer ──
+     ✅ v1.1 — la garde se fait PAR ÉLÉMENT (grip.__arvexaDragAttached) :
+     la poignée ET la zone pleine largeur reçoivent chacune les gestes. */
   function attachDrag(root, grip) {
-    if (root.__arvexaModalDrag) return;
-    root.__arvexaModalDrag = true;
+    if (!grip || grip.__arvexaDragAttached) return;
+    grip.__arvexaDragAttached = true;
 
-    var dragging = false, startY = 0, dy = 0, lastY = 0, lastT = 0, vel = 0;
+    var dragging = false, startY = 0, dy = 0, lastY = 0, lastT = 0, startT = 0, vel = 0;
 
     function onDown(e) {
       if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
       var t = e.target;
       if (t && t.closest && t.closest('a, button, input, textarea, select, label')) return;
-      dragging = true; dy = 0; startY = lastY = e.clientY; lastT = e.timeStamp || performance.now(); vel = 0;
+      dragging = true; dy = 0;
+      startY = lastY = e.clientY;
+      lastT = startT = e.timeStamp || performance.now();
+      vel = 0;
       if (!REDUCED) {
         root.classList.add('arvexa-modal-dragging');
       }
@@ -134,10 +177,14 @@
       if (e.cancelable && dy > 6) e.preventDefault();
     }
 
-    function onUp() {
+    function onUp(e, cancelled) {
       if (!dragging) return;
       dragging = false;
-      var shouldClose = dy > 90 || (dy > 24 && vel > 0.5) || (REDUCED && dy > 40);
+      var dt = (e && e.timeStamp ? e.timeStamp : performance.now()) - startT;
+      /* ✅ v8.63a — SIMPLE TAP sur la ligne du haut = fermer (sans
+         déplacement, geste court). */
+      var isTap = !cancelled && dy < 8 && dt < 500;
+      var shouldClose = dy > 90 || (dy > 24 && vel > 0.5) || (REDUCED && dy > 40) || isTap;
       if (REDUCED) {
         if (shouldClose) { closeModal(root); return; }
       } else {
@@ -158,12 +205,13 @@
 
     grip.addEventListener('pointerdown', onDown);
     grip.addEventListener('pointermove', onMove);
-    grip.addEventListener('pointerup', onUp);
-    grip.addEventListener('pointercancel', onUp);
-    grip.addEventListener('lostpointercapture', onUp);
+    grip.addEventListener('pointerup', function (e) { onUp(e, false); });
+    grip.addEventListener('pointercancel', function (e) { onUp(e, true); });
+    grip.addEventListener('lostpointercapture', function (e) { onUp(e, true); });
   }
 
-  /* ── Préparation d'une modale : poignée + croix masquée + gestes ── */
+  /* ── Préparation d'une modale : poignée + zone pleine largeur + croix
+        masquée + gestes ── */
   function ensure(root) {
     if (!root || !document.contains(root)) return;
     if (root.__arvexaModalDone) return;
@@ -179,6 +227,8 @@
         break;
       }
     }
+
+    var isFlow = !!grip;
     if (!grip) {
       grip = document.createElement('div');
       grip.className = 'arvexa-modal-handle';
@@ -186,6 +236,18 @@
       root.insertBefore(grip, root.firstChild);
     }
     if (getComputedStyle(root).position === 'static') root.classList.add('arvexa-modal-pos');
+
+    /* ✅ v8.63a — zone de prise pleine largeur : TOUTE la ligne du haut
+       ferme la modale (tap ou glisser). Uniquement pour les modales
+       positionnées (feuilles/bulles) ; les modales « en flux » gardent
+       leur poignée d'origine. */
+    if (!isFlow) {
+      var tap = document.createElement('div');
+      tap.className = 'arvexa-modal-tapzone';
+      tap.setAttribute('aria-hidden', 'true');
+      root.insertBefore(tap, root.firstChild);
+      attachDrag(root, tap);
+    }
 
     attachDrag(root, grip);
   }

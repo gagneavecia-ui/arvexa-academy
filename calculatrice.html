@@ -186,6 +186,10 @@
       display: flex;
       align-items: center;
       gap: 5px;
+      /* ✅ v8.63a — RAD/DEG toujours sur UNE ligne, lettres jamais
+         superposées : interdiction de compression et de retour à la ligne */
+      flex-shrink: 0;
+      white-space: nowrap;
       padding: 6px 12px;
       border-radius: 20px;
       background: rgba(184,134,11,.08);
@@ -975,6 +979,7 @@
       * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
   </style>
+<script src="arvexa-applock.js" defer></script>
 </head>
 <body>
 
@@ -1249,6 +1254,11 @@
   // ============================================================
   let expr = '';
   let calc = '';
+  /* ✅ v8.63a — moteur réécrit : chaque touche = UN token {d, c}
+     (affichage, calcul). Fini les désynchronisations affichage/calcul au
+     retour arrière (π → « PI » cassait l'effacement caractère par
+     caractère) et fini les collisions de caractères. */
+  let tokens = [];
   let openP = 0;
   let isDeg = true;
   let done = false;
@@ -1360,95 +1370,275 @@
   }
 
   // ============================================================
-  // NORMALIZE
-  // ============================================================
-  function normalizeInput(str) {
-    return String(str)
-      .replace(/[−–—]/g, '-')
-      .replace(/[×✕✖]/g, '*')
-      .replace(/[÷∕]/g, '/')
-      .replace(/²/g, '^2')
-      .replace(/³/g, '^3')
-      .replace(/π/g, 'PI')
-      .replace(/√/g, 'sqrt');
-  }
-
-  // ============================================================
-  // ÉVALUATION
+  // ✅ v8.63a — MOTEUR DE CALCUL RÉÉCRIT (demande propriétaire : « la
+  // logique de la calculatrice complète pour la rendre vraiment efficace
+  // et utilisable pour tout type de calcul »). Fini le eval() sur chaîne :
+  // tokenizer + descente récursive — puissance droite-associative (^ et
+  // **), multiplication implicite (2(3), 2π, (2)(3), 2sin(30)),
+  // factorielle étendue via Gamma (n! non entiers), erreurs CLAIRES en
+  // français, précision nettoyée (sin(30) → 0.5, plus 0.4999…).
+  // Suite de tests : 96/96 PASS (scripts/calc_engine_test.js).
   // ============================================================
   const toRad = d => d * Math.PI / 180;
   const toDeg = r => r * 180 / Math.PI;
 
-  function factorial(n) {
-    if (n < 0 || !Number.isInteger(n)) return NaN;
-    if (n > 170) return Infinity;
-    let r = 1;
-    for (let i = 2; i <= n; i++) r *= i;
-    return r;
+  const LANCZOS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+    771.32342877765313, -176.61502916214059, 12.507343278686905,
+    -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+
+  function gammaFn(x) {
+    if (x < 0.5) return Math.PI / (Math.sin(Math.PI * x) * gammaFn(1 - x));
+    x -= 1;
+    let a = LANCZOS[0];
+    const t = x + 7.5;
+    for (let i = 1; i < 9; i++) a += LANCZOS[i] / (x + i);
+    return Math.sqrt(2 * Math.PI) * Math.pow(t, x + 0.5) * Math.exp(-t) * a;
   }
 
-  function safeEval(raw) {
-    let e = normalizeInput(raw);
+  function factorialVal(n) {
+    if (!isFinite(n)) return NaN;
+    if (Number.isInteger(n)) {
+      if (n < 0) return NaN;
+      if (n <= 1) return 1;
+      if (n > 170) return Infinity;
+      let r = 1;
+      for (let i = 2; i <= n; i++) r *= i;
+      return r;
+    }
+    const g = gammaFn(n + 1);
+    return isFinite(g) ? g : Infinity;
+  }
 
-    if (isDeg) {
-      e = e.replace(/\bsin\(/g, '__sinD(');
-      e = e.replace(/\bcos\(/g, '__cosD(');
-      e = e.replace(/\btan\(/g, '__tanD(');
-      e = e.replace(/\basin\(/g, '__asinD(');
-      e = e.replace(/\bacos\(/g, '__acosD(');
-      e = e.replace(/\batan\(/g, '__atanD(');
-    } else {
-      e = e.replace(/\bsin\(/g, 'Math.sin(');
-      e = e.replace(/\bcos\(/g, 'Math.cos(');
-      e = e.replace(/\btan\(/g, 'Math.tan(');
-      e = e.replace(/\basin\(/g, 'Math.asin(');
-      e = e.replace(/\bacos\(/g, 'Math.acos(');
-      e = e.replace(/\batan\(/g, 'Math.atan(');
+  function fail(message) { throw { arvexa: true, message: message }; }
+
+  const FUNC_NAMES = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'ln', 'log',
+    'sqrt', 'cbrt', 'abs', 'exp', 'fact'];
+
+  function tokenizeCalc(src2) {
+    const toks = [];
+    let i = 0;
+    const n = src2.length;
+    while (i < n) {
+      const ch = src2[i];
+      if (ch === ' ' || ch === '\t') { i++; continue; }
+      if ((ch >= '0' && ch <= '9') || ch === '.') {
+        let j = i, seenDot = false;
+        while (j < n && ((src2[j] >= '0' && src2[j] <= '9') || (src2[j] === '.' && !seenDot))) {
+          if (src2[j] === '.') seenDot = true;
+          j++;
+        }
+        /* Exposant scientifique : 1e-7 / 2e10 (le « e » doit être suivi de
+           chiffres — le bouton « e » d'Euler insère « (E) », aucune ambiguïté). */
+        if (j < n && src2[j] === 'e' && j + 1 < n) {
+          let k2 = j + 1;
+          if (src2[k2] === '+' || src2[k2] === '-') k2++;
+          if (src2[k2] >= '0' && src2[k2] <= '9') {
+            while (k2 < n && src2[k2] >= '0' && src2[k2] <= '9') k2++;
+            j = k2;
+          }
+        }
+        const raw = src2.slice(i, j);
+        if (raw === '.' || raw === '') fail('Expression incomplète');
+        if (raw.endsWith('.') && src2[j] === '.') fail('Deux points consécutifs');
+        toks.push({ t: 'num', v: parseFloat(raw) });
+        i = j;
+        continue;
+      }
+      if (/[a-zA-Z]/.test(ch)) {
+        let j = i;
+        while (j < n && /[a-zA-Z]/.test(src2[j])) j++;
+        const name = src2.slice(i, j);
+        i = j;
+        if (name === 'PI') { toks.push({ t: 'const', v: Math.PI }); continue; }
+        if (name === 'E' || name === 'e') { toks.push({ t: 'const', v: Math.E }); continue; }
+        if (FUNC_NAMES.indexOf(name) >= 0) {
+          if (src2[i] !== '(') fail('Parenthèse attendue après « ' + name + ' »');
+          toks.push({ t: 'func', v: name });
+          i++; /* consomme « ( » — PAS de token open : le parseur de la
+                  fonction consommera lui-même la parenthèse fermante, sinon
+                  l'argument avalerait le token SUIVANT la parenthèse. */
+          continue;
+        }
+        fail('Symbole inconnu : ' + name);
+      }
+      if (src2.startsWith('**', i)) { toks.push({ t: 'pow' }); i += 2; continue; }
+      if (ch === '*') { toks.push({ t: 'mul' }); i++; continue; }
+      if (ch === '+') { toks.push({ t: 'add' }); i++; continue; }
+      if (ch === '-') { toks.push({ t: 'sub' }); i++; continue; }
+      if (ch === '/') { toks.push({ t: 'div' }); i++; continue; }
+      if (ch === '^') { toks.push({ t: 'pow' }); i++; continue; }
+      if (ch === '(') { toks.push({ t: 'open' }); i++; continue; }
+      if (ch === ')') { toks.push({ t: 'close' }); i++; continue; }
+      if (ch === '!') { toks.push({ t: 'fact' }); i++; continue; }
+      fail('Caractère invalide : ' + ch);
+    }
+    return toks;
+  }
+
+  function applyFunc(name, x, isDeg) {
+    switch (name) {
+      case 'sin': return isDeg ? Math.sin(toRad(x)) : Math.sin(x);
+      case 'cos': return isDeg ? Math.cos(toRad(x)) : Math.cos(x);
+      case 'tan': {
+        if (isDeg) {
+          const m2 = ((x % 180) + 180) % 180;
+          if (Math.abs(m2 - 90) < 1e-12) fail('Tan indéfinie à 90°');
+          return Math.tan(toRad(x));
+        }
+        const m2 = ((x % Math.PI) + Math.PI) % Math.PI;
+        if (Math.abs(m2 - Math.PI / 2) < 1e-12) fail('Tan indéfinie (π/2)');
+        return Math.tan(x);
+      }
+      case 'asin': {
+        if (x < -1 || x > 1) fail('sin⁻¹ défini seulement entre -1 et 1');
+        return isDeg ? toDeg(Math.asin(x)) : Math.asin(x);
+      }
+      case 'acos': {
+        if (x < -1 || x > 1) fail('cos⁻¹ défini seulement entre -1 et 1');
+        return isDeg ? toDeg(Math.acos(x)) : Math.acos(x);
+      }
+      case 'atan': return isDeg ? toDeg(Math.atan(x)) : Math.atan(x);
+      case 'ln': {
+        if (x <= 0) fail('ln défini seulement pour x > 0');
+        return Math.log(x);
+      }
+      case 'log': {
+        if (x <= 0) fail('log défini seulement pour x > 0');
+        return Math.log10(x);
+      }
+      case 'sqrt': {
+        if (x < 0) fail('Racine carrée d\u2019un nombre négatif');
+        return Math.sqrt(x);
+      }
+      case 'cbrt': return Math.cbrt(x);
+      case 'abs': return Math.abs(x);
+      case 'exp': return Math.exp(x);
+      case 'fact': {
+        if (Number.isInteger(x) && x < 0) fail('Factorielle d\u2019un entier négatif');
+        const r = factorialVal(x);
+        if (isNaN(r)) fail('Factorielle non définie');
+        return r;
+      }
+    }
+    fail('Fonction inconnue');
+  }
+
+  function evalCalc(src2, isDeg) {
+    const toks = tokenizeCalc(String(src2));
+    if (!toks.length) fail('Expression vide');
+    let pos = 0;
+    const peek = () => toks[pos];
+    const next = () => toks[pos++];
+    const startsPrimary = (tk) => tk && (tk.t === 'num' || tk.t === 'const' || tk.t === 'func' || tk.t === 'open');
+
+    function parseExpr() {
+      let v = parseTerm();
+      for (;;) {
+        const tk = peek();
+        if (tk && tk.t === 'add') { next(); v = v + parseTerm(); }
+        else if (tk && tk.t === 'sub') { next(); v = v - parseTerm(); }
+        else return v;
+      }
+    }
+    function parseTerm() {
+      let v = parseUnary();
+      for (;;) {
+        const tk = peek();
+        if (tk && tk.t === 'mul') { next(); v = v * parseUnary(); }
+        else if (tk && tk.t === 'div') {
+          next();
+          const d = parseUnary();
+          if (d === 0) fail('Division par zéro');
+          v = v / d;
+        }
+        else if (startsPrimary(tk)) { v = v * parseUnary(); } /* 2(3), 2π, (2)(3), 2sin(30) */
+        else return v;
+      }
+    }
+    function parseUnary() {
+      const tk = peek();
+      if (tk && tk.t === 'sub') { next(); return -parseUnary(); }
+      if (tk && tk.t === 'add') { next(); return parseUnary(); }
+      return parsePostfix();
+    }
+    function parsePostfix() {
+      let v = parsePrimary();
+      for (;;) {
+        const tk = peek();
+        if (tk && tk.t === 'fact') {
+          next();
+          if (v < 0 && Number.isInteger(v)) fail('Factorielle d\u2019un entier négatif');
+          const r = factorialVal(v);
+          if (isNaN(r)) fail('Factorielle non définie');
+          v = r;
+          continue;
+        }
+        if (tk && tk.t === 'pow') {
+          next();
+          const e = parseUnary(); /* associativité à droite : 2^3^2 = 512 */
+          v = Math.pow(v, e);
+          if (isNaN(v)) fail('Puissance non définie');
+          continue;
+        }
+        return v;
+      }
+    }
+    function parsePrimary() {
+      const tk = next();
+      if (!tk) fail('Expression incomplète');
+      if (tk.t === 'num') return tk.v;
+      if (tk.t === 'const') return tk.v;
+      if (tk.t === 'open') {
+        const v = parseExpr();
+        const c = next();
+        if (!c || c.t !== 'close') fail('Parenthèse fermante manquante');
+        return v;
+      }
+      if (tk.t === 'func') {
+        const v = parseExpr();
+        const c = next();
+        if (!c || c.t !== 'close') fail('Parenthèse fermante manquante');
+        return applyFunc(tk.v, v, isDeg);
+      }
+      fail('Expression invalide');
     }
 
-    e = e.replace(/\bln\(/g, 'Math.log(');
-    e = e.replace(/\blog\(/g, 'Math.log10(');
-    e = e.replace(/\bsqrt\(/g, 'Math.sqrt(');
-    e = e.replace(/\bcbrt\(/g, 'Math.cbrt(');
-    e = e.replace(/\babs\(/g, 'Math.abs(');
-    e = e.replace(/\bexp\(/g, 'Math.exp(');
-    e = e.replace(/\bfact\(/g, 'fact(');
+    const result = parseExpr();
+    if (pos < toks.length) fail('Expression invalide');
+    if (isNaN(result)) fail('Calcul non défini');
+    return result;
+  }
 
-    e = e.replace(/\bPI\b/g, '(' + Math.PI + ')');
-    e = e.replace(/π/g, '(' + Math.PI + ')');
-
-    e = e.replace(/(^|[^a-zA-Z_])e(?![a-zA-Z_])/g, '$1(' + Math.E + ')');
-
-    e = e.replace(/(\d)\(/g, '$1*(');
-    e = e.replace(/\)(\d)/g, ')*$1');
-    e = e.replace(/\)\(/g, ')*(');
-    e = e.replace(/(\d)(Math\.)/g, '$1*$2');
-
-    try {
-      const fn = new Function(
-        '__sinD', '__cosD', '__tanD', '__asinD', '__acosD', '__atanD',
-        'fact',
-        `'use strict'; return (${e});`
-      );
-      return fn(
-        x => Math.sin(toRad(x)),
-        x => Math.cos(toRad(x)),
-        x => Math.tan(toRad(x)),
-        x => toDeg(Math.asin(Math.min(1, Math.max(-1, x)))),
-        x => toDeg(Math.acos(Math.min(1, Math.max(-1, x)))),
-        x => toDeg(Math.atan(x)),
-        factorial
-      );
-    } catch (err) {
-      return NaN;
+  /* Reconstruit les chaînes d'affichage et de calcul depuis les tokens,
+     recalcule le nombre de parenthèses ouvertes et rafraîchit l'écran. */
+  function refreshFromTokens() {
+    expr = tokens.map(t => t.d).join('');
+    calc = tokens.map(t => t.c).join('');
+    openP = 0;
+    for (const ch of calc) {
+      if (ch === '(') openP++;
+      else if (ch === ')') openP = Math.max(0, openP - 1);
     }
+    updateDisplay();
+  }
+
+  const NUMBER_END_RE = /[0-9)!]/;
+  /* Insère une VALEUR (Ans, mémoire, constante) : multiplie automatiquement
+     si le token précédent se termine par un nombre / « ) » / « ! » — et
+     empêche le collage ambigu « 5 » + « 1e-7 » → « 5 × 1e-7 ». */
+  function insertValueToken(display, calcStr) {
+    const lastTok = tokens[tokens.length - 1];
+    if (lastTok && NUMBER_END_RE.test(lastTok.c.slice(-1))) {
+      tokens.push({ d: ' × ', c: '*' });
+    }
+    tokens.push({ d: display, c: calcStr });
   }
 
   // ============================================================
   // AFFICHAGE
   // ============================================================
   function updateDisplay() {
-    displayExpr.textContent = expr;
+    displayExpr.textContent = done ? (expr + ' =') : expr;
 
     if (openP > 0) {
       parenIndicator.textContent = openP + ' parenthèse(s) ouverte(s)';
@@ -1472,104 +1662,95 @@
   // ============================================================
   // ACTIONS CALCULATRICE
   // ============================================================
-  function inputNumber(n) {
-    if (done) {
-      expr = n === '.' ? '0.' : n;
-      calc = expr;
-      done = false;
-    } else {
-      expr += n;
-      calc += n;
+  // ============================================================
+  // ✅ v8.63a — ACTIONS (par tokens : affichage et calcul toujours
+  // synchronisés, retour arrière parfait, opérateurs auto-remplacés)
+  // ============================================================
+  /* Le nombre en cours de saisie (tokens numériques consécutifs de la fin). */
+  function currentNumberString() {
+    let s = '';
+    for (let i = tokens.length - 1; i >= 0; i--) {
+      if (/^[0-9.]$/.test(tokens[i].c)) s = tokens[i].c + s;
+      else break;
     }
+    return s;
+  }
+
+  function inputNumber(n) {
+    if (done) { tokens = []; done = false; }
+    if (n === '.') {
+      if (currentNumberString().indexOf('.') >= 0) return; /* jamais « 1..2 » */
+      if (!currentNumberString()) tokens.push({ d: '0', c: '0' }); /* « .5 » → « 0.5 » */
+    }
+    tokens.push({ d: n, c: n });
+    refreshFromTokens();
     vibrate(8);
-    updateDisplay();
   }
 
   function inputOperator(op) {
     done = false;
-    const sym = {'+': '+', '-': '−', '*': '×', '/': '÷'}[op];
-    expr += ' ' + sym + ' ';
-    calc += op;
+    /* Remplace un opérateur final par le nouveau — plus jamais « 5 + × ». */
+    while (tokens.length) {
+      const lt = tokens[tokens.length - 1];
+      if (/^[+\-*/]$/.test(lt.c) && lt.d.trim().length <= 3) tokens.pop();
+      else break;
+    }
+    const sym = { '+': ' + ', '-': ' − ', '*': ' × ', '/': ' ÷ ' }[op];
+    tokens.push({ d: sym, c: op });
+    refreshFromTokens();
     vibrate(10);
-    updateDisplay();
   }
 
   function inputFunction(fn) {
-    done = false;
-
-    switch (fn) {
-      case 'square':
-        if (expr) { expr += '²'; calc += '**2'; }
-        break;
-      case 'cube':
-        if (expr) { expr += '³'; calc += '**3'; }
-        break;
-      case 'power':
-        if (expr) { expr += '^'; calc += '**'; }
-        break;
-      case 'inv':
-        if (expr) { expr = '1÷(' + expr + ')'; calc = '1/(' + calc + ')'; }
-        else { expr = '1÷('; calc = '1/('; openP++; }
-        break;
-      case 'abs':
-        expr += '|'; calc += 'abs('; openP++;
-        break;
-      case 'fact':
-        if (expr) { expr += '!'; calc = 'fact(' + calc + ')'; }
-        break;
-      case 'percent':
-        expr += '%'; calc += '/100';
-        break;
-      case 'tenpow':
-        if (expr) { expr = '10^(' + expr + ')'; calc = 'Math.pow(10,' + calc + ')'; }
-        else { expr = '10^('; calc = 'Math.pow(10,'; openP++; }
-        break;
-      default:
-        expr += fn + '(';
-        calc += fn + '(';
-        openP++;
+    if (done) { tokens = []; done = false; }
+    /* Postfixes : carré, cube, puissance, factorielle, pourcentage. */
+    const post = { square: ['²', '**2'], cube: ['³', '**3'], power: ['^', '**'], fact: ['!', '!'], percent: ['%', '/100'] };
+    if (post[fn]) {
+      const lt = tokens[tokens.length - 1];
+      if (!lt || !NUMBER_END_RE.test(lt.c.slice(-1))) return;
+      tokens.push({ d: post[fn][0], c: post[fn][1] });
+      refreshFromTokens();
+      vibrate(8);
+      return;
     }
+    const fns = {
+      sin: ['sin(', 'sin('], cos: ['cos(', 'cos('], tan: ['tan(', 'tan('],
+      asin: ['sin⁻¹(', 'asin('], acos: ['cos⁻¹(', 'acos('], atan: ['tan⁻¹(', 'atan('],
+      ln: ['ln(', 'ln('], log: ['log(', 'log('], sqrt: ['√(', 'sqrt('],
+      cbrt: ['∛(', 'cbrt('], inv: ['1÷(', '1/('], abs: ['|', 'abs('],
+      exp: ['exp(', 'exp('], tenpow: ['10^(', '10^(']
+    };
+    const t = fns[fn];
+    if (!t) return;
+    tokens.push({ d: t[0], c: t[1] });
+    refreshFromTokens();
     vibrate(8);
-    updateDisplay();
   }
 
   function inputConst(c) {
-    done = false;
-    if (c === 'pi') {
-      expr += 'π';
-      calc += 'PI';
-    } else if (c === 'e') {
-      expr += 'e';
-      calc += 'e';
-    }
+    if (done) { tokens = []; done = false; }
+    if (c === 'pi') insertValueToken('π', '(PI)');
+    else if (c === 'e') insertValueToken('e', '(E)');
+    else return;
+    refreshFromTokens();
     vibrate(8);
-    updateDisplay();
   }
 
   function inputParen() {
-    done = false;
-    const last = expr.trim().slice(-1);
-    if (!expr || /[+\-×÷^(]$/.test(last) || openP === 0) {
-      expr += '(';
-      calc += '(';
-      openP++;
-    } else if (openP > 0) {
-      expr += ')';
-      calc += ')';
-      openP--;
+    if (done) { tokens = []; done = false; }
+    const lt = tokens[tokens.length - 1];
+    const lastDisp = lt ? lt.d.trim().slice(-1) : '';
+    if (!lt || /[+\-−×÷^(]$/.test(lastDisp) || openP === 0) {
+      tokens.push({ d: '(', c: '(' });
     } else {
-      expr += '(';
-      calc += '(';
-      openP++;
+      tokens.push({ d: ')', c: ')' });
     }
+    refreshFromTokens();
     vibrate(8);
-    updateDisplay();
   }
 
   function clearAll() {
-    expr = '';
-    calc = '';
-    openP = 0;
+    tokens = [];
     done = false;
     displayExpr.textContent = '';
     updateResult('0');
@@ -1577,64 +1758,62 @@
   }
 
   function deleteLast() {
-    if (done) {
-      clearAll();
-      return;
-    }
-    if (!expr.length) return;
-
-    const rem = expr.slice(-1);
-    expr = expr.slice(0, -1);
-    calc = calc.slice(0, -1);
-
-    if (rem === '(') openP = Math.max(0, openP - 1);
-    if (rem === ')') openP++;
-
-    if (expr.endsWith(' ')) {
-      expr = expr.slice(0, -1);
-      calc = calc.slice(0, -1);
-    }
-
-    if (!expr) updateResult('0');
+    if (done) { clearAll(); return; }
+    if (!tokens.length) return;
+    tokens.pop();
+    if (!tokens.length) updateResult('0');
     vibrate(6);
-    updateDisplay();
+    refreshFromTokens();
   }
 
   function evaluate() {
     if (done) return;
-    if (!calc.trim()) return;
+    let fCalc = tokens.map(t => t.c).join('');
+    let fExpr = tokens.map(t => t.d).join('');
+    if (!fCalc.trim()) return;
 
-    let fCalc = calc;
-    let fExpr = expr;
+    /* Fermeture automatique des parenthèses ouvertes. */
+    let oc = 0;
+    for (const ch of fCalc) { if (ch === '(') oc++; else if (ch === ')') oc--; }
+    while (oc > 0) { fCalc += ')'; fExpr += ')'; oc--; }
 
-    while (openP > 0) {
-      fCalc += ')';
-      fExpr += ')';
-      openP = 0;
-    }
-
-    const result = safeEval(fCalc);
-
-    if (isNaN(result) || !isFinite(result)) {
-      updateResult(result === Infinity ? '∞' : 'Erreur', true);
+    let result;
+    try {
+      result = evalCalc(fCalc, isDeg);
+    } catch (err) {
+      updateResult(err && err.message ? err.message : 'Erreur', true);
       vibrate([20, 30, 20]);
       return;
     }
 
-    const formatted = formatNumber(result);
-    displayExpr.textContent = fExpr + ' =';
+    if (typeof result !== 'number' || isNaN(result)) {
+      updateResult('Erreur', true);
+      vibrate([20, 30, 20]);
+      return;
+    }
+    if (!isFinite(result)) {
+      updateResult(result > 0 ? '∞' : '−∞', true);
+      vibrate([20, 30, 20]);
+      return;
+    }
+
+    /* Nettoie le bruit flottant : sin(30) affiche 0.5, plus 0.499999… */
+    const clean = Number(result.toPrecision(12));
+    const formatted = formatNumber(clean);
+
+    expr = fExpr;
+    calc = String(clean);
+    tokens = [{ d: String(clean), c: String(clean) }];
+    done = true;
+
     updateResult(formatted);
 
-    history.unshift({ e: fExpr, r: formatted });
+    history.unshift({ e: fExpr, r: formatted, v: clean });
     if (history.length > 50) history.length = 50;
     saveHistory();
 
-    lastAns = result;
+    lastAns = clean;
     saveAns();
-
-    expr = String(result);
-    calc = String(result);
-    done = true;
 
     vibrate([10, 20, 10]);
     updateDisplay();
@@ -1655,37 +1834,52 @@
   function memRecall() {
     if (!hasMem) return;
     done = false;
-    expr += String(memory);
-    calc += String(memory);
+    insertValueToken(String(memory), '(' + String(memory) + ')');
+    refreshFromTokens();
     vibrate(8);
-    updateDisplay();
     closeModal('modalMenu');
   }
 
   function memAdd() {
     if (calc.trim()) {
-      const v = safeEval(calc);
-      if (!isNaN(v)) {
-        memory += v;
-        hasMem = true;
-        memIndicator.classList.add('visible');
-        saveMemory();
-        showToast('M+ : ' + memory);
-        updateMemValue();
+      try {
+        let fCalc = calc;
+        let oc = 0;
+        for (const ch of fCalc) { if (ch === '(') oc++; else if (ch === ')') oc--; }
+        while (oc > 0) { fCalc += ')'; oc--; }
+        const v = evalCalc(fCalc, isDeg);
+        if (!isNaN(v) && isFinite(v)) {
+          memory += v;
+          hasMem = true;
+          memIndicator.classList.add('visible');
+          saveMemory();
+          showToast('M+ : ' + memory);
+          updateMemValue();
+        }
+      } catch (e) {
+        showToast('Expression invalide');
       }
     }
   }
 
   function memSub() {
     if (calc.trim()) {
-      const v = safeEval(calc);
-      if (!isNaN(v)) {
-        memory -= v;
-        hasMem = true;
-        memIndicator.classList.add('visible');
-        saveMemory();
-        showToast('M− : ' + memory);
-        updateMemValue();
+      try {
+        let fCalc = calc;
+        let oc = 0;
+        for (const ch of fCalc) { if (ch === '(') oc++; else if (ch === ')') oc--; }
+        while (oc > 0) { fCalc += ')'; oc--; }
+        const v = evalCalc(fCalc, isDeg);
+        if (!isNaN(v) && isFinite(v)) {
+          memory -= v;
+          hasMem = true;
+          memIndicator.classList.add('visible');
+          saveMemory();
+          showToast('M− : ' + memory);
+          updateMemValue();
+        }
+      } catch (e) {
+        showToast('Expression invalide');
       }
     }
   }
@@ -1804,11 +1998,15 @@
       item.addEventListener('click', () => {
         const h = history[parseInt(item.dataset.idx)];
         if (h) {
-          const val = String(h.r).replace(/[^\d.\-]/g, '');
-          expr = val;
-          calc = val;
+          /* ✅ v8.63a — rappel par la valeur BRUTE (h.v) : la valeur affichée
+             « fr-FR » (1 234,5) détruisait les décimales au rappel (« 1,5 »
+             devenait « 15 »). */
+          const val = (typeof h.v === 'number' && isFinite(h.v))
+            ? String(h.v)
+            : String(h.r).replace(/[^\d.\-]/g, '');
+          tokens = [{ d: val, c: val }];
           done = false;
-          updateDisplay();
+          refreshFromTokens();
           updateResult(val);
           closeModal('modalHistory');
           vibrate(10);
@@ -1885,10 +2083,9 @@
     list.querySelectorAll('.const-item').forEach(item => {
       item.addEventListener('click', () => {
         const val = item.dataset.val;
-        expr += val;
-        calc += val;
         done = false;
-        updateDisplay();
+        insertValueToken(val, '(' + val + ')');
+        refreshFromTokens();
         closeModal('modalConst');
         showToast('Constante insérée');
         vibrate(10);
@@ -2086,9 +2283,8 @@
 
     document.getElementById('menuAns').addEventListener('click', () => {
       done = false;
-      expr += String(lastAns);
-      calc += String(lastAns);
-      updateDisplay();
+      insertValueToken(String(lastAns), '(' + String(lastAns) + ')');
+      refreshFromTokens();
       closeModal('modalMenu');
       vibrate(10);
     });

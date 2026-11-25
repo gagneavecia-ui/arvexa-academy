@@ -17,7 +17,7 @@
 // appareil déjà installé, l'ancien SW qui mettait les pages en cache.
 // ================================================================
 
-let SW_VERSION = 'arvexa-online-v8.62a';
+let SW_VERSION = 'arvexa-online-v8.63a';
 
 self.addEventListener('install', (event) => {
   // Aucun précache : rien à mettre en cache, jamais.
