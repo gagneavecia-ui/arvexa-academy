@@ -868,6 +868,12 @@ async function attemptProviderOnce(provider, model, timeoutMs, { systemPrompt, u
     };
 
     if (provider.jsonMode) body.response_format = { type: 'json_object' };
+    // ✅ v8.65a — modèles à raisonnement (nemotron/particle/ernie) : exclure le
+    // raisonnement pour que le CONTENT contienne vraiment la réponse (testé en
+    // direct le 26/11/2026 — sans cela, gros prompt = content vide).
+    if (/openrouter\.ai/.test(provider.endpoint || '')) {
+      body.reasoning = { exclude: true, max_tokens: 1500 };
+    }
 
     const result = await fetch(provider.endpoint, {
       method: 'POST',
@@ -891,6 +897,10 @@ async function attemptProviderOnce(provider, model, timeoutMs, { systemPrompt, u
     }
 
     rawContent = data?.choices?.[0]?.message?.content;
+    if (!rawContent) {
+      const rsn = data?.choices?.[0]?.message?.reasoning;
+      if (rsn && String(rsn).trim().length > 40) rawContent = String(rsn); // filet v8.65a
+    }
     if (!rawContent) return { ok: false, status, errMsg: 'réponse vide', kind: 'empty' };
     // ✅ v8.48a — finish_reason « length » = sortie COUPÉE (max_tokens atteint)
     return { ok: true, rawContent, status, finishReason: data?.choices?.[0]?.finish_reason || null };

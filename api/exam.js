@@ -30,9 +30,11 @@ const MAX_REQUESTS_PER_WINDOW_LIGHT = 60;
 const MAX_REQUESTS_PER_WINDOW_HEAVY = 5;
 const requestLog = new Map();
 
-const ALLOWED_SUBJECTS = new Set(['mathematiques', 'physique', 'chimie', 'svt', 'philosophie', 'histoire', 'geographie']);
+// ✅ v8.65a — ALLOWED_SUBJECTS est déclaré APRÈS SUBJECT_LABELS (16 matières
+// du cahier, page Résumé). ALLOWED_DURATIONS : puces 1 h → 4 h (image du
+// propriétaire). La difficulté n'est PLUS choisie : c'est l'IA qui propose.
 const ALLOWED_DIFFICULTIES = new Set(['easy', 'medium', 'hard', 'bac']);
-const ALLOWED_DURATIONS = new Set([30, 60, 90, 120, 180]);
+const ALLOWED_DURATIONS = new Set([30, 60, 90, 120, 180, 240]);
 const ALLOWED_ACTIONS = new Set(['generate', 'correct', 'listExams', 'loadExam', 'deleteExam']);
 const LIGHT_ACTIONS = new Set(['listExams', 'loadExam', 'deleteExam']);
 const PREMIUM_ACTIONS = new Set(['listExams', 'loadExam']);
@@ -46,10 +48,14 @@ const POOL_COLLECTION = 'examPool';
 // jour, chaque génération coûte 5 crédits, débités en transaction serveur.
 const { COSTS, consumeCredits } = require('./_credits');
 
+// ✅ v8.65a — TESTÉ EN DIRECT le 26/11/2026 : les relais :free d'OpenRouter
+// renvoient un CONTENT VIDE dès que max_tokens dépasse ~4000 (cap upstream
+// silencieux). À 3800 : particle 4,3 s · ernie 4,8 s · JSON parsable 3/3.
+// 3800 tokens ≈ 12-15k caractères — largement suffisant pour un sujet complet.
 const MAX_TOKENS = {
-  GENERATE: 8000, // ✅ Baissé de 16000 à 8000 pour éviter les timeouts
-  CORRECT: 8000,
-  PROVIDER_DEFAULT: 8000
+  GENERATE: 3800,
+  CORRECT: 3800,
+  PROVIDER_DEFAULT: 3800
 };
 
 const SUBJECT_LABELS = {
@@ -59,8 +65,23 @@ const SUBJECT_LABELS = {
   svt: 'SVT',
   philosophie: 'Philosophie',
   histoire: 'Histoire',
-  geographie: 'Géographie'
+  geographie: 'Géographie',
+  // ✅ v8.65a — TOUTES les matières du cahier (page Résumé) : l'élève peut
+  // fabriquer une épreuve sur ce qu'il a réellement résumé, aucune matière
+  // bloquée côté serveur.
+  anglais: 'Anglais',
+  francais: 'Français',
+  informatique: 'Informatique',
+  technologie: 'Technologie',
+  economie: 'Économie & Gestion',
+  espagnol: 'Espagnol',
+  allemand: 'Allemand',
+  education_civique: 'Éducation civique',
+  arts: 'Arts & Musique'
 };
+
+// ✅ v8.65a — ALLOWED_SUBJECTS aligné sur la page Résumé (16 matières).
+const ALLOWED_SUBJECTS = new Set(Object.keys(SUBJECT_LABELS));
 
 // ✅ v5.0 — QCM autorisés aussi en SVT (questionnaires BAC SVT : QCM, vrai/faux).
 const CHOICE_SUBJECTS = new Set(['mathematiques', 'physique', 'chimie', 'svt']);
@@ -71,13 +92,15 @@ const CHOICE_SUBJECTS = new Set(['mathematiques', 'physique', 'chimie', 'svt']);
 // n'imposait AUCUN questionnaire aux littéraires — d'où : des décimales
 // impossibles en Nombres complexes, des calculs en Histoire, des exercices de
 // maths purs en SVT. Désormais 3 régimes ÉTANCHES :
-//   • calcul      (mathematiques, physique, chimie) : exercices de CALCUL, mais
-//                   avec VALEURS EXACTES en maths (zéro virgule, surtout en
-//                   complexes) ; décimales réalistes réservées à physique/chimie.
+//   • calcul      (mathematiques, physique, chimie, informatique, technologie) :
+//                   exercices de CALCUL, mais avec VALEURS EXACTES en maths
+//                   (zéro virgule, surtout en complexes) ; décimales réalistes
+//                   réservées à physique/chimie.
 //   • svt         : QUESTIONNAIRE + ANALYSE BAC SVT (restitution, exploitation de
 //                   documents, QCM, vrai/faux justifiés, conclusions) ; calculs
 //                   UNIQUEMENT en génétique/données chiffrées du chapitre.
-//   • litteraire  (histoire, geographie, philosophie) : QUESTIONS uniquement —
+//   • litteraire  (histoire, geographie, philosophie, langues, français, éco,
+//                   éducation civique, arts) : QUESTIONS uniquement —
 //                   STRICTEMENT ZÉRO calcul, zéro LaTeX mathématique.
 // ═════════════════════════════════════════════════════════════
 const SUBJECT_CATEGORY = {
@@ -87,7 +110,17 @@ const SUBJECT_CATEGORY = {
   svt: 'svt',
   histoire: 'litteraire',
   geographie: 'litteraire',
-  philosophie: 'litteraire'
+  philosophie: 'litteraire',
+  // ✅ v8.65a — nouvelles matières du cahier
+  anglais: 'litteraire',
+  francais: 'litteraire',
+  espagnol: 'litteraire',
+  allemand: 'litteraire',
+  economie: 'litteraire',
+  education_civique: 'litteraire',
+  arts: 'litteraire',
+  informatique: 'calcul',
+  technologie: 'calcul'
 };
 const CATEGORY_LABELS = {
   calcul: 'scientifique à CALCULS (exercices de calcul pur)',
@@ -373,23 +406,36 @@ async function releaseFreeGeneration(uid, usageDate) {
 
 function getProviders() {
   const providers = [];
-  if (process.env.GROQ_API_KEY) {
-    providers.push(
-      { name: 'Groq/gpt-oss-120b', key: process.env.GROQ_API_KEY, endpoint: 'https://api.groq.com/openai/v1/chat/completions', model: 'openai/gpt-oss-120b', jsonMode: true, headers: {} },
-      { name: 'Groq/llama-3.3-70b', key: process.env.GROQ_API_KEY, endpoint: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.3-70b-versatile', jsonMode: true, headers: {} },
-      { name: 'Groq/gpt-oss-20b', key: process.env.GROQ_API_KEY, endpoint: 'https://api.groq.com/openai/v1/chat/completions', model: 'openai/gpt-oss-20b', jsonMode: true, headers: {} },
-      { name: 'Groq/llama-3.1-8b', key: process.env.GROQ_API_KEY, endpoint: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.1-8b-instant', jsonMode: true, headers: {} }
-    );
-  }
   if (process.env.OPENROUTER_API_KEY) {
+    // ✅ v8.65a — CHAÎNE VÉRIFIÉE EN DIRECT le 26/11/2026 (test réel depuis
+    // le sandbox) : nemotron-3-ultra (550B) + ernie-5.5 répondent avec un JSON
+    // impeccable ; gemma/ling/particle ont un cap partagé variable (429 →
+    // relais suivant). Les slugs morts (inkling/dots3, retirés d'OpenRouter)
+    // sont supprimés. Groq passe APRÈS : la clé actuelle renvoie 403 Forbidden
+    // (test live) — si le propriétaire la remplace, elle reprend du service.
     const orHeaders = {
       'HTTP-Referer': process.env.APP_ORIGIN || '',
       'X-Title': 'ARVEXA Exam'
     };
+    const orModel = (name, model) => ({
+      name: 'OpenRouter/' + name, key: process.env.OPENROUTER_API_KEY,
+      endpoint: 'https://openrouter.ai/api/v1/chat/completions', model: model,
+      jsonMode: true, headers: orHeaders
+    });
     providers.push(
-      { name: 'OpenRouter/inkling:free', key: process.env.OPENROUTER_API_KEY, endpoint: 'https://openrouter.ai/api/v1/chat/completions', model: 'thinkingmachines/inkling:free', jsonMode: true, headers: orHeaders },
-      { name: 'OpenRouter/dots3:free', key: process.env.OPENROUTER_API_KEY, endpoint: 'https://openrouter.ai/api/v1/chat/completions', model: 'dots-studio/dots3-note-preview:free', jsonMode: true, headers: orHeaders },
-      { name: 'OpenRouter/inkling-small:free', key: process.env.OPENROUTER_API_KEY, endpoint: 'https://openrouter.ai/api/v1/chat/completions', model: 'thinkingmachines/inkling-small:free', jsonMode: true, headers: orHeaders }
+      orModel('particle-1:free', 'particle-ai/particle-1:free'),
+      orModel('ernie-5.5-flash:free', 'baidu/ernie-5.5-flash-preview:free'),
+      orModel('gemma-4-31b:free', 'google/gemma-4-31b-it:free'),
+      orModel('ling-3.2-flash:free', 'inclusionai/ling-3.2-flash:free'),
+      orModel('nemotron-3.5-super:free', 'nvidia/nemotron-3.5-super-vl:free'),
+      orModel('flint-v1:free', 'recursive/flint-v1.0:free'),
+      orModel('nemotron-3-ultra:free', 'nvidia/nemotron-3-ultra-550b-a55b:free')
+    );
+  }
+  if (process.env.GROQ_API_KEY) {
+    providers.push(
+      { name: 'Groq/gpt-oss-120b', key: process.env.GROQ_API_KEY, endpoint: 'https://api.groq.com/openai/v1/chat/completions', model: 'openai/gpt-oss-120b', jsonMode: true, headers: {} },
+      { name: 'Groq/llama-3.3-70b', key: process.env.GROQ_API_KEY, endpoint: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.3-70b-versatile', jsonMode: true, headers: {} }
     );
   }
   if (process.env.MISTRAL_API_KEY) {
@@ -436,6 +482,13 @@ async function callProvider(provider, prompt, maxTokens, temperature) {
     if (provider.jsonMode) body.response_format = { type: 'json_object' };
     // gpt-oss = modèle de raisonnement : effort bas → tokens réservés au contenu
     if (/gpt-oss/.test(provider.model || '')) body.reasoning_effort = 'low';
+    // ✅ v8.65a — modèles à RAISONNEMENT (nemotron/particle/ernie...) : sans
+    // cette ligne, le raisonnement brûle TOUT le budget sur les gros prompts
+    // → content vide + finish=length (constaté en test live). Verified :
+    // exclude=true → contenu pur, finish=stop.
+    if (/openrouter\.ai/.test(provider.endpoint || '')) {
+      body.reasoning = { exclude: true, max_tokens: 2000 };
+    }
 
     const headers = {
       'Content-Type': 'application/json',
@@ -453,7 +506,13 @@ async function callProvider(provider, prompt, maxTokens, temperature) {
       throw new Error(provider.name + ': ' + msg);
     }
 
-    const content = data?.choices?.[0]?.message?.content;
+    let content = data?.choices?.[0]?.message?.content;
+    if (!content) {
+      // ✅ v8.65a — filet : sur certains relais le JSON aboutit dans le champ
+      // « reasoning » (exclusion non appliquée en amont). On le récupère.
+      const rsn = data?.choices?.[0]?.message?.reasoning;
+      if (rsn && String(rsn).trim().length > 40) content = String(rsn);
+    }
     if (!content) throw new Error(provider.name + ': réponse vide');
 
     console.log(`[AI] ${provider.name} — réponse: ${content.length} car`);
@@ -681,7 +740,7 @@ Les exercices doivent être :
 - Fidèles au programme officiel (niveau BAC)
 - Progressifs (facile → difficile au sein du même exercice)
 - Chaque question teste UNE notion précise, mais peut nécessiter plusieurs étapes.
-- Les points sont FIXES : Exercice = 6.67 pts, Question = 1.33 pts.
+- BARÈME (composition sur 20) : QCM/Questions de connaissance = 5 pts ; exercices classiques = 7 pts au total ; dissertation finale = 8 pts.
 - STYLE DE RÉFÉRENCE OBLIGATOIRE — 100% CALCULS type "Pascal Lainé" : chaque énoncé DONNE une expression, une équation, une fonction ou un bloc "Données :", et l'élève calcule, transforme, résout. AUCUN récit, AUCUNE histoire, AUCUNE situation vécue. La difficulté vient UNIQUEMENT des calculs.
 - INTERDIT de générer une question sans travail réel (simple recopie du cours) comme de noyer un calcul dans un long récit. L'élève doit réfléchir sur des CALCULS.
 `;
@@ -695,7 +754,7 @@ Tu prépares un élève de Terminale D en Afrique francophone pour le BAC.
 Les exercices doivent être :
 - Fidèles au programme officiel (niveau BAC) et au format des sujets BAC SVT.
 - Progressifs (restitution → analyse → synthèse au sein du même exercice).
-- Les points sont FIXES : Exercice = 6.67 pts, Question = 1.33 pts.
+- BARÈME (composition sur 20) : QCM/Questions de connaissance = 5 pts ; exercices classiques = 7 pts au total ; dissertation finale = 8 pts.
 COMPOSITION OBLIGATOIRE D'UN EXERCICE SVT (mélanger ces familles de questions) :
 1. Restitution des connaissances : définir, citer, compléter, nommer, décrire (type "text", réponses courtes).
 2. ANALYSE de documents/données : graphique, tableau, expérience, résultat d'observation → exploiter, interpréter, expliquer, comparer (type "text"). Les données (courbes, valeurs) sont données DANS l'énoncé et servent à RAISONNER, pas à calculer.
@@ -716,7 +775,7 @@ Tu prépares un élève de Terminale D en Afrique francophone pour le BAC.
 Les questions doivent être :
 - Fidèles au programme officiel (niveau BAC) et aux attentes réelles de l'épreuve.
 - Progressives : connaissance → analyse → mise en relation → jugement argumenté.
-- Les points sont FIXES : Exercice = 6.67 pts, Question = 1.33 pts.
+- BARÈME (composition sur 20) : QCM/Questions de connaissance = 5 pts ; exercices classiques = 7 pts au total ; dissertation finale = 8 pts.
 COMPOSITION OBLIGATOIRE (mélanger ces familles de questions) :
 1. Questions de connaissances : citer, définir, situer, nommer, caractériser (type "text").
 2. Analyse : expliquer un fait, un document, une notion, un extrait (type "text").
@@ -795,9 +854,9 @@ const PHYSICS_RULES = `
 RÈGLES SPÉCIFIQUES PHYSIQUE
 ═══════════════════════════════════════════════════════════════
 1. L'énoncé DONNE directement les données techniques (équation(s) horaire(s), valeurs de v0, a, U, R, m...), avec au maximum UNE phrase de cadrage neutre ("Un mobile M et un camion C se déplacent sur une route rectiligne."), puis on passe immédiatement au CALCUL. STRICTEMENT INTERDIT de raconter une histoire.
-2. LA PREMIÈRE QUESTION (1.a) EST OBLIGATOIREMENT DE TYPE "drawing" :
+2. LA PREMIÈRE QUESTION DU PREMIER EXERCICE CLASSIQUE (partie Q1.a — PAS le QCM) EST OBLIGATOIREMENT DE TYPE "drawing" :
    - Demander de faire le schéma, de placer le repère, ou de tracer les vecteurs.
-3. Les questions suivantes (1.b à 1.e) demandent des équations horaires, des calculs de distance/temps, ou des analyses graphiques.
+3. Les questions suivantes du même exercice (1.b à 1.d) demandent des équations horaires, des calculs de distance/temps, ou des analyses graphiques.
 `;
 
 const CHEMISTRY_RULES = `
@@ -815,23 +874,28 @@ RÈGLES SPÉCIFIQUES CHIMIE
 
 const STRUCTURE_CONTROL = `
 ═══════════════════════════════════════════════════════════════
-CONTRÔLE STRUCTUREL OBLIGATOIRE
+CONTRÔLE STRUCTUREL OBLIGATOIRE (composition v8.65a — sur 20)
 ═══════════════════════════════════════════════════════════════
+CONCISION OBLIGATOIRE : énoncés et données TENUS (statement ≤ 30 mots),
+options courtes (≤ 12 mots), instructions brèves — la sortie ENTIÈRE doit
+tenir dans un budget serré. Pas de bavardage, pas de répétition.
 Ton JSON contient EXACTEMENT :
-- "subjects" : tableau de 2 objets
-- Chaque subject a : "id" ("subject_1" / "subject_2"), "title", "level", "instructions", "exercises" (3 objets)
-- Chaque exercise a : "number" (1-3), "title", "points" (6.67), "statement", "questions" (5 objets)
-- Chaque question a : "number" ("1.a"), "text", "points" (1.33), "type" ("choice", "text", ou "drawing")
-  - Si "choice" : "options" (4 objets {id:A/B/C/D, text}) + "correctAnswer" (A/B/C/D)
-  - Si "text" : PAS d'options, PAS de correctAnswer
-  - Si "drawing" : PAS d'options, PAS de correctAnswer (utilisé uniquement en Physique Q1)
+- "subjects" : tableau de __NB_SUJETS__
+- Chaque subject a : "id" ("subject_1" / "subject_2"), "title", "level", "instructions", "exercises"
+- "exercises" OBEIT STRICTEMENT à cette composition (dans cet ordre) :
+  1) EXERCICE 0 — PARTIE QCM : "title": "QCM", "points": 5, EXACTEMENT 5 questions de type "choice", 1 point chacune, chacune avec "options" (4 objets {id:A/B/C/D, text}) et "correctAnswer" (A/B/C/D).
+     (Si la matière N'ADMET PAS de QCM — matières littéraires hors SVT — ces 5 questions deviennent des questions de CONNAISSANCE à réponse courte type "text", toujours 1 point chacune.)
+  2) EXERCICES 1..k — EXERCICES CLASSIQUES : k est TON CHOIX de professeur (2 OU 3 exercices). Chacun a "number", "title", "statement", "points", et 2 à 4 questions (type "text" ou "drawing"). La SOMME des "points" de ces exercices = EXACTEMENT 7.
+  3) DERNIER EXERCICE — DISSERTATION / PROBLÈME DE SYNTHÈSE : "title": "Dissertation", "points": 8, "dissertation": true, "propositions": tableau de EXACTEMENT 2 objets {"id": "A" ou "B", "title": "...", "text": "énoncé complet du sujet"} — l'élève en traite UNE au choix — et EXACTEMENT 1 question de type "text" (points 8) dont le "text" demande de traiter l'une des deux propositions.
+- La somme des points d'un sujet = EXACTEMENT 20 (5 + 7 + 8).
+- C'est TOI qui décides du nombre d'exercices classiques (2 ou 3) et du nombre de questions par exercice (2 à 4) comme un vrai professeur : l'élève traite TOUT ce que tu livres.
 
 CONTRAT DE COMPLÉTION — ABSOLUMENT OBLIGATOIRE :
-- Tu livres l'INTÉGRALITÉ des 30 questions (2 sujets × 3 exercices × 5 questions), JAMAIS une réponse partielle.
+- Tu livres l'INTÉGRALITÉ des questions (2 sujets complets), JAMAIS une réponse partielle.
 - CHAQUE question a un énoncé ("text") COMPLET et NON VIDE : la question posée, les données numériques et l'unité attendue.
-- CHAQUE exercice a un "statement" non vide qui pose les données de ses 5 questions (expression à transformer, équation, données techniques ou courte situation).
+- CHAQUE exercice a un "statement" non vide qui pose les données de ses questions (expression à transformer, équation, données techniques ou courte situation).
 - Si tu manques de place, raccourcis les formulations mais ne supprime JAMAIS une question et ne mets jamais "..." ou "".
-- VÉRIFICATION FINALE AVANT DE RÉPONDRE : compte tes questions (15 par sujet). S'il en manque, complète-les AVANT d'émettre ta réponse.
+- VÉRIFICATION FINALE AVANT DE RÉPONDRE : compte tes points par sujet (QCM 5 + exercices 7 + dissertation 8 = 20). S'il en manque, complète AVANT d'émettre ta réponse.
 - INTERDIT de renvoyer un commentaire, une excuse ou du texte hors JSON.
 `;
 
@@ -1106,7 +1170,7 @@ ${styleBlock}${contextLines}
 ${avoidBlock}`;
 }
 
-function generationPrompt(config, avoidStatements) {
+function generationPrompt(config, avoidStatements, single) {
   const subjectLabel = SUBJECT_LABELS[config.subject] || config.subject;
   const category = subjectCategory(config.subject);
 
@@ -1131,13 +1195,10 @@ MISSION : Génère DEUX sujets d'examen complets.
 Matière : ${subjectLabel}
 Niveau : ${config.level}
 Chapitre : ${config.chapter === 'all' ? 'tous les chapitres' : config.chapter}
-Difficulté exigée : ${config.difficulty}
-RÈGLES DE DIFFICULTÉ :
-${diffRules}
+DIFFICULTÉ : c'est TOI, professeur, qui juges le niveau juste — de la maîtrise du cours jusqu'au niveau BAC. GRADATION OBLIGATOIRE : le Sujet 2 doit être VISIBLEMENT plus difficile que le Sujet 1 (énoncés plus riches, plus d'étapes de calcul, notions combinées).
 
-SUJET 1 — "Consolidation" (facile à moyen) : tester les bases.
-SUJET 2 — "Approfondissement" (moyen à difficile) : aller plus loin.
-GRADATION OBLIGATOIRE : le Sujet 2 doit être VISIBLEMENT plus difficile que le Sujet 1 (énoncés plus riches, plus d'étapes de calcul, notions combinées) tout en respectant la difficulté exigée ci-dessus. Interdit de livrer deux sujets de même difficulté.
+SUJET 1 — "Consolidation" : tester les bases du chapitre.
+SUJET 2 — "Approfondissement" : aller plus loin vers le BAC.
 
 ${variationBlock}
 
@@ -1158,12 +1219,13 @@ FORMAT JSON :
   ]
 }
 
-${STRUCTURE_CONTROL}
+${STRUCTURE_CONTROL.replace('__NB_SUJETS__', single ? '1 objet' : '2 objets')}
 
+${single ? 'UN SEUL sujet est attendu dans "subjects" (entraînement sur le cours : l\'élève traite ce sujet unique).' : ''}
 Réponds UNIQUEMENT avec le JSON complet et valide.`;
 }
 
-function generationPromptFromNotebook(config, notebookContext, avoidStatements) {
+function generationPromptFromNotebook(config, notebookContext, avoidStatements, single) {
   const subjectLabel = SUBJECT_LABELS[config.subject] || config.subject;
   const category = subjectCategory(config.subject);
 
@@ -1187,9 +1249,7 @@ L'élève a étudié un chapitre dans son cahier. Génère DEUX sujets basés ST
 
 Chapitre : ${notebookContext.chapterTitle}
 Matière : ${subjectLabel}
-Difficulté exigée : ${config.difficulty}
-RÈGLES DE DIFFICULTÉ :
-${diffRules}
+DIFFICULTÉ : c'est TOI, professeur, qui juges le niveau juste — de la maîtrise du cours lu ci-dessous jusqu'au niveau BAC. GRADATION OBLIGATOIRE : le Sujet 2 doit être VISIBLEMENT plus difficile que le Sujet 1.
 
 ═══════════════════════════════════════════════════════════════
 CONTENU DU CHAPITRE ÉTUDIÉ
@@ -1218,8 +1278,9 @@ FORMAT JSON :
   ]
 }
 
-${STRUCTURE_CONTROL}
+${STRUCTURE_CONTROL.replace('__NB_SUJETS__', single ? '1 objet' : '2 objets')}
 
+${single ? 'UN SEUL sujet est attendu dans "subjects" (entraînement sur le cours : l\'élève traite ce sujet unique).' : ''}
 Réponds UNIQUEMENT avec le JSON.`;
 }
 
@@ -1233,12 +1294,18 @@ function correctionPrompt(body, notebookContext) {
       const key = body.subjectId + ':' + exIdx + ':' + qIdx;
       questionsDetail.push({
         exerciseNumber: exercise.number || (exIdx + 1),
+        exerciseTitle: exercise.title || '',
         exerciseStatement: exercise.statement || '',
+        // ✅ v8.65a — la dissertation (2 propositions au choix) est identifiée :
+        // le correcteur sait quel sujet l'élève a choisi et corrige dessus.
+        isDissertation: exercise.dissertation === true,
+        propositions: Array.isArray(exercise.propositions) ? exercise.propositions : null,
+        chosenProposition: exercise.dissertation === true ? (body.answers['dissertProp:' + exIdx] || null) : null,
         questionNumber: question.number || ((exIdx + 1) + '.' + (qIdx + 1)),
         questionText: question.text,
         type: question.type || 'text',
         options: question.options || null,
-        points: Number(question.points) || 1.33,
+        points: Number(question.points) || 1,
         // ✅ v5.0 — la réponse vérifiée par la passe de résolution (q.solution)
         // renforce la correction : le correcteur part d'une réponse déjà validée.
         correctAnswer: question.correctAnswer || question.solution || null,
@@ -1281,7 +1348,7 @@ CE QUE TU DOIS GÉNÉRER POUR CHAQUE QUESTION (obligatoire, sans exception) :
 2. "points" : la note décimale attribuée, entre 0 et maxPoints de la question.
 3. "status" : "correct" (note max ou presque), "partial" (note intermédiaire), "wrong" (0 mais réponse fournie), "unanswered" (pas de réponse).
 4. "explanation" : Explication complète (3-6 phrases), comme un prof qui explique la réponse attendue.
-5. "steps" : Tableau des ÉTAPES du calcul (3 à 7 étapes) pour les questions de calcul.
+5. "steps" : Tableau des ÉTAPES DE CORRECTION (2 à 7) — OBLIGATOIRE pour TOUTE question de calcul (chaque étape du raisonnement chiffré) ET pour la dissertation (plan détaillé : introduction/problématique, thèses, arguments, exemples du cours, conclusion). Pour une question de restitution, "steps" liste les points clés attendus (1 à 3).
 6. "concept" : La notion/théorème testée (une phrase).
 7. "whyWrong" : Si l'élève a raté, explication de SON erreur précise.
 8. "commonMistake" : L'erreur classique.
@@ -1300,6 +1367,8 @@ BARÈME STRICT — RÈGLES DE NOTATION (à appliquer rigoureusement) :
 CALCUL DES POINTS — CAS PARTICULIERS
 - QCM : compare la réponse de l'élève à correctAnswer. Correcte = points maximaux. Fausse ou absente = 0.
 - Texte libre : évalue le FOND (idées justes, démarche, résultat), pas la forme.
+- DISSERTATION (isDissertation=true) : l'élève devait traiter UNE des deux propositions. Identifie la proposition traitée ("chosenProposition", sinon déduis-la de sa copie). Évalue : le plan (introduction avec problématique, développement argumenté, conclusion), le respect du sujet choisi, la précision des connaissances et l'usage des mots du cours. Une copie partielle mais sérieuse gagne des points PARTIELS — jamais 0 si des idées justes figurent dessus. Dans "steps", rends le PLAN DE CORRECTION attendu.
+- SCHÉMA (drawing) : évalue la présence des éléments exigés (repère, vecteurs, labels), pas la beauté du dessin.
 
 ${LATEX_RULES}
 
@@ -1338,6 +1407,85 @@ CONTRAT DE COMPLÉTION — ABSOLUMENT OBLIGATOIRE :
 Réponds UNIQUEMENT avec l'objet JSON.`;
 }
 
+// ✅ v8.65a — composition d'un sujet : QCM 5 pts + exercices classiques 7 pts
+// (NOMBRE DÉCIDÉ PAR L'IA, 2 à 3) + dissertation 8 pts (2 propositions).
+// repairExamStructure répare tout écart et RENORMALISE les points à 20.
+function round2(v) { return Math.round(Number(v) * 100) / 100; }
+
+function repairQuestion(question, subjectName, eIdx, qIdx, forceChoice) {
+  if (!question || typeof question !== 'object') question = {};
+  if (!question.number) question.number = (eIdx + 1) + '.' + String.fromCharCode(97 + qIdx);
+  if (!question.text) question.text = question.question || '';
+  if (!Array.isArray(question.options) && Array.isArray(question.choices)) question.options = question.choices;
+  if (forceChoice) {
+    // QCM : 4 options A-D obligatoires, sinon la question devient "text"
+    if (!Array.isArray(question.options) || question.options.length !== 4) {
+      question.type = 'text';
+      delete question.options;
+      delete question.correctAnswer;
+    } else {
+      question.type = 'choice';
+      const letters = ['A', 'B', 'C', 'D'];
+      question.options = question.options.map((opt, oi) => {
+        const text = typeof opt === 'string' ? opt : (opt?.text || opt?.label || String(opt || ''));
+        return { id: letters[oi], text: String(text || '').trim() || ('Option ' + letters[oi]) };
+      });
+      let correct = question.correctAnswer;
+      if (correct === null || correct === undefined) correct = 'A';
+      else if (typeof correct === 'number') correct = letters[correct] || 'A';
+      else {
+        correct = String(correct).toUpperCase().trim();
+        if (['A', 'B', 'C', 'D'].indexOf(correct) === -1) correct = 'A';
+      }
+      question.correctAnswer = correct;
+    }
+  } else {
+    if (!question.type) {
+      question.type = (Array.isArray(question.options) && question.options.length === 4) ? 'choice' : 'text';
+    }
+    if (question.type === 'choice') {
+      if (!Array.isArray(question.options) || question.options.length !== 4) {
+        question.type = 'text';
+        delete question.options;
+        delete question.correctAnswer;
+      } else {
+        const letters = ['A', 'B', 'C', 'D'];
+        question.options = question.options.map((opt, oi) => {
+          const text = typeof opt === 'string' ? opt : (opt?.text || opt?.label || String(opt || ''));
+          return { id: letters[oi], text: String(text || '').trim() || ('Option ' + letters[oi]) };
+        });
+        let correct = question.correctAnswer;
+        if (correct === null || correct === undefined) correct = 'A';
+        else if (typeof correct === 'number') correct = letters[correct] || 'A';
+        else {
+          correct = String(correct).toUpperCase().trim();
+          if (['A', 'B', 'C', 'D'].indexOf(correct) === -1) correct = 'A';
+        }
+        question.correctAnswer = correct;
+      }
+    } else {
+      delete question.options;
+      delete question.correctAnswer;
+    }
+    if (!CHOICE_SUBJECTS.has(subjectName) && question.type === 'choice') {
+      question.type = 'text';
+      delete question.options;
+      delete question.correctAnswer;
+    }
+    // ✅ RÈGLE SPÉCIALE PHYSIQUE : la première question du PREMIER exercice
+    // classique reste un schéma (le QCM n'est pas concerné).
+    if (subjectName === 'physique' && eIdx === 1 && qIdx === 0) {
+      question.type = 'drawing';
+      delete question.options;
+      delete question.correctAnswer;
+      if (!String(question.text).toLowerCase().includes('schéma') && !String(question.text).toLowerCase().includes('dessin')) {
+        question.text = "Faire le schéma du dispositif en précisant le repère et les vecteurs. " + question.text;
+      }
+    }
+  }
+  return question;
+}
+
 function repairExamStructure(exam, subjectName) {
   if (!exam || typeof exam !== 'object') return null;
   const supportsChoices = CHOICE_SUBJECTS.has(subjectName);
@@ -1362,93 +1510,137 @@ function repairExamStructure(exam, subjectName) {
     if (!subject.id) subject.id = 'subject_' + (sIdx + 1);
     if (!subject.title) subject.title = 'Sujet ' + (sIdx + 1);
     if (!subject.level) subject.level = sIdx === 0 ? 'consolidation' : 'approfondissement';
-    
-    // ✅ Instructions garanties et DIFFÉRENTES pour chaque sujet
-    if (sIdx === 0) {
-      subject.instructions = 'Consolidez vos bases avec des exercices progressifs pour maîtriser l\'essentiel du chapitre.';
-    } else {
-      subject.instructions = 'Allez plus loin avec des exercices exigeants pour viser le niveau BAC.';
-    }
+    subject.instructions = sIdx === 0
+      ? 'Consolidez vos bases avec des exercices progressifs pour maîtriser l\'essentiel du chapitre.'
+      : 'Allez plus loin avec des exercices exigeants pour viser le niveau BAC.';
 
     if (!Array.isArray(subject.exercises)) subject.exercises = [];
+    subject.exercises = subject.exercises.filter((ex) => ex && typeof ex === 'object');
 
-    while (subject.exercises.length < REQUIRED_EXERCISES) {
-      const num = subject.exercises.length + 1;
-      subject.exercises.push({
-        number: num, title: 'Exercice ' + num, points: 6.67,
-        statement: '', questions: []
-      });
-    }
-    subject.exercises = subject.exercises.slice(0, REQUIRED_EXERCISES);
-
-    subject.exercises.forEach((exercise, eIdx) => {
-      if (!exercise.number) exercise.number = eIdx + 1;
-      if (!exercise.title) exercise.title = 'Exercice ' + (eIdx + 1);
-      if (!exercise.points) exercise.points = 6.67;
-      if (!exercise.statement) exercise.statement = '';
-      if (!Array.isArray(exercise.questions)) exercise.questions = [];
-
-      while (exercise.questions.length < QUESTIONS_PER_EXERCISE) {
-        const qNum = exercise.questions.length + 1;
-        exercise.questions.push({
-          number: (eIdx + 1) + '.' + String.fromCharCode(96 + qNum),
-          text: '', points: 1.33, type: 'text'
-        });
-      }
-      exercise.questions = exercise.questions.slice(0, QUESTIONS_PER_EXERCISE);
-
-      exercise.questions.forEach((question, qIdx) => {
-        if (!question.number) question.number = (eIdx + 1) + '.' + String.fromCharCode(97 + qIdx);
-        if (!question.text) question.text = question.question || '';
-        if (!question.points) question.points = 1.33;
-
-        // ✅ RÈGLE SPÉCIALE PHYSIQUE : La Q1 est TOUJOURS un dessin
-        if (subjectName === 'physique' && qIdx === 0) {
-          question.type = 'drawing';
-          delete question.options;
-          delete question.correctAnswer;
-          if (!question.text.toLowerCase().includes('schéma') && !question.text.toLowerCase().includes('dessin')) {
-             question.text = "Faire le schéma du dispositif en précisant le repère et les vecteurs. " + question.text;
-          }
-        } else {
-          if (!question.type) {
-            question.type = (Array.isArray(question.options) && question.options.length === 4) ? 'choice' : 'text';
-          }
-
-          if (question.type === 'choice') {
-            if (!Array.isArray(question.options) || question.options.length !== 4) {
-              question.type = 'text';
-              delete question.options;
-              delete question.correctAnswer;
-            } else {
-              const letters = ['A', 'B', 'C', 'D'];
-              question.options = question.options.map((opt, oi) => {
-                const text = typeof opt === 'string' ? opt : (opt?.text || opt?.label || String(opt || ''));
-                return { id: letters[oi], text: String(text || '').trim() || ('Option ' + letters[oi]) };
-              });
-
-              let correct = question.correctAnswer;
-              if (correct === null || correct === undefined) correct = 'A';
-              else if (typeof correct === 'number') correct = letters[correct] || 'A';
-              else {
-                correct = String(correct).toUpperCase().trim();
-                if (['A', 'B', 'C', 'D'].indexOf(correct) === -1) correct = 'A';
-              }
-              question.correctAnswer = correct;
-            }
-          } else {
-            delete question.options;
-            delete question.correctAnswer;
-          }
-
-          if (!supportsChoices && question.type === 'choice') {
-            question.type = 'text';
-            delete question.options;
-            delete question.correctAnswer;
-          }
-        }
-      });
+    // ── Sépare la dissertation (dernier bloc) si l'IA l'a mise ailleurs ──
+    let dissertation = null;
+    subject.exercises = subject.exercises.filter((ex) => {
+      if (ex.dissertation === true) { dissertation = dissertation || ex; return false; }
+      return true;
     });
+    if (!dissertation && subject.exercises.length >= 2) {
+      const last = subject.exercises[subject.exercises.length - 1];
+      // L'IA a parfois appelé la dissertation « Exercice 3 » : si le DERNIER
+      // exercice est déjà long/textuel (aucune question choice), on l'adopte.
+      const allText = Array.isArray(last.questions) && last.questions.length <= 2 &&
+        last.questions.every((q) => q && q.type !== 'choice');
+      if (allText && String(last.title || '').toLowerCase().match(/dissert|composition|probl[eè]me|synth|essai/)) {
+        dissertation = last;
+        subject.exercises.pop();
+      }
+    }
+
+    // ── 1. PARTIE QCM / QUESTIONS DE CONNAISSANCE (5 pts) ──
+    const qcm = subject.exercises[0] || {};
+    const qcmSource = Array.isArray(qcm.questions) ? qcm.questions.filter((q) => q && String(q.text || '').trim()) : [];
+    const qcmQuestions = [];
+    for (let i = 0; i < 5; i++) {
+      const src = qcmSource[i];
+      const q = repairQuestion(src ? JSON.parse(JSON.stringify(src)) : null, subjectName, 0, i, supportsChoices);
+      q.points = 1;
+      qcmQuestions.push(q);
+    }
+    // Les questions en trop du bloc QCM : on les garde comme exercice classique si l'IA en a livré plus de 5
+    const extraQcm = qcmSource.slice(5).map((q, i) => repairQuestion(JSON.parse(JSON.stringify(q)), subjectName, 1, i, false));
+
+    const qcmBlock = {
+      number: 1,
+      // ✅ le libellé suit le CONTENU réel (l'IA, le pool ou la matière peuvent
+      // livrer des questions de connaissance plutôt qu'un vrai QCM)
+      title: (supportsChoices && qcmQuestions.filter((q) => q.type === 'choice').length >= 3)
+        ? 'QCM — Questions à choix multiples'
+        : 'Questions de connaissance',
+      points: 5,
+      statement: qcm.statement || (supportsChoices ? 'Pour chaque question, entoure la bonne réponse. Une seule réponse est acceptée.' : 'Réponds brièvement et précisément à chaque question.'),
+      questions: qcmQuestions
+    };
+
+    // ── 2. EXERCICES CLASSIQUES (7 pts au total, nombre = IA) ──
+    const middles = subject.exercises.slice(1).filter((ex) => Array.isArray(ex.questions) && ex.questions.length > 0);
+    if (extraQcm.length && middles.length) {
+      middles[0].questions = (middles[0].questions || []).concat(extraQcm);
+    } else if (extraQcm.length) {
+      middles.push({ number: 1, title: 'Exercice 1', points: 0, statement: '', questions: extraQcm });
+    }
+    const repairedMiddles = middles.map((ex, i) => {
+      const qs = (ex.questions || []).filter((q) => q && String(q.text || '').trim()).slice(0, 5);
+      return {
+        number: i + 2,
+        title: ex.title || ('Exercice ' + (i + 2)),
+        points: Number(ex.points) || 0,
+        statement: String(ex.statement || ''),
+        questions: qs.map((q, qi) => repairQuestion(q, subjectName, i + 1, qi, false))
+      };
+    }).filter((ex) => ex.questions.length > 0);
+
+    // Garde-fou : au moins UN exercice classique ; sinon on déplace 2 questions
+    // de connaissance en exercice (l'épreuve reste complète).
+    if (!repairedMiddles.length) {
+      const moved = qcmQuestions.splice(3, 2).map((q, i) => ({ ...q, type: 'text', points: 3.5 / 2 }));
+      qcmQuestions.push({
+        number: '1.e', text: 'Reproduis et complète ton schéma/réponse du chapitre étudié (question de synthèse).', points: 1, type: 'text'
+      });
+      repairedMiddles.push({ number: 2, title: 'Exercice 2', points: 7, statement: '', questions: moved });
+    }
+
+    // ── 3. DISSERTATION (8 pts, 2 propositions) ──
+    let dissertBlock = null;
+    if (dissertation) {
+      const qs = (Array.isArray(dissertation.questions) ? dissertation.questions : []).filter((q) => q && String(q.text || '').trim());
+      const props = (Array.isArray(dissertation.propositions) ? dissertation.propositions : [])
+        .filter((p) => p && (String(p.text || p.title || '').trim()))
+        .slice(0, 2)
+        .map((p, i) => ({
+          id: String(p.id || String.fromCharCode(65 + i)).toUpperCase().slice(0, 1),
+          title: String(p.title || ''),
+          text: String(p.text || p.title || '')
+        }));
+      dissertBlock = {
+        number: repairedMiddles.length + 2,
+        title: 'Dissertation / Problème de synthèse',
+        points: 8,
+        dissertation: true,
+        statement: String(dissertation.statement || ''),
+        propositions: props.length === 2 ? props : null,
+        questions: qs.slice(0, 1).map((q, qi) => repairQuestion(q, subjectName, repairedMiddles.length + 1, qi, false))
+      };
+      if (!dissertBlock.questions.length) {
+        dissertBlock.questions = [{
+          number: (repairedMiddles.length + 2) + '.a',
+          text: 'Traite l\'une des deux propositions ci-dessus (introduction, développement argumenté, conclusion).',
+          points: 8, type: 'text'
+        }];
+      }
+      // Une seule proposition valide → pas de choix A/B possible : on retire
+      // les propositions (la question unique reste posée normalement).
+      if (dissertBlock.propositions && dissertBlock.propositions.length < 2) dissertBlock.propositions = null;
+    }
+
+    // ── ASSEMBLAGE + RENORMALISATION DES POINTS (total = 20) ──
+    const finalExercises = [qcmBlock, ...repairedMiddles];
+    if (dissertBlock) finalExercises.push(dissertBlock);
+
+    // Cible : QCM 5 fixe ; dissertation 8 si présente ; le reste aux exercices classiques
+    const hasDissert = Boolean(dissertBlock);
+    const middleTarget = hasDissert ? 7 : 15;
+    const middleSum = repairedMiddles.reduce((s, ex) => s + (Number(ex.points) || 0), 0) || 1;
+    repairedMiddles.forEach((ex) => {
+      ex.points = round2(((Number(ex.points) || 0) / middleSum) * middleTarget);
+    });
+    // Ajuste l'arrondi sur le dernier exercice classique
+    const middleTotal = repairedMiddles.reduce((s, ex) => s + ex.points, 0);
+    if (repairedMiddles.length) {
+      const drift = round2(middleTarget - middleTotal);
+      repairedMiddles[repairedMiddles.length - 1].points = round2(repairedMiddles[repairedMiddles.length - 1].points + drift);
+    }
+
+    subject.exercises = finalExercises;
+    subject.totalPoints = 20;
   });
 
   return exam;
@@ -1459,32 +1651,23 @@ function validateGeneratedExam(exam, subjectName) {
   const validQuestion = (q) => {
     // ✅ v4.15 — une question SANS énoncé est inacceptable pour l'élève : invalide.
     if (!q || typeof q.text !== 'string' || !q.text.trim()) return false;
-    if (subjectName === 'physique' && q.number && q.number.endsWith('a')) {
-      return q.type === 'drawing';
-    }
-    // ✅ v5.2 — « Parmi les propositions/affirmations suivantes » SANS options :
-    // la question est intraitable pour l'élève → invalide (le fournisseur
-    // suivant reprend la main).
-    if (/parmi\s+(les\s+)?(propositions|affirmations|assertions|énonc[eé]s|enonc[eé]s|repons(es|e))\s+(suivantes?|propos[eé]es?)/i.test(q.text) &&
-        !(Array.isArray(q.options) && q.options.length === 4)) return false;
     if (!supportsChoices || q.type !== 'choice') return ['text', 'number', 'formula', 'choice', 'drawing'].indexOf(q.type) !== -1;
     return Array.isArray(q.options) && q.options.length === 4 && ['A', 'B', 'C', 'D'].indexOf(q.correctAnswer) !== -1;
   };
   return exam && Array.isArray(exam.subjects) && exam.subjects.length === 2 &&
-    exam.subjects.every((s) =>
-      Array.isArray(s.exercises) && s.exercises.length === REQUIRED_EXERCISES &&
-      s.exercises.every((ex) =>
-        Array.isArray(ex.questions) && ex.questions.length === QUESTIONS_PER_EXERCISE &&
-        ex.questions.every(validQuestion)
-      )
-    );
+    exam.subjects.every((s) => {
+      const exs = s.exercises;
+      if (!Array.isArray(exs) || exs.length < 2 || exs.length > 6) return false;
+      // Chaque exercice : au moins 1 question valide
+      return exs.every((ex) => Array.isArray(ex.questions) && ex.questions.length >= 1 && ex.questions.every(validQuestion));
+    });
 }
 
-// ✅ v4.15 — RATTRAPAGE "PRESQUE COMPLET" : une IA qui livre 13/15 questions
-// valables ne doit pas jeter tout le sujet (ni pire, montrer des questions
-// vides). On remplace les exercices fautifs par des exercices équivalents du
-// pool d'exercices, puis on revalide STRICTEMENT. Si le pool ne suffit pas,
-// le résultat est rejeté et le fournisseur suivant prend le relais.
+// ✅ v4.15 — RATTRAPAGE "PRESQUE COMPLET" : une IA qui livre presque tout ne
+// doit pas jeter tout le sujet (ni pire, montrer des questions vides). On
+// remplace les questions fautives du QCM par des questions du pool puis on
+// revalide STRICTEMENT. Si le pool ne suffit pas, le fournisseur suivant
+// prend le relais.
 const NEAR_MISS_MAX_EMPTY = 3;
 
 function countEmptyQuestions(exam) {
@@ -1527,7 +1710,7 @@ function patchExamFromPoolQuestions(exam, subjectName, poolExercises, chapter) {
   const pool = poolExercises.filter((p) =>
     p && wantedStyles.indexOf(p.genStyle || 'recit') !== -1 &&
     exerciseCompliant(p, subjectName, chapter) &&
-    Array.isArray(p.questions) && p.questions.length >= QUESTIONS_PER_EXERCISE &&
+    Array.isArray(p.questions) && p.questions.length >= 2 &&
     p.questions.every((q) => String(q.text || '').trim())
   );
   if (!pool.length) return null;
@@ -1535,6 +1718,7 @@ function patchExamFromPoolQuestions(exam, subjectName, poolExercises, chapter) {
   let patched = false;
   exam.subjects.forEach((subject) => {
     (subject.exercises || []).forEach((ex, eIdx) => {
+      if (ex.dissertation === true) return; // la dissertation n'est pas remplacée par un exercice de pool
       const hasEmpty = (ex.questions || []).some((q) => !String(q.text || '').trim());
       if (!hasEmpty) return;
       const sameLevel = pool.filter((p) => p.level === subject.level);
@@ -1545,12 +1729,14 @@ function patchExamFromPoolQuestions(exam, subjectName, poolExercises, chapter) {
       const pick = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
       if (!pick) return;
       seen.add(String(pick.title || '') + '|' + String(pick.statement || '').slice(0, 40));
+      const keepPoints = ex.points;
       subject.exercises[eIdx] = {
         number: ex.number || (eIdx + 1),
-        title: pick.title || ('Exercice ' + (eIdx + 1)),
-        points: pick.points || 6.67,
+        title: ex.dissertation ? ex.title : (pick.title || ('Exercice ' + (eIdx + 1))),
+        points: keepPoints || pick.points || 6.67,
         statement: pick.statement || '',
-        questions: pick.questions
+        questions: pick.questions.slice(0, 5),
+        ...(ex.dissertation ? { dissertation: true, propositions: ex.propositions } : {})
       };
       patched = true;
     });
@@ -2269,6 +2455,130 @@ function localFallbackCorrection(deterministicResults) {
   });
 }
 
+// ✅ v8.65a — PROMPT DE CORRECTION PAR LOTS (5 questions) : sortie compacte
+// qui tient DANS le plafond des relais :free (3800 tokens) — fini les JSON
+// tronqués. Le QCM est déjà noté côté serveur : l'IA ne voit que les
+// questions rédigées / schémas / dissertation. Elle explique avec les MOTS
+// DU COURS de l'élève (entraînement) et rend des ÉTAPES de correction.
+function correctionChunkPrompt(items, notebookContext, includeSummary) {
+  const courseBlock = (notebookContext && notebookContext.contentText)
+    ? `
+
+═══════════════════════════════════════════════
+LE COURS DE CET ÉLÈVE (source pédagogique de vérité — chapitre : ${notebookContext.chapterTitle || ''})
+═══════════════════════════════════════════════
+${notebookContext.contentText}
+
+RÈGLES DE CORRECTION AVEC LE COURS (obligatoires) :
+- Utilise les MOTS EXACTS et les TECHNIQUES du cours ci-dessus dans "explanation", "concept", "betterMethod" et "toReview".
+- Montre à l'élève COMMENT son cours répond à la question (définitions, formules, étapes telles qu'écrites dans sa leçon).
+- Ne contredits JAMAIS le cours de l'élève : s'il est approximatif, corrige en t'appuyant d'abord sur sa formulation.
+`
+    : '';
+
+  return `Tu es un professeur correcteur expert du BAC en Afrique francophone. Corrige avec une PÉDAGOGIE MAXIMALE les questions ci-dessous, chacune avec une NOTE précise et des ÉTAPES DE CORRECTION.${courseBlock}
+
+QUESTIONS À CORRIGER (le QCM est déjà noté : ne corrige QUE ces questions) :
+${JSON.stringify(items, null, 1)}
+
+RÈGLES DE NOTATION (strictes) :
+- Réponse complète et juste → points = max (status "correct").
+- Partiellement juste → points PARTIELS entre 0.25 et 0.75 × max (status "partial").
+- Réponse fournie mais fausse → 0 (status "wrong"). Aucune réponse → 0 (status "unanswered").
+- INTERDIT de donner 0 à une réponse contenant des éléments justes.
+- SCHÉMA (drawing) : évalue la présence des éléments exigés (repère, vecteurs, labels), pas la beauté.
+- DISSERTATION (isDissertation=true) : l'élève devait traiter UNE des deux propositions. Évalue plan (intro/problématique, arguments, conclusion), respect du sujet choisi, usage des mots du cours. Copie partielle sérieuse = points PARTIELS, jamais 0.
+- CHAQUE question : "steps" = tableau des ÉTAPES (calcul : chaque étape chiffrée ; dissertation : plan de correction ; restitution : points clés attendus, 1-3 items).
+
+FORMAT JSON (UNIQUEMENT cet objet, sans texte autour) :
+{
+  "corrections": [
+    { "number": "2.a", "points": 1.5, "status": "partial", "explanation": "2-4 phrases claires", "steps": ["étape 1", "étape 2"], "concept": "notion testée", "whyWrong": "son erreur précise ou null", "commonMistake": "...", "toReview": "...", "betterMethod": "astuce", "feedback": "message encourageant" }
+  ]${includeSummary ? `,
+  "revisionTopics": ["Notion à revoir 1", "Notion 2"],
+  "globalFeedback": { "strengths": ["..."], "weaknesses": ["..."], "encouragement": "message personnalisé" }` : ''}
+}
+
+CONTRAT :
+- "number" : EXACTEMENT le numéro de la question dans les données (jamais renuméroter).
+- UNE entrée "corrections" par question des données, même ordre, AUCUNE exception.
+- Réponds UNIQUEMENT avec l'objet JSON.`;
+}
+
+// ✅ v8.65a — même chaîne de secours que correctWithFallback, mais pour les
+// lots : valide un tableau "corrections" (JSON plat) au lieu de "exercises".
+async function correctChunkWithFallback(prompt) {
+  const providers = getProviders();
+  if (!providers.length) throw new Error('provider_missing');
+  const errors = [];
+  for (const provider of providers) {
+    try {
+      const result = await callProvider(provider, prompt, MAX_TOKENS.CORRECT);
+      if (!result || typeof result !== 'object') { errors.push(provider.name + ': résultat non-objet'); continue; }
+      if (!Array.isArray(result.corrections) || result.corrections.length === 0) {
+        errors.push(provider.name + ': corrections vide ou invalide');
+        continue;
+      }
+      const okShape = result.corrections.every((c) => c && typeof c === 'object' && (c.number !== undefined));
+      if (!okShape) { errors.push(provider.name + ': corrections mal formées'); continue; }
+      return result;
+    } catch (e) {
+      errors.push(e.message);
+    }
+  }
+  throw new Error('all_providers_failed: ' + errors.join(' | '));
+}
+
+// ✅ v8.65a — fusion des corrections par NUMÉRO DE QUESTION (indépendant du
+// découpage en exercices) : remplit les champs pédagogiques + la note de
+// TOUTE question encore en attente (pending) après la passe déterministe.
+function mergeAiCorrectionsFlat(deterministicResults, corrections) {
+  if (!Array.isArray(corrections)) return;
+  const all = [];
+  deterministicResults.forEach((r) => {
+    (r.exerciseResult.questions || []).forEach((q) => all.push(q));
+  });
+  const matched = new Set();
+  corrections.forEach((aiQ) => {
+    if (!aiQ || typeof aiQ !== 'object') return;
+    const numKey = normQNumber(pickAiNumber(aiQ));
+    let match = null;
+    if (numKey) match = all.find((q) => !matched.has(q) && normQNumber(q.number) === numKey);
+    if (!match) match = all.find((q) => !matched.has(q) && q.status === 'pending' && String(q.type).toLowerCase() !== 'choice');
+    if (!match) return;
+    matched.add(match);
+
+    // 1) Champs pédagogiques
+    if (aiQ.explanation) match.explanation = String(aiQ.explanation);
+    if (Array.isArray(aiQ.steps) && aiQ.steps.length > 0) match.steps = aiQ.steps.map((s) => String(s));
+    else if (typeof aiQ.steps === 'string' && aiQ.steps.trim()) match.steps = [aiQ.steps.trim()];
+    if (aiQ.concept) match.concept = String(aiQ.concept);
+    if (aiQ.whyWrong) match.whyWrong = String(aiQ.whyWrong);
+    if (aiQ.commonMistake) match.commonMistake = String(aiQ.commonMistake);
+    if (aiQ.toReview) match.toReview = String(aiQ.toReview);
+    if (aiQ.betterMethod) match.betterMethod = String(aiQ.betterMethod);
+    if (aiQ.feedback) match.feedback = String(aiQ.feedback);
+    if (aiQ.correctAnswer && !match.correctAnswer) match.correctAnswer = String(aiQ.correctAnswer);
+
+    // 2) Note IA pour les questions rédigées encore en attente
+    const maxPts = Number(match.maxPoints) || 1;
+    if (match.status === 'pending' && String(match.type).toLowerCase() !== 'choice') {
+      if (match.status === 'pending' && !isAnswered(match.studentAnswer)) {
+        match.points = 0;
+        match.status = 'unanswered';
+      } else {
+        const given = Number(aiQ.points);
+        if (Number.isFinite(given)) {
+          match.points = Math.max(0, Math.min(maxPts, given));
+          if (match.points >= maxPts * 0.95) match.status = 'correct';
+          else if (match.points > 0) match.status = 'partial';
+          else match.status = 'wrong';
+        }
+      }
+    }
+  });
+}
+
 async function correctWithFallback(prompt) {
   const providers = getProviders();
   if (!providers.length) throw new Error('provider_missing');
@@ -2442,15 +2752,63 @@ async function correctExamHybrid(exam, subjectId, answers, uid, notebookContext)
 
   if (hasTextQuestions) {
     try {
-      const prompt = correctionPrompt({ exam: { ...exam, subjects: [subject] }, subjectId, answers }, notebookContext);
-      const aiResponse = await correctWithFallback(prompt);
-      const aiResult = aiResponse.result;
-      aiGlobalScore = aiResult ? aiResult.score : null;
+      // ✅ v8.65a — CORRECTION PAR LOTS : les relais IA :free plafonnent la
+      // taille de sortie (~3800 tokens) ; un prompt unique de 15+ questions
+      // tronquait le JSON. On corrige par paquets de 5 questions (QCM déjà
+      // noté côté serveur), puis on fusionne par numéro de question.
+      const pendingItems = [];
+      deterministicResults.forEach((r) => {
+        (r.exerciseResult.questions || []).forEach((q) => {
+          if (String(q.type).toLowerCase() === 'choice') return; // QCM : déjà noté
+          pendingItems.push({
+            exerciseNumber: r.exerciseResult.number,
+            exerciseTitle: r.exerciseResult.title || '',
+            exerciseStatement: r.exerciseResult.statement || '',
+            isDissertation: r.exerciseResult.dissertation === true,
+            propositions: Array.isArray(r.exerciseResult.propositions) ? r.exerciseResult.propositions : null,
+            chosenProposition: r.exerciseResult.dissertation === true
+              ? (answers['dissertProp:' + (Number(r.exerciseResult.number) - 1)] || null) : null,
+            number: q.number,
+            questionText: q.questionText || q.text || '',
+            type: q.type || 'text',
+            points: Number(q.maxPoints) || 1,
+            correctAnswer: q.correctAnswer || null,
+            studentAnswer: q.studentAnswer || null,
+            answered: isAnswered(q.studentAnswer)
+          });
+        });
+      });
 
-      mergeAiCorrection(deterministicResults, aiResult);
-      if (Array.isArray(aiResult?.revisionTopics)) deterministicResults.revisionTopics = aiResult.revisionTopics;
-      if (aiResult?.globalFeedback) deterministicResults.globalFeedback = aiResult.globalFeedback;
-      correctionMode = 'ai';
+      const CHUNK_SIZE = 5;
+      const chunks = [];
+      for (let i = 0; i < pendingItems.length; i += CHUNK_SIZE) {
+        chunks.push(pendingItems.slice(i, i + CHUNK_SIZE));
+      }
+
+      let aiMerged = 0;
+      const collectedTopics = [];
+      let collectedFeedback = null;
+      for (let ci = 0; ci < chunks.length; ci++) {
+        const isLast = ci === chunks.length - 1;
+        const prompt = correctionChunkPrompt(chunks[ci], notebookContext, isLast);
+        const aiResponse = await correctChunkWithFallback(prompt);
+        const corrections = (aiResponse && Array.isArray(aiResponse.corrections)) ? aiResponse.corrections : [];
+        mergeAiCorrectionsFlat(deterministicResults, corrections);
+        aiMerged += corrections.length;
+        if (isLast) {
+          if (Array.isArray(aiResponse.revisionTopics)) collectedTopics.push(...aiResponse.revisionTopics);
+          if (aiResponse.globalFeedback) collectedFeedback = aiResponse.globalFeedback;
+        }
+      }
+
+      if (aiMerged > 0) {
+        if (collectedTopics.length) deterministicResults.revisionTopics = collectedTopics;
+        if (collectedFeedback) deterministicResults.globalFeedback = collectedFeedback;
+        correctionMode = 'ai';
+        aiGlobalScore = null;
+      } else {
+        throw new Error('aucune correction IA exploitable');
+      }
     } catch (error) {
       console.warn('AI correction failed → correction locale (note + explications garanties):', error.message);
       // ✅ L'IA est indisponible : on corrige QUAND MÊME localement. L'élève reçoit
@@ -2579,14 +2937,15 @@ function validateConfig(body) {
     level: String(body.level || ''),
     chapter: String(body.chapter || 'all'),
     difficulty: String(body.difficulty || ''),
-    duration: Number(body.duration),
-    exerciseCount: Number(body.exerciseCount)
+    duration: Number(body.duration)
   };
   if (!ALLOWED_SUBJECTS.has(config.subject)) return 'Matière invalide.';
-  if (config.level !== 'Terminale D') return 'Niveau invalide.';
-  if (!ALLOWED_DIFFICULTIES.has(config.difficulty)) return 'Difficulté invalide.';
+  // ✅ v8.65a — niveaux étendus (Bac D/C/A/B, 1ère …) : le type d'examen vient
+  // du profil de l'élève. La difficulté N'EST PLUS choisie (l'IA propose) et
+  // le nombre d'exercices est DÉCIDÉ PAR L'IA.
+  if (!config.level || config.level.length > 40) return 'Niveau invalide.';
+  if (config.difficulty && !ALLOWED_DIFFICULTIES.has(config.difficulty)) return 'Difficulté invalide.';
   if (!ALLOWED_DURATIONS.has(config.duration)) return 'Durée invalide.';
-  if (config.exerciseCount !== REQUIRED_EXERCISES) return 'Nombre d\'exercices invalide.';
   if (config.chapter.length > 100) return 'Chapitre invalide.';
   return null;
 }
@@ -2850,6 +3209,10 @@ module.exports = async function handler(request, response) {
       const providers = getProviders();
       if (!providers.length) throw new Error('provider_missing');
 
+      // ✅ v8.65a — la difficulté n'est plus choisie par l'élève : valeur
+      // neutre par défaut (le pool et les statistiques restent cohérents).
+      body.difficulty = ALLOWED_DIFFICULTIES.has(String(body.difficulty || '')) ? String(body.difficulty) : 'medium';
+
       let notebookContext = null;
       if (body.notebookContext && (body.notebookContext.chapterId || body.notebookContext.chapterTitle)) {
         try {
@@ -2863,9 +3226,11 @@ module.exports = async function handler(request, response) {
       // ✅ v4.16 — anti-répétition : la liste des énoncés déjà servis vient du
       // client (localStorage de l'appareil), assainie puis injectée dans le prompt.
       const avoidStatements = sanitizeAvoidList(body.avoidStatements);
+      // ✅ v8.65a — ENTRAÎNEMENT : UN seul sujet (sortie 2× plus courte →
+      // tient dans le plafond des relais :free + moitié moins de quota).
       const prompt = notebookContext
-        ? generationPromptFromNotebook(body, notebookContext, avoidStatements)
-        : generationPrompt(body, avoidStatements);
+        ? generationPromptFromNotebook(body, notebookContext, avoidStatements, true)
+        : generationPrompt(body, avoidStatements, false);
 
       // ✅ v4.15 — accès paresseux au pool pour le rattrapage des sujets presque complets
       const poolLoader = async () => {

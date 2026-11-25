@@ -2016,31 +2016,115 @@
     .btn-preparer { margin-top: 16px; width: 100%; }
     .btn-history { margin-top: 9px; width: 100%; text-align: center; }
 
-    /* ── Modale Préparer (gabarit modales v1.1 du site) ── */
-    .modal-backdrop {
-      position: fixed; inset: 0; z-index: 11000;
-      display: none; align-items: flex-end; justify-content: center;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    /* ── ✅ v8.65a — PRÉPARATION SUR LA PAGE (remplace la modale) : matières en
+       puces directement visibles, cours en cartes, durée en puces, composition
+       sur 20, barre 2 modes en bas — comme sur l'image du propriétaire ── */
+    .prep-back {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: none; border: none; color: var(--accent-bright);
+      font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+      padding: 4px 2px; margin-bottom: 4px;
     }
-    .modal-backdrop.show { display: flex; animation: fadeIn 0.2s ease; }
-    .preparer-modal {
-      width: 100%; max-width: 560px; max-height: 88vh;
-      display: flex; flex-direction: column;
-      background: var(--panel-bg, #101B14);
-      border: 1px solid rgba(224,184,74,.14);
-      border-radius: 22px 22px 0 0;
-      padding: 18px 18px 16px; box-sizing: border-box;
-      overflow: hidden;
+    .prep-section { margin-top: 18px; }
+    .prep-label {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12.5px; font-weight: 800; letter-spacing: .02em;
+      color: var(--text-muted); margin-bottom: 9px; text-transform: uppercase;
     }
-    .preparer-modal .modal-head { flex: 0 0 auto; margin-bottom: 10px; padding: 0 2px; }
-    .preparer-modal .modal-head h2 { margin: 0 0 4px; font-size: 19px; }
-    .preparer-modal .modal-head p { margin: 0; font-size: 12.5px; color: var(--text-dim); }
-    .preparer-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .preparer-body::-webkit-scrollbar { display: none; }
+    .prep-label i { color: var(--accent-bright); }
+    .prep-label .prep-suffix { color: var(--text-dim); text-transform: none; font-weight: 700; }
+    .prep-loading { font-size: 13px; color: var(--text-dim); padding: 8px 0; }
+    .prep-hint { font-size: 12px; color: #d98a3d; margin-top: 8px; line-height: 1.5; }
+
+    .subject-chips { display: flex; flex-wrap: wrap; gap: 9px; }
+    .s-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 15px; border-radius: 999px; cursor: pointer;
+      border: 1.6px solid rgba(224,184,74,.16); background: rgba(255,255,255,.03);
+      color: var(--text-muted); font: inherit; font-size: 13.5px; font-weight: 700;
+      transition: transform .12s, border-color .18s, background .18s;
+    }
+    .s-chip:active { transform: scale(.97); }
+    .s-chip.active {
+      border-color: var(--accent-bright); color: var(--accent-bright);
+      background: linear-gradient(160deg, rgba(224,184,74,.16), rgba(224,184,74,.06));
+    }
+    .s-chip .sc-ico { font-size: 16px; }
+    .s-chip .sc-n { font-size: 11px; font-weight: 800; color: var(--text-dim); }
+    .s-chip.active .sc-n { color: var(--accent-bright); }
+
+    .cours-list { display: flex; flex-direction: column; gap: 9px; }
+    .cours-card {
+      display: flex; align-items: center; gap: 12px; text-align: left;
+      width: 100%; padding: 13px 14px; border-radius: 15px; cursor: pointer;
+      border: 1.6px solid rgba(224,184,74,.14); background: rgba(255,255,255,.02);
+      color: var(--text-light); font: inherit;
+      transition: border-color .18s, background .18s;
+    }
+    .cours-card.active {
+      border-color: var(--accent-bright);
+      background: linear-gradient(160deg, rgba(224,184,74,.13), rgba(224,184,74,.05));
+    }
+    .cours-card .cc-ico { font-size: 20px; flex: 0 0 auto; }
+    .cours-card .cc-body { flex: 1 1 auto; min-width: 0; }
+    .cours-card .cc-title { font-size: 14px; font-weight: 800; line-height: 1.35; }
+    .cours-card .cc-meta { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+    .cours-card .cc-check { flex: 0 0 auto; color: var(--accent-bright); opacity: 0; font-size: 15px; }
+    .cours-card.active .cc-check { opacity: 1; }
+    .cours-loading { font-size: 12.5px; color: var(--text-dim); padding: 6px 0; }
+
+    .examtype-chip {
+      display: inline-flex; align-items: center; gap: 9px;
+      padding: 10px 16px; border-radius: 999px;
+      border: 1.6px solid rgba(224,184,74,.22); background: rgba(224,184,74,.07);
+      color: var(--text-light); font-size: 13.5px;
+    }
+    .examtype-chip .et-ico { font-size: 16px; }
+
+    .duration-chips { display: flex; flex-wrap: wrap; gap: 9px; }
+    .d-chip {
+      min-width: 62px; padding: 10px 14px; border-radius: 12px; cursor: pointer;
+      border: 1.6px solid rgba(224,184,74,.16); background: rgba(255,255,255,.03);
+      color: var(--text-muted); font: inherit; font-size: 13.5px; font-weight: 800;
+      transition: transform .12s, border-color .18s, background .18s;
+    }
+    .d-chip:active { transform: scale(.97); }
+    .d-chip.active {
+      border-color: var(--accent-bright); color: var(--accent-bright);
+      background: linear-gradient(160deg, rgba(224,184,74,.16), rgba(224,184,74,.06));
+    }
+
+    .composition-card {
+      border: 1px solid rgba(224,184,74,.18); border-radius: 16px;
+      background: rgba(224,184,74,.04); padding: 6px 13px;
+    }
+    .comp-row {
+      display: flex; align-items: center; gap: 11px; padding: 10px 0;
+      border-bottom: 1px dashed rgba(224,184,74,.14);
+    }
+    .comp-row:last-of-type { border-bottom: none; }
+    .comp-ico { font-size: 17px; flex: 0 0 auto; }
+    .comp-body { flex: 1 1 auto; min-width: 0; }
+    .comp-body b { font-size: 13.5px; display: block; }
+    .comp-body span { font-size: 11.5px; color: var(--text-dim); }
+    .comp-pts { font-size: 13px; font-weight: 900; color: var(--accent-bright); flex: 0 0 auto; }
+    .comp-total {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 2px 5px; border-top: 1.6px solid rgba(224,184,74,.28);
+      font-size: 12.5px; color: var(--text-dim);
+    }
+    .comp-total b { font-size: 15px; color: var(--accent-bright); }
 
     /* ── Barre 2 modes : Examen blanc (gauche) / Entraînement+IA lit le cours (droite) ── */
-    .mode-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mode-bar {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      position: sticky; bottom: 0; z-index: 40;
+      background: linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,.92) 26%, #0A0A0A 100%);
+      padding: 14px 0 12px; margin-top: 10px;
+    }
+    html[data-theme="light"] .mode-bar {
+      background: linear-gradient(180deg, rgba(245,242,235,0) 0%, rgba(245,242,235,.94) 26%, #F5F2EB 100%);
+    }
     .mode-seg {
       display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px;
       padding: 12px 8px; border-radius: 14px; cursor: pointer;
@@ -2071,6 +2155,66 @@
     .photo-status { font-size: 11.5px; color: var(--text-dim); flex: 1; min-width: 0; }
     .photo-status.err { color: #d98a3d; }
     .photo-status.ok { color: var(--success-light, #3AB67E); }
+
+    /* ── ✅ v8.65a — fabrication avec TEMPS RESTANT estimé (comme le Résumé) ── */
+    .loading-eta {
+      font-size: 12.5px; font-weight: 800; color: var(--accent-bright);
+      margin-top: 9px; letter-spacing: .01em;
+    }
+
+    /* ── ✅ v8.65a — TOUTES les questions sur UNE page ── */
+    .exam-mode-chip { display: block; font-size: 11.5px; color: var(--text-dim); margin-top: 6px; }
+    .exercise-block {
+      background: var(--panel-bg, #101B14);
+      border: 1px solid rgba(224,184,74,.13); border-radius: 16px;
+      padding: 15px 14px; margin-bottom: 14px;
+    }
+    .exercise-block-head {
+      display: flex; align-items: baseline; gap: 9px; margin-bottom: 4px;
+    }
+    .exercise-block-head h3 { margin: 0; font-size: 16px; }
+    .exercise-block-pts { font-size: 12px; font-weight: 800; color: var(--accent-bright); margin-left: auto; flex: 0 0 auto; }
+    .exercise-block .statement { margin: 2px 0 10px; }
+    .block-divider {
+      text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .14em;
+      color: var(--text-dim); margin: 18px 0 10px; text-transform: uppercase;
+    }
+    .exam-submit-row { margin-top: 6px; }
+    .exam-submit-row .btn { width: 100%; }
+
+    /* Dissertation : 2 propositions au choix */
+    .dissert-note {
+      font-size: 12.5px; color: var(--text-dim); margin: 4px 0 10px; line-height: 1.5;
+    }
+    .dissert-propositions { display: flex; flex-direction: column; gap: 9px; margin-bottom: 10px; }
+    .dissert-prop {
+      display: flex; gap: 11px; align-items: flex-start; text-align: left;
+      padding: 12px 13px; border-radius: 13px; cursor: pointer; font: inherit;
+      border: 1.6px solid rgba(224,184,74,.16); background: rgba(255,255,255,.02);
+      color: var(--text-light);
+    }
+    .dissert-prop.active {
+      border-color: var(--accent-bright);
+      background: linear-gradient(160deg, rgba(224,184,74,.12), rgba(224,184,74,.05));
+    }
+    .dissert-prop .dp-radio {
+      flex: 0 0 auto; width: 17px; height: 17px; border-radius: 50%; margin-top: 2px;
+      border: 2px solid rgba(224,184,74,.4); position: relative;
+    }
+    .dissert-prop.active .dp-radio::after {
+      content: ''; position: absolute; inset: 3px; border-radius: 50%;
+      background: var(--accent-bright);
+    }
+    .dissert-prop .dp-body b { display: block; font-size: 13px; margin-bottom: 2px; }
+    .dissert-prop .dp-body span { font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+
+    /* Correction complète sur UNE page (résultats) */
+    .corr-exercise { border: 1px solid rgba(224,184,74,.12); border-radius: 16px; padding: 14px 13px; margin-bottom: 13px; }
+    .corr-ex-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+    .corr-ex-head h3 { margin: 0; font-size: 15px; }
+    .corr-ex-score { margin-left: auto; font-size: 12.5px; font-weight: 900; color: var(--accent-bright); }
+    .corr-ex-progress { height: 5px; border-radius: 4px; background: rgba(224,184,74,.12); overflow: hidden; margin-bottom: 12px; }
+    .corr-ex-progress > span { display: block; height: 100%; border-radius: 4px; }
 
     </style>
 <script src="arvexa-applock.js" defer></script>
@@ -2202,143 +2346,79 @@
       </div>
     </section>
 
-    <!-- ⚡ v8.64a — MODALE « PRÉPARER » (même gabarit que « Ajouter » du Résumé :
-         feuille du bas, ligne du haut cliquable, fermeture animée v1.1) -->
-    <div class="modal-backdrop" id="preparerBackdrop">
-      <div class="modal preparer-modal" role="dialog" aria-modal="true" aria-labelledby="prepTitle">
-        <button class="modal-close" id="preparerClose" aria-label="Fermer"><i class="fas fa-times"></i></button>
-        <div class="modal-head">
-          <h2 id="prepTitle">Préparer une épreuve</h2>
-          <p id="prepSubtitle">Matière, chapitre, durée — puis choisis ton mode</p>
+    <!-- ✅ v8.65a — PRÉPARATION D'ÉPREUVE DIRECTEMENT SUR LA PAGE (demande du
+         propriétaire : « ces matières pas dans un modal mais directement sur la
+         page, un peu comme sur l'image »). Matières = UNIQUEMENT celles qui ont
+         des cours résumés dans la page Résumé (cahier de l'élève). Durée en
+         puces 1 h/2 h/3 h/4 h comme sur l'image ; difficulté SUPPRIMÉE (c'est
+         l'IA qui propose) ; composition affichée sur 20 comme sur l'image. -->
+    <section class="view" id="configView" aria-labelledby="prepTitle">
+      <div class="panel">
+        <button class="prep-back" id="prepBackBtn" type="button"><i class="fas fa-arrow-left"></i> Retour</button>
+        <div class="eyebrow">Préparation</div>
+        <h2 id="prepTitle" style="margin-top:6px;">Préparer une épreuve</h2>
+        <p class="lead">Choisis une matière de ton cahier, ton cours, la durée — puis lance la fabrication.</p>
+
+        <div class="prep-section">
+          <div class="prep-label"><i class="fas fa-book"></i> Tes matières résumées</div>
+          <div class="subject-chips" id="subjectChips">
+            <div class="prep-loading"><i class="fas fa-circle-notch fa-spin"></i> Lecture de ton cahier…</div>
+          </div>
+          <div class="prep-hint" id="subjectChipsHint"></div>
         </div>
-        <div class="preparer-body">
 
-        <div class="notebook-banner" id="notebookBanner">
-          <i class="fas fa-book-open"></i>
-          <div>
-            <strong id="notebookBannerTitle">📖 Basé sur ton cahier</strong>
-            <span id="notebookBannerSub">Le test sera généré à partir de ce que tu as étudié.</span>
+        <div class="prep-section" id="coursSection" style="display:none;">
+          <div class="prep-label"><i class="fas fa-layer-group"></i> Ton cours dans cette matière</div>
+          <div class="cours-list" id="coursList"></div>
+        </div>
+
+        <div class="prep-section">
+          <div class="prep-label"><i class="fas fa-graduation-cap"></i> Type d'examen</div>
+          <div class="examtype-chip"><span class="et-ico">🎓</span><b id="examTypeLabel">Bac</b></div>
+        </div>
+
+        <div class="prep-section">
+          <div class="prep-label"><i class="fas fa-clock"></i> Durée</div>
+          <div class="duration-chips" id="durationChips">
+            <button type="button" class="d-chip" data-min="60">1 h</button>
+            <button type="button" class="d-chip" data-min="120">2 h</button>
+            <button type="button" class="d-chip active" data-min="180">3 h</button>
+            <button type="button" class="d-chip" data-min="240">4 h</button>
           </div>
         </div>
 
-        <form id="configForm" class="form-grid">
-          <div class="field">
-            <label>Matière</label>
-            <div class="custom-select" id="subjectSelect" data-name="subject">
-              <button type="button" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-                <span class="custom-select-value"></span>
-                <i class="fas fa-chevron-down custom-select-arrow"></i>
-              </button>
-              <div class="custom-select-options">
-                <div class="custom-select-option" data-value="mathematiques"><span class="option-prefix">📐</span> Mathématiques</div>
-                <div class="custom-select-option" data-value="physique"><span class="option-prefix">⚡</span> Physique</div>
-                <div class="custom-select-option" data-value="chimie"><span class="option-prefix">🧪</span> Chimie</div>
-                <div class="custom-select-option" data-value="svt"><span class="option-prefix">🧬</span> SVT</div>
-                <div class="custom-select-option" data-value="philosophie"><span class="option-prefix">🧠</span> Philosophie</div>
-                <div class="custom-select-option" data-value="histoire"><span class="option-prefix">🌍</span> Histoire</div>
-                <div class="custom-select-option" data-value="geographie"><span class="option-prefix">🗺️</span> Géographie</div>
-              </div>
-            </div>
+        <div class="prep-section">
+          <div class="prep-label"><i class="fas fa-file-lines"></i> Composition de l'épreuve <span class="prep-suffix">— sur 20</span></div>
+          <div class="composition-card">
+            <div class="comp-row"><span class="comp-ico">✅</span><div class="comp-body"><b>QCM</b><span>5 questions à choix multiples</span></div><span class="comp-pts">5 pts</span></div>
+            <div class="comp-row"><span class="comp-ico">🧮</span><div class="comp-body"><b>Exercices</b><span>nombre décidé par l'IA d'après ton cours</span></div><span class="comp-pts">7 pts</span></div>
+            <div class="comp-row"><span class="comp-ico">📝</span><div class="comp-body"><b>Dissertation</b><span>2 propositions au choix — tu en traites une</span></div><span class="comp-pts">8 pts</span></div>
+            <div class="comp-total"><span>Total</span><b>20 pts</b></div>
           </div>
+        </div>
 
-          <div class="field">
-            <label>Niveau</label>
-            <div class="custom-select" id="levelSelect" data-name="level">
-              <button type="button" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-                <span class="custom-select-value"></span>
-                <i class="fas fa-chevron-down custom-select-arrow"></i>
-              </button>
-              <div class="custom-select-options" role="listbox">
-                <div class="custom-select-option" data-value="Terminale D" role="option"><span class="option-prefix">🎓</span> Terminale D</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>Chapitre</label>
-            <div class="custom-select" id="chapterSelect" data-name="chapter">
-              <button type="button" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-                <span class="custom-select-value"></span>
-                <i class="fas fa-chevron-down custom-select-arrow"></i>
-              </button>
-              <div class="custom-select-options" role="listbox" id="chapterOptions"></div>
-            </div>
-            <!-- ✅ v8.9 — matières littéraires + pays ≠ Niger : chapitres du pays
-                 (remplis progressivement par les élèves). Scientifiques : caché. -->
-            <div class="axc-exam-extra" id="axcExamExtra" style="display:none;">
-              <span class="axc-country-hint" id="axcCountryHint"></span>
-              <button type="button" class="axc-add-inline" id="axcAddChapterExamBtn"><i class="fas fa-plus"></i> Ajouter un chapitre</button>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>Difficulté</label>
-            <div class="custom-select" id="difficultySelect" data-name="difficulty">
-              <button type="button" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-                <span class="custom-select-value"></span>
-                <i class="fas fa-chevron-down custom-select-arrow"></i>
-              </button>
-              <div class="custom-select-options" role="listbox">
-                <div class="custom-select-option" data-value="easy" role="option"><span class="option-prefix">🟢</span> Facile</div>
-                <div class="custom-select-option" data-value="medium" role="option"><span class="option-prefix">🟡</span> Moyen</div>
-                <div class="custom-select-option" data-value="hard" role="option"><span class="option-prefix">🟠</span> Difficile</div>
-                <div class="custom-select-option" data-value="bac" role="option"><span class="option-prefix">🔴</span> Niveau Examen</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>Durée</label>
-            <div class="custom-select" id="durationSelect" data-name="duration">
-              <button type="button" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-                <span class="custom-select-value"></span>
-                <i class="fas fa-chevron-down custom-select-arrow"></i>
-              </button>
-              <div class="custom-select-options" role="listbox">
-                <div class="custom-select-option" data-value="30" role="option"><span class="option-prefix">⏱️</span> 30 min</div>
-                <div class="custom-select-option" data-value="60" role="option"><span class="option-prefix">⏱️</span> 1 heure</div>
-                <div class="custom-select-option" data-value="90" role="option"><span class="option-prefix">⏱️</span> 1 h 30</div>
-                <div class="custom-select-option" data-value="120" role="option"><span class="option-prefix">⏱️</span> 2 heures</div>
-                <div class="custom-select-option" data-value="180" role="option"><span class="option-prefix">⏱️</span> 3 heures</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="exerciseCount">Nombre d'exercices</label>
-            <input id="exerciseCount" type="number" min="3" max="3" value="3" readonly required>
-            <small style="color:var(--text-muted);font-size:12px;">Chaque sujet contient 3 exercices × 5 questions.</small>
-          </div>
-
-          <div class="field full">
-            <label>Mode de l'épreuve</label>
-            <div class="mode-bar" id="modeBar" role="tablist" aria-label="Choix du mode">
-              <button type="button" class="mode-seg active" data-mode="blanc" role="tab" aria-selected="true">
-                <span class="ms-ico">🎯</span>
-                <span class="ms-name">Examen blanc</span>
-                <span class="ms-desc">Conditions réelles d'examen, sans aide</span>
-              </button>
-              <button type="button" class="mode-seg" data-mode="entrainement" role="tab" aria-selected="false">
-                <span class="ms-ico">📖</span>
-                <span class="ms-name">Entraînement</span>
-                <span class="ms-desc">L'IA lit ton cours (Résumé) et t'évalue dessus — noté sur 20</span>
-              </button>
-            </div>
-            <small class="mode-hint" id="modeHint" style="display:none;"></small>
-          </div>
-
-          <div class="field full">
-            <button class="btn primary" id="generateButton" type="submit">
-              <span class="btn-text">Lancer l'épreuve</span>
-              <span class="loader"></span>
-            </button>
-          </div>
-        </form>
-
+        <button class="btn primary btn-preparer" id="generateButton" type="button">
+          <i class="fas fa-wand-magic-sparkles"></i>&nbsp; <span class="btn-text">Lancer la fabrication</span>
+          <span class="loader"></span>
+        </button>
         <div class="status" id="configStatus" role="status" aria-live="polite"></div>
       </div>
-    </div>
-  </div>
+
+      <!-- ✅ Barre horizontale du bas : DEUX modes seulement, comme demandé -->
+      <div class="mode-bar" id="modeBar" role="tablist" aria-label="Choix du mode">
+        <button type="button" class="mode-seg active" data-mode="blanc" role="tab" aria-selected="true">
+          <span class="ms-ico">🎯</span>
+          <span class="ms-name">Examen blanc</span>
+          <span class="ms-desc">Conditions réelles, chronométré</span>
+        </button>
+        <button type="button" class="mode-seg" data-mode="entrainement" role="tab" aria-selected="false">
+          <span class="ms-ico">📖</span>
+          <span class="ms-name">Entraînement</span>
+          <span class="ms-desc">L'IA lit ton cours et te note sur 20</span>
+        </button>
+      </div>
+      <small class="mode-hint" id="modeHint" style="display:none;"></small>
+    </section>
 
     <!-- VUE 2 : CHARGEMENT -->
     <section class="view" id="loadingView" aria-labelledby="loadingTitle">
@@ -2357,6 +2437,7 @@
             <div class="loading-step" id="genStep5"><span class="step-icon">✨</span><div class="step-content"><span class="step-label">Finalisation</span><span class="step-desc">Préparation de l'affichage</span></div></div>
           </div>
           <div class="loading-status" id="genLoadingStatus">Préparation...</div>
+          <div class="loading-eta" id="genEta" aria-live="polite">⏱ Temps restant estimé : ~ 1 min 20 s</div>
         </div>
       </div>
     </section>
@@ -2374,7 +2455,10 @@
       </div>
     </section>
 
-    <!-- VUE 4 : EXAMEN -->
+    <!-- VUE 4 : EXAMEN — ✅ v8.65a : TOUTES les questions sur UNE SEULE page
+         (demande du propriétaire : « toutes les questionnaires s'affichent sur
+         une seule page il y a pas de défilé vers les autres »). Plus de
+         Précédent/Suivant : QCM, exercices et dissertation empilés. -->
     <section class="view" id="examView" aria-labelledby="examTitle">
       <div class="exam-top">
         <div class="exam-topline">
@@ -2387,26 +2471,13 @@
         <div class="progress" aria-label="Progression">
           <span id="progressBar" style="width:0%"></span>
         </div>
+        <small class="exam-mode-chip" id="examModeChip"></small>
       </div>
 
-      <div class="panel">
-        <div class="exercise-head">
-          <div>
-            <h3 id="exerciseTitle">Exercice</h3>
-            <small id="exerciseCounter"></small>
-          </div>
-          <div class="points" id="exercisePoints"></div>
-        </div>
+      <div id="questionsAll"></div>
 
-        <p class="statement" id="exerciseStatement"></p>
-        <div id="questionsList"></div>
-
-        <div class="actions">
-          <button class="btn secondary" id="previousButton" type="button">Précédent</button>
-          <button class="btn primary" id="nextButton" type="button">Suivant</button>
-          <button class="btn danger" id="finishButton" type="button">Terminer</button>
-        </div>
-
+      <div class="actions exam-submit-row">
+        <button class="btn danger" id="finishButton" type="button">Terminer et envoyer la copie</button>
         <div class="status" id="examStatus" role="status" aria-live="polite"></div>
       </div>
     </section>
@@ -2580,119 +2651,29 @@ var EXAM_CONSTANTS = {
   SESSION_TTL_HOURS: 24
 };
 
-var CHAPTERS = {
-  'mathematiques': [
-    'Nombres complexes',
-    'Similitudes planes directes',
-    'Calcul de probabilités',
-    'Variable aléatoire',
-    'Fonction numérique',
-    'Fonction logarithme',
-    'Fonction exponentielle',
-    'Calcul intégral',
-    'Équations différentielles',
-    'Suites numériques',
-    'Statistiques'
-  ],
-  'physique': [
-    'Cinématique',
-    'Mouvement rectiligne',
-    'Mouvement dans le champ de pesanteur',
-    'Mouvement des particules chargées',
-    'Oscillateurs mécaniques',
-    'Généralités sur les ondes',
-    'Mouvement vibratoire',
-    'Superposition des ondes',
-    'Interférence lumineuse',
-    'Champ magnétique',
-    'Force de Laplace',
-    'Force de Lorentz',
-    'Induction magnétique',
-    'Auto-induction',
-    'Circuit LC',
-    'Circuit RLC',
-    'Radioactivité'
-  ],
-  'chimie': [
-    'Solutions aqueuses et leur pH',
-    'Acide fort, base forte',
-    'Acide faible, base faible',
-    'Couples acide/base et classification',
-    'Réaction acido-basique et solution tampon',
-    'Alcools',
-    'Acides carboxyliques et ses dérivés',
-    'Amines et amides',
-    'Acides α-aminés et protéines'
-  ],
-  'svt': [
-    'Notion de l\'IG',
-    'Nature chimique et structure de l\'IG',
-    'La reproduction conforme',
-    'Cycle cellulaire',
-    'Protéines',
-    'Synthèse des protéines',
-    'Reproduction sexuée',
-    'Brassage des gènes',
-    'Transmission des caractères',
-    'Anomalies chromosomiques',
-    'Tissus nerveux',
-    'Messages nerveux',
-    'La glycémie',
-    'Appareils génitaux',
-    'Régulation des organes génitaux',
-    'Fécondation à la nidation',
-    'Régulation des naissances',
-    'Le soi et le non soi',
-    'Réponses immunitaires',
-    'VIH/SIDA'
-  ],
-  'philosophie': [
-    'Conscience - Inconscient',
-    'Les passions',
-    'Autrui',
-    'Travail',
-    'Histoire',
-    'Religion',
-    'Science et technique',
-    'Le langage',
-    'La vérité',
-    'Espace - temps',
-    'État',
-    'La justice',
-    'La liberté'
-  ],
-  'histoire': [
-    'Les causes de la Seconde Guerre mondiale',
-    'Le déroulement de la Seconde Guerre mondiale',
-    'L\'Afrique dans la guerre',
-    'Le bilan de la Seconde Guerre mondiale',
-    'Les conditions de la lutte de libération',
-    'La libération de l\'Algérie',
-    'La décolonisation en AOF',
-    'Les problèmes des pays décolonisés'
-  ],
-  'geographie': [
-    'Les aspects physiques',
-    'Étude humaine',
-    'L\'agriculture',
-    'L\'élevage',
-    'La pêche',
-    'L\'industrie et l\'artisanat',
-    'La communication et le transport',
-    'Le commerce',
-    'Le tourisme'
-  ]
+// ✅ v8.65a — TOUTES les matières du cahier (page Résumé), avec emoji + libellé.
+// L'épreuve ne propose PLUS une liste figée : les matières affichées sur la page
+// sont celles que l'élève a réellement résumées (getDashboard via api/progress).
+var SUBJECTS_ALL = {
+  mathematiques:      { label: 'Mathématiques',       emoji: '📐' },
+  physique:           { label: 'Physique',            emoji: '⚡' },
+  chimie:             { label: 'Chimie',              emoji: '🧪' },
+  svt:                { label: 'SVT',                 emoji: '🧬' },
+  philosophie:        { label: 'Philosophie',         emoji: '🧠' },
+  histoire:           { label: 'Histoire',            emoji: '🌍' },
+  geographie:         { label: 'Géographie',          emoji: '🗺️' },
+  anglais:            { label: 'Anglais',             emoji: '🇬🇧' },
+  francais:           { label: 'Français',            emoji: '📚' },
+  informatique:       { label: 'Informatique',        emoji: '💻' },
+  technologie:        { label: 'Technologie',         emoji: '⚙️' },
+  economie:           { label: 'Économie & Gestion',  emoji: '💰' },
+  espagnol:           { label: 'Espagnol',            emoji: '🇪🇸' },
+  allemand:           { label: 'Allemand',            emoji: '🇩🇪' },
+  education_civique:  { label: 'Éducation civique',   emoji: '⚖️' },
+  arts:               { label: 'Arts & Musique',      emoji: '🎨' }
 };
-
-var SUBJECT_LABELS = {
-  'mathematiques': 'Mathématiques',
-  'physique': 'Physique',
-  'chimie': 'Chimie',
-  'svt': 'SVT',
-  'philosophie': 'Philosophie',
-  'histoire': 'Histoire',
-  'geographie': 'Géographie'
-};
+var SUBJECT_LABELS = {};
+Object.keys(SUBJECTS_ALL).forEach(function (k) { SUBJECT_LABELS[k] = SUBJECTS_ALL[k].label; });
 
 var GENERATION_STEPS = ['genStep1', 'genStep2', 'genStep3', 'genStep4', 'genStep5'];
 var CORRECTION_STEPS = ['corrStep1', 'corrStep2', 'corrStep3', 'corrStep4', 'corrStep5'];
@@ -2705,12 +2686,19 @@ var state = {
   answers: {},
   startedAt: 0,
   remainingSeconds: 0,
+  timedMode: true,
   timerId: null,
   submitting: false,
   lastResult: null,
   notebookContext: null,
   prepMode: 'blanc',
-  notebookChapters: []
+  prepSubject: null,
+  prepChapter: null,        // { id, title } du cahier (page Résumé)
+  prepDuration: 180,
+  cahierSubjects: [],       // [{key, label, chaptersCount, sectionsCount}]
+  cahierChapters: {},       // { subjectKey: [{id, title, sectionsCount, last}] }
+  cahierLoading: false,
+  profileExam: 'Bac'
 };
 
 var $ = function (id) { return document.getElementById(id); };
@@ -2953,38 +2941,158 @@ async function loadDashboard() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ⚡ v8.64a — MODALE « PRÉPARER » + BARRE 2 MODES
+// ✅ v8.65a — PRÉPARATION SUR LA PAGE, CONNECTÉE AU RÉSUMÉ (cahier)
+// Les matières affichées sont UNIQUEMENT celles résumées par l'élève
+// (api/progress getDashboard, SDK admin). Le bug « tu n'as pas résumé
+// ce cours » venait de la lecture client Firestore (rules refus
+// permission-denied) : désormais TOUT passe par api/progress.
 // ═══════════════════════════════════════════════════════════════
-function openPreparer() {
-  var bd = $('preparerBackdrop');
-  if (!bd) return;
-  bd.classList.add('show');
-  document.body.style.overflow = 'hidden';
-  var first = bd.querySelector('.custom-select-trigger');
-  try { if (first && window.innerWidth > 700) first.blur(); } catch (e) {}
+
+async function progressApi(action, params) {
+  var token = await getIdToken(state.user);
+  var res = await fetch('/api/progress', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify(Object.assign({ action: action }, params || {}))
+  });
+  var payload = await res.json().catch(function () { return null; });
+  if (!res.ok || !payload || payload.success === false) {
+    throw new Error((payload && (payload.error || payload.message)) || ('api/progress ' + res.status));
+  }
+  return payload;
 }
-function closePreparer() {
-  var bd = $('preparerBackdrop');
-  if (!bd) return;
-  bd.classList.remove('show');
-  document.body.style.overflow = '';
+
+function openPrepView() {
+  showView('configView');
+  if (state.cahierSubjects.length && !state.cahierLoading) return;
+  loadCahierSubjects();
 }
-function bindPreparer() {
-  var bd = $('preparerBackdrop');
-  if (!bd) return;
-  $('preparerButton') && $('preparerButton').addEventListener('click', openPreparer);
-  $('preparerClose') && $('preparerClose').addEventListener('click', closePreparer);
-  bd.addEventListener('click', function (e) { if (e.target === bd) closePreparer(); });
+
+async function loadCahierSubjects() {
+  if (!state.user || state.cahierLoading) return;
+  state.cahierLoading = true;
+  var box = $('subjectChips');
+  var hint = $('subjectChipsHint');
+  try {
+    var data = await progressApi('getDashboard');
+    var subjects = (data && Array.isArray(data.subjects)) ? data.subjects : [];
+    // ✅ UNIQUEMENT les matières qui ont des cours résumés (cahier).
+    state.cahierSubjects = subjects.filter(function (s) { return Number(s.chaptersCount || 0) > 0; });
+    renderSubjectChips();
+    if (!state.cahierSubjects.length) {
+      box.innerHTML = '<div class="prep-loading">Aucune matière résumée pour le moment.</div>';
+      hint.innerHTML = 'Ajoute d\u2019abord un cours dans la page <a href="arv-progress.html" style="color:var(--accent-bright);font-weight:800;">Résumé</a> : tes \u00e9preuves seront fabriqu\u00e9es \u00e0 partir de TES le\u00e7ons.';
+    }
+  } catch (e) {
+    console.warn('[EXAM] cahier subjects:', e.message);
+    box.innerHTML = '<div class="prep-loading">Cahier indisponible \u2014 v\u00e9rifie ta connexion puis rafra\u00eechis.</div>';
+  } finally {
+    state.cahierLoading = false;
+  }
+}
+
+function renderSubjectChips() {
+  var box = $('subjectChips');
+  if (!box) return;
+  box.replaceChildren();
+  state.cahierSubjects.forEach(function (s) {
+    var info = SUBJECTS_ALL[s.key] || { label: s.label || s.key, emoji: '\ud83d\udcd8' };
+    var chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 's-chip' + (state.prepSubject === s.key ? ' active' : '');
+    chip.innerHTML =
+      '<span class="sc-ico">' + info.emoji + '</span>' + escapeHtml(info.label) +
+      '<span class="sc-n">' + Number(s.chaptersCount || 0) + (Number(s.chaptersCount || 0) > 1 ? ' cours' : ' cours') + '</span>';
+    chip.addEventListener('click', function () { selectPrepSubject(s.key); });
+    box.appendChild(chip);
+  });
+}
+
+function selectPrepSubject(key) {
+  state.prepSubject = key;
+  state.prepChapter = null;
+  renderSubjectChips();
+  $('coursSection').style.display = 'block';
+  renderCoursList(null);
+  updateModeHint();
+  loadCahierChapters(key);
+}
+
+async function loadCahierChapters(subject) {
+  if (!state.user || !subject) return;
+  // ✅ LA CORRECTION DU BUG : les chapitres viennent de api/progress
+  // (listChapters, SDK admin) — plus jamais d'une lecture client Firestore.
+  try {
+    var data = await progressApi('listChapters', { subject: subject });
+    var list = (data && Array.isArray(data.chapters)) ? data.chapters : [];
+    state.cahierChapters[subject] = list.map(function (c) {
+      return { id: c.id, title: c.title, sectionsCount: Number(c.sectionsCount || 0), last: c.last || '' };
+    });
+  } catch (e) {
+    console.warn('[EXAM] listChapters:', e.message);
+    state.cahierChapters[subject] = [];
+  }
+  if (state.prepSubject === subject) renderCoursList();
+}
+
+function renderCoursList(loading) {
+  var box = $('coursList');
+  if (!box) return;
+  box.replaceChildren();
+  var subject = state.prepSubject;
+  if (!subject) return;
+  var info = SUBJECTS_ALL[subject] || { label: subject, emoji: '\ud83d\udcd8' };
+
+  if (loading) {
+    box.innerHTML = '<div class="cours-loading"><i class="fas fa-circle-notch fa-spin"></i> Lecture de ton cahier\u2026</div>';
+    return;
+  }
+  var chapters = state.cahierChapters[subject] || [];
+  if (!chapters.length) {
+    box.innerHTML = '<div class="cours-loading">Aucun cours r\u00e9sum\u00e9 en ' + escapeHtml(info.label) + ' pour le moment \u2014 ajoute-le dans la page R\u00e9sum\u00e9.</div>';
+    return;
+  }
+  chapters.forEach(function (c) {
+    var active = state.prepChapter && state.prepChapter.id === c.id;
+    var card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'cours-card' + (active ? ' active' : '');
+    card.innerHTML =
+      '<span class="cc-ico">\ud83d\udcd6</span>' +
+      '<span class="cc-body"><span class="cc-title">' + escapeHtml(c.title) + '</span>' +
+      '<span class="cc-meta">Cahier ARVEXA \u00b7 ' + Number(c.sectionsCount || 0) + ' section' + (Number(c.sectionsCount || 0) > 1 ? 's' : '') + ' r\u00e9sum\u00e9e' + (Number(c.sectionsCount || 0) > 1 ? 's' : '') + (c.last ? ' \u00b7 ' + escapeHtml(c.last) : '') + '</span></span>' +
+      '<span class="cc-check"><i class="fas fa-circle-check"></i></span>';
+    card.addEventListener('click', function () {
+      state.prepChapter = { id: c.id, title: c.title };
+      renderCoursList();
+      updateModeHint();
+    });
+    box.appendChild(card);
+  });
+}
+
+function bindPrep() {
+  $('preparerButton') && $('preparerButton').addEventListener('click', openPrepView);
+  $('prepBackBtn') && $('prepBackBtn').addEventListener('click', function () { showView('dashboardView'); });
   // Barre 2 modes
   var bar = $('modeBar');
   if (bar) {
     bar.querySelectorAll('.mode-seg').forEach(function (seg) {
-      seg.addEventListener('click', function () {
-        setPrepMode(seg.dataset.mode);
+      seg.addEventListener('click', function () { setPrepMode(seg.dataset.mode); });
+    });
+  }
+  // Puces durée
+  var dchips = $('durationChips');
+  if (dchips) {
+    dchips.querySelectorAll('.d-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        state.prepDuration = Number(chip.dataset.min) || 180;
+        dchips.querySelectorAll('.d-chip').forEach(function (c) { c.classList.toggle('active', c === chip); });
       });
     });
   }
 }
+
 function setPrepMode(mode) {
   state.prepMode = (mode === 'entrainement') ? 'entrainement' : 'blanc';
   var bar = $('modeBar');
@@ -2996,263 +3104,39 @@ function setPrepMode(mode) {
     });
   }
   updateModeHint();
-  // Bannière cahier : visible en mode entraînement
-  var banner = $('notebookBanner');
-  if (banner) {
-    if (state.prepMode === 'entrainement') {
-      banner.classList.add('show');
-      $('notebookBannerTitle').textContent = '📖 Entraînement sur ton cours';
-      $('notebookBannerSub').textContent = 'L\'IA lit les sections que tu as résumées et te notera sur 20 avec les mots de ta leçon.';
-    } else if (!state.notebookContext) {
-      banner.classList.remove('show');
-    }
-  }
 }
+
 function updateModeHint() {
   var hint = $('modeHint');
   if (!hint) return;
   if (state.prepMode !== 'entrainement') { hint.style.display = 'none'; hint.textContent = ''; return; }
-  var subject = selects.subject.getValue();
-  var chapters = (state.notebookChapters[subject] || []);
-  if (!subject) {
-    hint.textContent = 'Choisis d\'abord une matière.';
+  if (!state.prepSubject) {
+    hint.textContent = 'Choisis d\u2019abord une mati\u00e8re de ton cahier \u2014 l\u2019Entra\u00eenement lit TON cours.';
     hint.style.display = 'block';
-  } else if (!chapters.length) {
-    hint.textContent = 'Tu n\'as pas encore de chapitre résumé en ' + (SUBJECT_LABELS[subject] || subject) + '. Ouvre la page Résumé, ajoute ton cours, puis reviens — l\'IA lira ta leçon pour préparer l\'épreuve.';
+  } else if (!state.prepChapter) {
+    var label = (SUBJECTS_ALL[state.prepSubject] || {}).label || state.prepSubject;
+    hint.textContent = 'Choisis ton cours r\u00e9sum\u00e9 en ' + label + ' : l\u2019IA le lira pour fabriquer l\u2019\u00e9preuve et corriger avec les mots de ta le\u00e7on.';
     hint.style.display = 'block';
   } else {
-    hint.textContent = chapters.length + ' chapitre' + (chapters.length > 1 ? 's' : '') + ' de ton cahier disponible' + (chapters.length > 1 ? 's' : '') + ' — choisis-en un dans la liste 📚.';
+    hint.textContent = '\ud83d\udcd6 ' + state.prepChapter.title + ' \u2014 l\u2019IA lira tes sections r\u00e9sum\u00e9es et te notera sur 20 avec les mots de ta le\u00e7on.';
     hint.style.display = 'block';
   }
-}
-
-// ── Chapitres du CAHIER de l'élève (connecté à la page Résumé) ──
-async function loadNotebookChapters(subject) {
-  if (!state.user || !subject) return [];
-  try {
-    var snap = await getDocs(collection(db, 'users', state.user.uid, 'notebooks', subject, 'chapters'));
-    var list = [];
-    snap.forEach(function (d) {
-      var v = d.data();
-      list.push({ id: d.id, title: v.title || 'Chapitre' });
-    });
-    list.sort(function (a, b) { return a.title.localeCompare(b.title, 'fr'); });
-    state.notebookChapters[subject] = list;
-    return list;
-  } catch (e) {
-    console.warn('[EXAM] chapitres cahier :', e.code || e.message);
-    state.notebookChapters[subject] = [];
-    return [];
-  }
-}
-
-// Option cahier actuellement sélectionnée (dataset.notebookId)
-function selectedNotebookOption() {
-  var value = selects.chapter.getValue();
-  if (!value) return null;
-  var options = selects.chapter.options || [];
-  for (var i = 0; i < options.length; i++) {
-    if (options[i].dataset.value === String(value) && options[i].dataset.notebookId) {
-      return { value: options[i].dataset.value, notebookId: options[i].dataset.notebookId };
-    }
-  }
-  return null;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// CUSTOM SELECT
-// ═══════════════════════════════════════════════════════════════
-function CustomSelect(element) {
-  this.element = element;
-  this.name = element.dataset.name;
-  this.trigger = element.querySelector('.custom-select-trigger');
-  this.valueEl = element.querySelector('.custom-select-value');
-  this.optionsContainer = element.querySelector('.custom-select-options');
-  this.options = [];
-  this.value = null;
-  this.isOpen = false;
-  this.init();
-}
-
-CustomSelect.prototype.init = function () {
-  var self = this;
-  this.trigger.addEventListener('click', function (e) { e.stopPropagation(); self.toggle(); });
-  document.addEventListener('click', function (e) {
-    if (!self.element.contains(e.target)) self.close();
-  });
-  this.refreshOptions();
-};
-
-CustomSelect.prototype.refreshOptions = function () {
-  var self = this;
-  this.options = Array.prototype.slice.call(this.optionsContainer.querySelectorAll('.custom-select-option'));
-  this.options.forEach(function (opt) {
-    opt.addEventListener('click', function (e) {
-      e.stopPropagation();
-      self.select(opt.dataset.value);
-    });
-  });
-  if (!this.value && this.options.length > 0) {
-    this.select(this.options[0].dataset.value, true);
-  }
-};
-
-CustomSelect.prototype.setOptions = function (options) {
-  this.optionsContainer.innerHTML = '';
-  var self = this;
-  options.forEach(function (opt) {
-    var div = document.createElement('div');
-    div.className = 'custom-select-option';
-    div.dataset.value = opt.value;
-    if (opt.notebookId) div.dataset.notebookId = opt.notebookId;
-    div.setAttribute('role', 'option');
-    if (opt.prefix) {
-      div.innerHTML = '<span class="option-prefix">' + escapeHtml(opt.prefix) + '</span> ' + escapeHtml(opt.label);
-    } else {
-      div.textContent = opt.label;
-    }
-    self.optionsContainer.appendChild(div);
-  });
-  this.value = null;
-  this.refreshOptions();
-};
-
-CustomSelect.prototype.select = function (value, silent) {
-  this.value = value;
-  var selected = null;
-  for (var i = 0; i < this.options.length; i++) {
-    if (this.options[i].dataset.value === String(value)) { selected = this.options[i]; break; }
-  }
-  if (!selected) return;
-
-  var prefix = selected.querySelector('.option-prefix');
-  var prefixHTML = prefix ? prefix.outerHTML : '';
-  var label = selected.textContent.replace(prefix ? prefix.textContent : '', '').trim();
-  this.valueEl.innerHTML = prefixHTML + ' <span>' + escapeHtml(label) + '</span>';
-
-  this.options.forEach(function (o) {
-    o.classList.toggle('selected', o.dataset.value === String(value));
-  });
-  this.close();
-
-  if (!silent) {
-    this.element.dispatchEvent(new CustomEvent('change', {
-      detail: { name: this.name, value: this.value }
-    }));
-  }
-};
-
-CustomSelect.prototype.toggle = function () { this.isOpen ? this.close() : this.open(); };
-
-CustomSelect.prototype.open = function () {
-  document.querySelectorAll('.custom-select.open').forEach(function (el) {
-    if (el !== this.element) el.classList.remove('open');
-  }, this);
-  this.element.classList.add('open');
-  this.trigger.setAttribute('aria-expanded', 'true');
-  this.isOpen = true;
-};
-
-CustomSelect.prototype.close = function () {
-  this.element.classList.remove('open');
-  this.trigger.setAttribute('aria-expanded', 'false');
-  this.isOpen = false;
-};
-
-CustomSelect.prototype.getValue = function () { return this.value; };
-
-var selects = { subject: null, level: null, chapter: null, difficulty: null, duration: null };
-
-function initSelects() {
-  selects.subject = new CustomSelect($('subjectSelect'));
-  selects.level = new CustomSelect($('levelSelect'));
-  selects.chapter = new CustomSelect($('chapterSelect'));
-  selects.difficulty = new CustomSelect($('difficultySelect'));
-  selects.duration = new CustomSelect($('durationSelect'));
-
-  selects.subject.select('mathematiques', true);
-  selects.level.select('Terminale D', true);
-  selects.difficulty.select('medium', true);
-  selects.duration.select('60', true);
-
-  updateChapters();
-  axBindExamAdd();
-  selects.subject.element.addEventListener('change', updateChapters);
-}
-
-function updateChapters() {
-  var subject = selects.subject.getValue();
-  // ✅ v8.9 — littéraire + pays ≠ Niger → chapitres remplis progressivement
-  // par les élèves du pays ; sinon programme intégré (toutes scientifiques).
-  var chapters = axChaptersFor(subject);
-  // ⚡ v8.64a — CHAPITRES DU CAHIER (connecté à la page Résumé) en tête de
-  // liste, marqués 📚 : ce sont eux que le mode « Entraînement » utilisera.
-  loadNotebookChapters(subject).then(function (nbChapters) {
-    var opts = [{ value: 'all', label: 'Tous les chapitres', prefix: '🌍' }];
-    nbChapters.forEach(function (c) {
-      opts.push({ value: c.title, label: c.title, prefix: '📚', notebookId: c.id });
-    });
-    chapters.forEach(function (ch) { opts.push({ value: ch, label: ch, prefix: '📖' }); });
-    selects.chapter.setOptions(opts);
-    updateModeHint();
-  });
-  axUpdateExtra(subject, chapters);
-}
-
-// ✅ v8.9 — chapitres de la matière selon le pays confirmé
-function axChaptersFor(subject) {
-  if (ArvexaCountry.useCommunity(subject)) {
-    return (ArvexaCountry.getCurriculum(subject) || []).map(function (c) { return c.title; });
-  }
-  return CHAPTERS[subject] || [];
-}
-
-// ✅ v8.9 — ligne « hint pays + ajouter un chapitre » (littéraires seulement)
-function axUpdateExtra(subject, chapters) {
-  try {
-    var extra = $('axcExamExtra');
-    if (!extra) return;
-    var community = ArvexaCountry.useCommunity(subject);
-    extra.style.display = community ? 'flex' : 'none';
-    if (!community) return;
-    var c = ArvexaCountry.getCountry();
-    var info = c.info || {};
-    $('axcCountryHint').textContent = (info.flag ? info.flag + ' ' + info.fr : '') +
-      ' · Chapitres de ton pays';
-    // ✅ v8.12 — listener TOUJOURS attaché (l'anti-doublon interne du
-    // module garantit 1 seul temps réel + 1 lecture initiale). Avant :
-    // il n'était attaché que si la liste était VIDE, donc un chapitre
-    // resté « local » (écriture manquée pendant une coupure réseau)
-    // n'était JAMAIS re-synchronisé vers Firestore — les autres élèves
-    // du pays ne le voyaient jamais (cas « Le relief »).
-    ArvexaCountry.watchCurriculum(subject);
-  } catch (e) { console.warn('[EXAM] axUpdateExtra:', e); }
-}
-
-var axcExamAddBound = false;
-function axBindExamAdd() {
-  if (axcExamAddBound) return;
-  var btn = $('axcAddChapterExamBtn');
-  if (!btn) return;
-  axcExamAddBound = true;
-  btn.addEventListener('click', function () {
-    var subject = selects.subject.getValue();
-    ArvexaCountry.openChapterEntry(subject, SUBJECT_LABELS[subject] || subject);
-  });
 }
 
 function readConfig() {
+  var info = SUBJECTS_ALL[state.prepSubject] || {};
   return {
-    subject: selects.subject.getValue(),
-    level: selects.level.getValue(),
-    chapter: selects.chapter.getValue(),
-    difficulty: selects.difficulty.getValue(),
-    duration: Number(selects.duration.getValue()),
-    exerciseCount: EXAM_CONSTANTS.REQUIRED_EXERCISES
+    subject: state.prepSubject,
+    subjectLabel: info.label || state.prepSubject,
+    level: state.profileExam === 'Bac' ? 'Terminale' : state.profileExam,
+    chapter: (state.prepChapter && state.prepChapter.title) || 'Tous les chapitres',
+    duration: state.prepDuration
   };
 }
 
 function prefillFromUrl() {
+  // ✅ v8.65a — arrivée depuis le Résumé (lien « m'entraîner sur ce cours ») :
+  // présélection matière + cours + mode Entraînement, sans modal.
   try {
     var urlParams = new URLSearchParams(window.location.search);
     var preSubject = urlParams.get('subject');
@@ -3266,53 +3150,11 @@ function prefillFromUrl() {
         chapterTitle: preChapter || '',
         useNotebook: true
       };
-      // ⚡ v8.64a — arrivée depuis le Résumé : le mode Entraînement est présélectionné
       setPrepMode('entrainement');
-      $('notebookBanner').classList.add('show');
-      if (preChapter) {
-        $('notebookBannerTitle').textContent = '📖 Basé sur ton cahier : ' + preChapter;
-        $('notebookBannerSub').textContent = 'Le test sera généré à partir des sections que tu as étudiées.';
-      }
     }
-
-    if (preSubject) {
-      var exists = Array.prototype.slice.call(
-        document.querySelectorAll('#subjectSelect .custom-select-option')
-      ).some(function (o) { return o.dataset.value === preSubject; });
-      if (exists) {
-        selects.subject.select(preSubject, true);
-        updateChapters();
-      }
-    }
-
-    if (preChapter) {
-      setTimeout(function () {
-        var chapterOptions = Array.prototype.slice.call(
-          document.querySelectorAll('#chapterOptions .custom-select-option')
-        );
-
-        var normalize = function (s) {
-          return String(s || '').toLowerCase().normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-        };
-
-        var target = normalize(preChapter);
-        var match = null;
-        for (var i = 0; i < chapterOptions.length; i++) {
-          if (normalize(chapterOptions[i].dataset.value) === target) { match = chapterOptions[i]; break; }
-        }
-        if (!match && target.length > 3) {
-          for (var j = 0; j < chapterOptions.length; j++) {
-            var v = normalize(chapterOptions[j].dataset.value);
-            if (v.length > 3 && (v.indexOf(target) !== -1 || target.indexOf(v) !== -1)) {
-              match = chapterOptions[j]; break;
-            }
-          }
-        }
-        if (match && match.dataset.value !== 'all') {
-          selects.chapter.select(match.dataset.value, true);
-        }
-      }, 150);
+    if (preSubject && SUBJECTS_ALL[preSubject]) {
+      state.prepSubject = preSubject;
+      state.prepChapter = preChapterId ? { id: preChapterId, title: preChapter || '' } : null;
     }
   } catch (e) {
     console.warn('[EXAM] Prefill error:', e.message);
@@ -3429,7 +3271,8 @@ function debouncedSaveSession() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// NORMALISATION
+// NORMALISATION — ✅ v8.65a : structure VARIABLE (l'IA décide du nombre
+// d'exercices ; QCM en tête, dissertation en fin) — l'élève traite tout.
 // ═══════════════════════════════════════════════════════════════
 function normalizeExam(payload) {
   var exam = payload && payload.exam;
@@ -3440,10 +3283,10 @@ function normalizeExam(payload) {
   exam.totalPoints = Number(exam.totalPoints) || 20;
   exam.subjects = exam.subjects.slice(0, 2);
   exam.subjects.forEach(function (subject, idx) {
-    var ok = Array.isArray(subject.exercises)
-      && subject.exercises.length === EXAM_CONSTANTS.REQUIRED_EXERCISES
+    var ok = Array.isArray(subject.exercises) && subject.exercises.length >= 2
       && subject.exercises.every(function (ex) {
-        return Array.isArray(ex.questions) && ex.questions.length === EXAM_CONSTANTS.QUESTIONS_PER_EXERCISE;
+        return Array.isArray(ex.questions) && ex.questions.length >= 1
+          && ex.questions.every(function (q) { return q && String(q.text || '').trim(); });
       });
     if (!ok) throw new Error('Sujet ' + (idx + 1) + ' invalide.');
   });
@@ -3451,9 +3294,10 @@ function normalizeExam(payload) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GÉNÉRATION
+// GÉNÉRATION — ✅ v8.65a : bouton unique (plus de form), étapes + TEMPS
+// RESTANT estimé (comme le Résumé), lecture du cours via le cahier.
 // ═══════════════════════════════════════════════════════════════
-$('configForm').addEventListener('submit', generateExam);
+$('generateButton').addEventListener('click', generateExam);
 
 // ✅ v4.15 — technique du cahier (v4.13) appliquée à l'exam : l'élève ne doit
 // JAMAIS voir une erreur qui finirait par passer. 429 → compte à rebours
@@ -3554,14 +3398,21 @@ function buildAvoidList(subject) {
   return out;
 }
 
-async function generateExam(event) {
-  event.preventDefault();
+async function generateExam() {
   if (!navigator.onLine) {
     setStatus('configStatus', 'Votre connexion semble interrompue.', 'error');
     return;
   }
   if (!state.user) {
     setStatus('configStatus', 'Connecte-toi pour générer un test.', 'error');
+    return;
+  }
+  if (!state.prepSubject) {
+    setStatus('configStatus', 'Choisis d\'abord une matière résumée dans ton cahier.', 'error');
+    return;
+  }
+  if (state.prepMode === 'entrainement' && !state.prepChapter && !(state.notebookContext && state.notebookContext.useNotebook)) {
+    setStatus('configStatus', 'Le mode Entraînement lit TON cours : choisis ton cours résumé dans la liste ci-dessus.', 'error');
     return;
   }
 
@@ -3574,6 +3425,18 @@ async function generateExam(event) {
   resetSteps(GENERATION_STEPS);
   var statusEl = $('genLoadingStatus');
 
+  // ✅ v8.65a — TEMPS RESTANT estimé (comme dans la page Résumé) : compte à
+  // rebours affiché pendant la fabrication, arrêté dès que c'est prêt.
+  var etaEl = $('genEta');
+  var etaLeft = 80; // estimation généreuse : 80 s
+  var etaTimer = setInterval(function () {
+    if (etaLeft <= 0) { clearInterval(etaTimer); return; }
+    etaLeft -= 1;
+    var mm = Math.floor(etaLeft / 60), ss = etaLeft % 60;
+    etaEl.textContent = '⏱ Temps restant estimé : ~ ' + mm + ' min ' + (ss < 10 ? '0' : '') + ss + ' s';
+  }, 1000);
+  etaEl.textContent = '⏱ Temps restant estimé : ~ 1 min 20 s';
+
   try {
     var config = readConfig();
     activateStep('genStep1', statusEl, 'Analyse de la configuration...');
@@ -3582,23 +3445,23 @@ async function generateExam(event) {
     var token = await getIdToken(state.user);
     var headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
 
-    activateStep('genStep2', statusEl, 'Génération des deux sujets...');
+    activateStep('genStep2', statusEl, 'Lecture de ton cours + génération des deux sujets...');
     if (window.ARVEXAWakeLock) ARVEXAWakeLock.acquire('exam-gen');
 
-    // ⚡ v8.64a — MODES : « blanc » = conditions réelles (pas de contexte cahier)
-    // ; « entraînement » = l'IA lit le chapitre du cahier choisi (connecté au
-    // Résumé) et notera sur 20 avec les mots du cours.
+    // ⚡ v8.65a — MODES : « blanc » = conditions réelles (le contenu du cours
+    // n'est PAS lu par l'IA) ; « entraînement » = l'IA lit TON cours résumé
+    // (cahier, via le serveur) et notera sur 20 avec les mots de la leçon.
     var notebookContextPayload = null;
     if (state.prepMode === 'entrainement') {
-      var nbOpt = selectedNotebookOption();
-      if (nbOpt) {
-        notebookContextPayload = { subject: config.subject, chapterId: nbOpt.notebookId, chapterTitle: nbOpt.value };
-      } else if (state.notebookContext && state.notebookContext.useNotebook && state.notebookContext.chapterId) {
+      if (state.prepChapter && state.prepChapter.id) {
+        notebookContextPayload = { subject: config.subject, chapterId: state.prepChapter.id, chapterTitle: state.prepChapter.title };
+      } else if (state.notebookContext && state.notebookContext.useNotebook && (state.notebookContext.chapterId || state.notebookContext.chapterTitle)) {
         notebookContextPayload = { subject: config.subject, chapterId: state.notebookContext.chapterId, chapterTitle: state.notebookContext.chapterTitle };
       } else {
+        clearInterval(etaTimer);
         btn.disabled = false;
         btn.classList.remove('loading');
-        setStatus('configStatus', 'Le mode Entraînement lit TON cours : choisis un chapitre marqué 📚 (résumé dans la page Résumé) ou passe en Examen blanc.', 'error');
+        setStatus('configStatus', 'Le mode Entraînement lit TON cours : choisis ton cours résumé ci-dessus.', 'error');
         return;
       }
     }
@@ -3610,7 +3473,7 @@ async function generateExam(event) {
     );
     await sleep(1500);
 
-    activateStep('genStep3', statusEl, 'Rédaction des exercices...');
+    activateStep('genStep3', statusEl, 'Rédaction du QCM, des exercices et de la dissertation...');
     var response = await responsePromise;
     var payload = await response.json().catch(function () { return null; });
 
@@ -3621,8 +3484,7 @@ async function generateExam(event) {
     }
 
     if (payload && payload.unavailable) {
-      showView('dashboardView');
-      openPreparer();
+      showView('configView');
       setStatus('configStatus', payload.exam && payload.exam.message || 'Service temporairement indisponible.', 'error');
       return;
     }
@@ -3634,6 +3496,10 @@ async function generateExam(event) {
     recordExamAvoid(payload); // ✅ v4.16 — mémorise les énoncés pour ne jamais les resservir
     state.answers = {};
     state.exerciseIndex = 0;
+    state.timedMode = (state.prepMode === 'blanc');
+    // ✅ v8.65a — l'IA du CORRECTEUR reçoit TON cours en Entraînement :
+    // corrections avec les mots exacts et les techniques de la leçon.
+    state.notebookContext = notebookContextPayload;
     await clearActiveSession();
 
     activateStep('genStep5', statusEl, 'Finalisation...');
@@ -3641,27 +3507,25 @@ async function generateExam(event) {
     finishAllSteps(GENERATION_STEPS, statusEl, '✅ Tes deux sujets sont prêts !');
     await sleep(400);
     displaySubjects();
-    // ✅ v8.64a — la modale « Préparer » se ferme dès que les sujets sont prêts
-    closePreparer();
     showView('subjectsView');
   } catch (error) {
     console.error('Génération échouée:', error);
     if (error.message === 'FREE_EXAM_LIMIT') {
-      showView('dashboardView');
-      openPreparer();
+      showView('configView');
       showPremiumPopup();
-      // ⚡ v8.64a — la réserve d'examens se recharge dans l'Abonnement
       setStatus('configStatus', 'Limite du jour (2 examens gratuits). Recharge ta réserve d\'examens ⚡ dans l\'Abonnement ou passe Premium.', 'error');
     } else if (error.message === 'AUTH_REQUIRED') {
+      showView('configView');
       setStatus('configStatus', 'Connecte-toi pour générer un test.', 'error');
     } else if (error.message === 'RATE_LIMIT') {
+      showView('configView');
       setStatus('configStatus', 'Beaucoup d\'élèves en ce moment. Réessaie dans une minute.', 'error');
     } else {
+      showView('configView');
       setStatus('configStatus', error.message || 'Impossible de générer le test.', 'error');
     }
-    showView('dashboardView');
-    openPreparer();
   } finally {
+    clearInterval(etaTimer);
     if (window.ARVEXAWakeLock) ARVEXAWakeLock.release('exam-gen');
     btn.disabled = false;
     btn.classList.remove('loading');
@@ -3671,7 +3535,18 @@ async function generateExam(event) {
 function displaySubjects() {
   var list = $('subjectsList');
   list.replaceChildren();
-  state.exam.subjects.forEach(function (subject, index) {
+  // ✅ v8.65a — ENTRAÎNEMENT : l'IA fabrique UN sujet tiré du cours → on
+  // affiche ce sujet unique (pas deux versions identiques).
+  var subjects = state.exam.subjects;
+  var isTraining = state.exam.fromNotebook === true || state.prepMode === 'entrainement';
+  var shown = isTraining ? subjects.slice(0, 1) : subjects;
+  var title = $('subjectsTitle');
+  var lead = document.querySelector('#subjectsView .lead');
+  if (title) title.textContent = isTraining ? 'Ton entraînement est prêt' : 'Ton test est prêt';
+  if (lead) lead.textContent = isTraining
+    ? 'Une seule épreuve, fabriquée à partir de TON cours résumé — notée sur 20.'
+    : 'Choisis un seul sujet. L\'autre reste disponible si tu veux recommencer.';
+  shown.forEach(function (subject, index) {
     var exerciseCount = subject.exercises.length;
     var totalQuestions = subject.exercises.reduce(function (sum, ex) { return sum + ((ex.questions && ex.questions.length) || 0); }, 0);
     var points = subject.exercises.reduce(function (sum, ex) { return sum + (Number(ex.points) || 0); }, 0);
@@ -3713,12 +3588,22 @@ async function startExam(subject) {
   state.exerciseIndex = 0;
   state.answers = {};
   state.startedAt = Date.now();
-  state.remainingSeconds = Math.max(60, Number(state.exam.duration) * 60);
+  state.timedMode = (state.prepMode === 'blanc');
+  state.remainingSeconds = state.timedMode ? Math.max(60, Number(state.exam.duration) * 60) : 0;
   await saveActiveSession();
   $('examTitle').textContent = subject.title || 'Sujet';
+  // ✅ v8.65a — Examen blanc = chronométré ; Entraînement = sans limite de temps
+  var timerEl = $('timer');
+  var modeChip = $('examModeChip');
+  if (timerEl) timerEl.style.display = state.timedMode ? '' : 'none';
+  if (modeChip) {
+    modeChip.textContent = state.timedMode
+      ? '🎯 Examen blanc — durée ' + Number(state.exam.duration) + ' min'
+      : '📖 Entraînement sur ton cours — sans limite de temps';
+  }
   showView('examView');
-  renderExercise();
-  startTimer();
+  renderAllQuestions();
+  if (state.timedMode) startTimer();
 }
 
 function answerKey(exerciseIndex, questionIndex) {
@@ -3730,92 +3615,165 @@ function saveAnswer(key, value) {
   debouncedSaveSession();
 }
 
-function renderExercise() {
-  var exercise = state.selectedSubject.exercises[state.exerciseIndex];
-  if (!exercise) return;
+// ✅ v8.65a — TOUTES les questions sur UNE page (demande du propriétaire) :
+// QCM, exercices et dissertation empilés verticalement — l'élève traite tout,
+// puis « Terminer ». Plus de défilement d'exercice en exercice.
+function renderAllQuestions() {
+  var subject = state.selectedSubject;
+  if (!subject) return;
+  var container = $('questionsAll');
+  container.replaceChildren();
 
-  $('exerciseTitle').textContent = 'Exercice ' + (exercise.number || (state.exerciseIndex + 1)) + (exercise.title ? ' — ' + exercise.title : '');
-  $('exerciseCounter').textContent = (state.exerciseIndex + 1) + ' / ' + EXAM_CONSTANTS.REQUIRED_EXERCISES;
-  $('exercisePoints').textContent = (Math.round((Number(exercise.points) || 0) * 100) / 100) + ' points · ' + EXAM_CONSTANTS.QUESTIONS_PER_EXERCISE + ' questions';
-  $('exerciseStatement').textContent = exercise.statement || '';
+  subject.exercises.forEach(function (exercise, eIdx) {
+    var isDissert = exercise.dissertation === true;
+    var isQcm = (eIdx === 0 && !isDissert && exercise.questions.every(function (q) { return q.type === 'choice'; }));
 
-  var list = $('questionsList');
-  list.replaceChildren();
-
-  exercise.questions.slice(0, EXAM_CONSTANTS.QUESTIONS_PER_EXERCISE).forEach(function (question, qIdx) {
-    var key = answerKey(state.exerciseIndex, qIdx);
-    var wrapper = document.createElement('div');
-    wrapper.className = 'question';
-
-    var title = document.createElement('div');
-    title.className = 'question-title';
-    title.innerHTML =
-      '<span>' + escapeHtml(question.number || ((state.exerciseIndex + 1) + '.' + (qIdx + 1))) + '. ' + escapeHtml(question.text || '') + '</span>' +
-      '<span class="points">' + (Math.round((Number(question.points) || 0) * 100) / 100) + ' pt</span>';
-    wrapper.appendChild(title);
-
-    if (question.type === 'drawing') {
-      var drawingBox = document.createElement('div');
-      drawingBox.style.cssText = 'border: 2px dashed #B8860B; padding: 20px; text-align: center; color: var(--text-dim); border-radius: 10px; margin-top: 12px; background: rgba(184, 134, 11, 0.05);';
-      drawingBox.innerHTML = '<i class="fas fa-pencil-alt" style="font-size: 24px; margin-bottom: 10px; color: var(--accent-bright);"></i><br>' +
-        '<strong style="color: var(--accent-bright);">Fais ce schéma sur ton cahier.</strong><br>' +
-        '<span style="font-size: 13px;">Photographie-le ci-dessous : l\'IA le lira et le corrigera avec ta copie.</span>';
-      wrapper.appendChild(drawingBox);
-      wrapper.appendChild(buildPhotoAnswerRow(key, 'schéma'));
+    if (eIdx > 0) {
+      var divider = document.createElement('div');
+      divider.className = 'block-divider';
+      divider.textContent = isDissert ? '— Partie dissertation —' : '— Suite du sujet —';
+      container.appendChild(divider);
     }
-    else if (Array.isArray(question.options) && question.options.length === 4) {
-      var options = document.createElement('div');
-      options.className = 'answer-options';
-      var letters = ['A', 'B', 'C', 'D'];
-      question.options.forEach(function (opt, oIdx) {
-        var letter = (opt && opt.id) ? String(opt.id).toUpperCase().slice(0, 1) : letters[oIdx];
-        var optText = (opt && (opt.text || opt.label)) ? (opt.text || opt.label) : String(opt || '');
-        var label = document.createElement('label');
-        label.className = 'answer-option';
 
-        var input = document.createElement('input');
-        input.type = 'radio';
-        input.name = key;
-        input.value = letter;
-        input.checked = state.answers[key] === letter;
-        input.addEventListener('change', function () { saveAnswer(key, letter); });
+    var block = document.createElement('div');
+    block.className = 'exercise-block';
 
-        var text = document.createElement('span');
-        text.textContent = letter + '. ' + optText;
+    var head = document.createElement('div');
+    head.className = 'exercise-block-head';
+    var label = isDissert ? 'Dissertation / Problème de synthèse'
+      : isQcm ? 'QCM — Questions à choix multiples'
+      : 'Exercice ' + (exercise.number || eIdx) + (exercise.title && !isQcm ? ' — ' + exercise.title : '');
+    head.innerHTML = '<h3>' + escapeHtml(label) + '</h3>' +
+      '<span class="exercise-block-pts">' + (Math.round((Number(exercise.points) || 0) * 100) / 100) + ' pts</span>';
+    block.appendChild(head);
 
-        label.appendChild(input);
-        label.appendChild(text);
-        options.appendChild(label);
+    if (exercise.statement) {
+      var st = document.createElement('p');
+      st.className = 'statement';
+      st.innerHTML = fmtText(exercise.statement);
+      block.appendChild(st);
+    }
+
+    // ✅ Dissertation : 2 propositions au choix (comme sur l'image), l'élève
+    // coche celle qu'il traite puis rédige sa copie.
+    if (isDissert && Array.isArray(exercise.propositions) && exercise.propositions.length >= 2) {
+      var note = document.createElement('div');
+      note.className = 'dissert-note';
+      note.textContent = 'Traite UNE des deux propositions au choix, puis rédige ta copie ci-dessous :';
+      block.appendChild(note);
+
+      var propsBox = document.createElement('div');
+      propsBox.className = 'dissert-propositions';
+      var propKey = state.answers['dissertProp:' + eIdx];
+      exercise.propositions.slice(0, 2).forEach(function (prop, pIdx) {
+        var active = propKey === prop.id || (!propKey && pIdx === 0);
+        var pBtn = document.createElement('button');
+        pBtn.type = 'button';
+        pBtn.className = 'dissert-prop' + (active ? ' active' : '');
+        pBtn.innerHTML = '<span class="dp-radio"></span><span class="dp-body"><b>Proposition ' + escapeHtml(prop.id || String.fromCharCode(65 + pIdx)) + '</b><span>' + escapeHtml((prop.title ? prop.title + ' — ' : '') + (prop.text || '')) + '</span></span>';
+        pBtn.addEventListener('click', function () {
+          state.answers['dissertProp:' + eIdx] = prop.id;
+          propsBox.querySelectorAll('.dissert-prop').forEach(function (el) { el.classList.remove('active'); });
+          pBtn.classList.add('active');
+          debouncedSaveSession();
+        });
+        propsBox.appendChild(pBtn);
       });
-      wrapper.appendChild(options);
+      block.appendChild(propsBox);
     }
-    else {
-      var isNumber = question.type === 'number';
-      var input = document.createElement(isNumber ? 'input' : 'textarea');
-      input.className = 'answer';
-      if (isNumber) {
-        input.type = 'number';
-        input.step = 'any';
-        input.placeholder = 'Ta réponse numérique';
-      } else {
-        input.placeholder = 'Rédige ta réponse ici...';
+
+    var qlist = document.createElement('div');
+    exercise.questions.forEach(function (question, qIdx) {
+      var key = answerKey(eIdx, qIdx);
+      var wrapper = document.createElement('div');
+      wrapper.className = 'question';
+
+      var title = document.createElement('div');
+      title.className = 'question-title';
+      title.innerHTML =
+        '<span>' + escapeHtml(question.number || ((eIdx + 1) + '.' + (qIdx + 1))) + '. ' + fmtText(question.text || '') + '</span>' +
+        '<span class="points">' + (Math.round((Number(question.points) || 0) * 100) / 100) + ' pt</span>';
+      wrapper.appendChild(title);
+
+      if (question.type === 'drawing') {
+        var drawingBox = document.createElement('div');
+        drawingBox.style.cssText = 'border: 2px dashed #B8860B; padding: 20px; text-align: center; color: var(--text-dim); border-radius: 10px; margin-top: 12px; background: rgba(184, 134, 11, 0.05);';
+        drawingBox.innerHTML = '<i class="fas fa-pencil-alt" style="font-size: 24px; margin-bottom: 10px; color: var(--accent-bright);"></i><br>' +
+          '<strong style="color: var(--accent-bright);">Fais ce schéma sur ton cahier.</strong><br>' +
+          '<span style="font-size: 13px;">Photographie-le ci-dessous : l\'IA le lira et le corrigera avec ta copie.</span>';
+        wrapper.appendChild(drawingBox);
+        wrapper.appendChild(buildPhotoAnswerRow(key, 'schéma'));
       }
-      input.value = state.answers[key] || '';
-      input.dataset.arvKey = key;
-      input.addEventListener('input', function () { saveAnswer(key, input.value); });
-      wrapper.appendChild(input);
-      // ⚡ v8.64a — RÉPONSE PAR PHOTO : l'élève photographie sa copie manuscrite,
-      // l'IA la transcrit ; si elle n'arrive pas à lire, elle explique POURQUOI.
-      wrapper.appendChild(buildPhotoAnswerRow(key, isNumber ? 'réponse' : 'réponse rédigée'));
-    }
-    list.appendChild(wrapper);
+      else if (Array.isArray(question.options) && question.options.length === 4) {
+        var options = document.createElement('div');
+        options.className = 'answer-options';
+        var letters = ['A', 'B', 'C', 'D'];
+        question.options.forEach(function (opt, oIdx) {
+          var letter = (opt && opt.id) ? String(opt.id).toUpperCase().slice(0, 1) : letters[oIdx];
+          var optText = (opt && (opt.text || opt.label)) ? (opt.text || opt.label) : String(opt || '');
+          var labelEl = document.createElement('label');
+          labelEl.className = 'answer-option';
+
+          var input = document.createElement('input');
+          input.type = 'radio';
+          input.name = key;
+          input.value = letter;
+          input.checked = state.answers[key] === letter;
+          input.addEventListener('change', function () { saveAnswer(key, letter); updateExamProgress(); });
+
+          var text = document.createElement('span');
+          text.textContent = letter + '. ' + optText;
+
+          labelEl.appendChild(input);
+          labelEl.appendChild(text);
+          options.appendChild(labelEl);
+        });
+        wrapper.appendChild(options);
+      }
+      else {
+        var isNumber = question.type === 'number';
+        var big = isDissert;
+        var input = document.createElement(isNumber ? 'input' : 'textarea');
+        input.className = 'answer' + (big ? ' answer-big' : '');
+        if (isNumber) {
+          input.type = 'number';
+          input.step = 'any';
+          input.placeholder = 'Ta réponse numérique';
+        } else {
+          input.placeholder = big ? 'Rédige ta dissertation / ta copie ici (introduction, développement, conclusion)...' : 'Rédige ta réponse ici...';
+        }
+        input.value = state.answers[key] || '';
+        input.dataset.arvKey = key;
+        input.addEventListener('input', function () { saveAnswer(key, input.value); updateExamProgress(); });
+        wrapper.appendChild(input);
+        // ⚡ v8.64a — RÉPONSE PAR PHOTO : transcription IA + raison précise si illisible.
+        wrapper.appendChild(buildPhotoAnswerRow(key, isNumber ? 'réponse' : 'réponse rédigée'));
+      }
+      qlist.appendChild(wrapper);
+    });
+    block.appendChild(qlist);
+    container.appendChild(block);
   });
 
-  $('previousButton').disabled = state.exerciseIndex === 0;
-  $('nextButton').disabled = state.exerciseIndex >= EXAM_CONSTANTS.REQUIRED_EXERCISES - 1;
-  $('progressBar').style.width = (((state.exerciseIndex + 1) / EXAM_CONSTANTS.REQUIRED_EXERCISES) * 100) + '%';
+  updateExamProgress();
+}
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+function updateExamProgress() {
+  var subject = state.selectedSubject;
+  if (!subject) return;
+  var total = 0, answered = 0;
+  subject.exercises.forEach(function (ex, eIdx) {
+    (ex.questions || []).forEach(function (q, qIdx) {
+      var key = answerKey(eIdx, qIdx);
+      total += 1;
+      if (String(state.answers[key] || '').trim()) answered += 1;
+    });
+  });
+  $('progressBar').style.width = (total ? Math.round((answered / total) * 100) : 0) + '%';
+  var chip = $('examModeChip');
+  if (chip && !state.timedMode) {
+    chip.textContent = '📖 Entraînement — ' + answered + '/' + total + ' questions traitées · sans limite de temps';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3904,23 +3862,8 @@ function tryParseJsonLoose(t) {
   return null;
 }
 
-function goNext() {
-  if (state.exerciseIndex < EXAM_CONSTANTS.REQUIRED_EXERCISES - 1) {
-    state.exerciseIndex += 1;
-    saveActiveSession();
-    renderExercise();
-  }
-}
-
-function goPrevious() {
-  if (state.exerciseIndex > 0) {
-    state.exerciseIndex -= 1;
-    saveActiveSession();
-    renderExercise();
-  }
-}
-
 function startTimer() {
+  if (!state.timedMode) return;
   clearInterval(state.timerId);
   state.timerId = setInterval(function () {
     state.remainingSeconds -= 1;
@@ -3940,11 +3883,13 @@ window.addEventListener('beforeunload', function () {
 });
 
 function updateTimerDisplay() {
+  var timer = $('timer');
+  if (!timer) return;
+  if (!state.timedMode) { timer.textContent = 'Sans limite'; return; }
   var s = Math.max(0, state.remainingSeconds);
   var h = String(Math.floor(s / 3600)).padStart(2, '0');
   var m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
   var sec = String(s % 60).padStart(2, '0');
-  var timer = $('timer');
   timer.textContent = h + ':' + m + ':' + sec;
   timer.classList.toggle('urgent', s <= EXAM_CONSTANTS.TIMER_WARNING_SEC);
 }
@@ -4110,38 +4055,79 @@ function showResults(result) {
     }
   }
 
+  // ✅ v8.65a — CORRECTION COMPLÈTE SUR UNE PAGE : chaque exercice, chaque
+  // question, chaque ÉTAPE de correction visible directement — plus de
+  // cartes à ouvrir une par une.
   var exercises = (result && Array.isArray(result.exercises)) ? result.exercises : [];
-  if (exercises.length > 0) {
-    var recap = document.createElement('div');
-    recap.className = 'recap-section';
-    recap.innerHTML = '<h3 class="recap-title">📚 Détail des exercices</h3>';
+  exercises.forEach(function (exercise, idx) {
+    var percent = exercise.maxScore > 0 ? Math.min(100, (exercise.score / exercise.maxScore) * 100) : 0;
 
-    exercises.forEach(function (exercise, idx) {
-      var percent = exercise.maxScore > 0 ? Math.min(100, (exercise.score / exercise.maxScore) * 100) : 0;
-      var icon = percent >= 75 ? '✅' : percent >= 50 ? '⚠️' : '❌';
+    var wrap = document.createElement('div');
+    wrap.className = 'corr-exercise';
+    var head = '<div class="corr-ex-head"><h3>' +
+      (idx === 0 ? 'QCM' : 'Exercice ' + (exercise.number || idx)) +
+      '</h3><span class="corr-ex-score">' +
+      Number(exercise.score || 0).toFixed(2) + ' / ' + Number(exercise.maxScore || 0).toFixed(2) + ' pts</span></div>' +
+      '<div class="corr-ex-progress"><span style="width:' + Math.round(percent) + '%;background:' + getProgressColor(percent) + '"></span></div>';
+    if (exercise.explanation) head += '<div class="qd-section explanation"><div class="qd-section-label"><i class="fas fa-lightbulb"></i> Bilan</div><div>' + fmtText(exercise.explanation) + '</div></div>';
 
-      var card = document.createElement('button');
-      card.className = 'exercise-card';
-      card.type = 'button';
-      card.innerHTML =
-        '<div class="exercise-card-icon">' + icon + '</div>' +
-        '<div class="exercise-card-body">' +
-        '<div class="exercise-card-title">Exercice ' + (exercise.number || (idx + 1)) + (exercise.title ? ' — ' + fmtText(exercise.title) : '') + '</div>' +
-        '<div class="exercise-card-meta">' +
-        Math.min(Number(exercise.score || 0), Number(exercise.maxScore || 6.67)).toFixed(2) +
-        ' / ' +
-        Number(exercise.maxScore || 6.67).toFixed(2) +
-        ' pts · ' +
-        (exercise.correctAnswers || 0) + '/' + (exercise.totalQuestions || 5) + ' correctes' +
-        '</div>' +
-        '<div class="exercise-card-progress"><div class="exercise-card-fill" style="width:' + percent + '%;background:' + getProgressColor(percent) + '"></div></div>' +
-        '</div>' +
-        '<div class="exercise-card-arrow">→</div>';
-      card.addEventListener('click', function () { showExerciseDetail(exercise, idx); });
-      recap.appendChild(card);
+    var questions = Array.isArray(exercise.questions) ? exercise.questions : [];
+    questions.forEach(function (q, qIdx) {
+      var qIcon = q.status === 'correct' ? '✅' : q.status === 'wrong' ? '❌' : '⏭️';
+      var pointsClass = q.status === 'correct' ? 'full' : (Number(q.points) > 0 ? '' : 'zero');
+      var html = '<div class="question-detail q-' + (q.status || 'pending') + '">';
+
+      html += '<div class="qd-header">' +
+        '<div class="qd-number"><span class="q-icon">' + qIcon + '</span> Question ' + fmtText(q.number || (qIdx + 1)) + '</div>' +
+        '<div class="qd-points ' + pointsClass + '">' + Number(q.points || 0).toFixed(2) + ' / ' + Number(q.maxPoints || 1).toFixed(2) + ' pt</div>' +
+        '</div>';
+
+      if (q.questionText) {
+        html += '<div class="qd-statement"><div class="qd-statement-label"><i class="fas fa-question-circle"></i> Énoncé</div><div>' + fmtText(q.questionText) + '</div></div>';
+      }
+
+      html += '<div class="qd-answers">';
+      html += '<div class="qd-answer-box student"><div class="qd-answer-label">✍️ Ta réponse</div>';
+      if (q.status === 'unanswered' || !q.studentAnswer) html += '<div class="qd-answer-text muted">Pas de réponse</div>';
+      else html += '<div class="qd-answer-text">' + fmtText(String(q.studentAnswer)) + '</div>';
+      html += '</div>';
+
+      if (q.correctAnswer) {
+        html += '<div class="qd-answer-box correct"><div class="qd-answer-label">✅ Bonne réponse</div><div class="qd-answer-text">' + fmtText(String(q.correctAnswer)) + '</div></div>';
+      }
+      html += '</div>';
+
+      if (q.concept) html += '<div class="qd-section concept"><div class="qd-section-label"><i class="fas fa-brain"></i> Notion testée</div><div>' + fmtText(q.concept) + '</div></div>';
+      if (q.explanation) html += '<div class="qd-section explanation"><div class="qd-section-label"><i class="fas fa-lightbulb"></i> Explication</div><div>' + fmtText(q.explanation) + '</div></div>';
+
+      // ✅ ÉTAPES DE CORRECTION (toujours montrées quand l'IA en livre)
+      if (Array.isArray(q.steps) && q.steps.length > 0) {
+        html += '<div class="qd-section steps"><div class="qd-section-label"><i class="fas fa-list-ol"></i> Étapes de la correction</div><ol>';
+        q.steps.forEach(function (s) { html += '<li>' + fmtText(s) + '</li>'; });
+        html += '</ol></div>';
+      }
+
+      if (q.whyWrong && q.status !== 'correct') html += '<div class="qd-section why-wrong"><div class="qd-section-label"><i class="fas fa-times-circle"></i> Pourquoi tu as raté</div><div>' + fmtText(q.whyWrong) + '</div></div>';
+      if (q.commonMistake) html += '<div class="qd-section mistake"><div class="qd-section-label"><i class="fas fa-triangle-exclamation"></i> Erreur classique</div><div>' + fmtText(q.commonMistake) + '</div></div>';
+      if (q.toReview) html += '<div class="qd-section review"><div class="qd-section-label"><i class="fas fa-book-open"></i> À revoir</div><div>' + fmtText(q.toReview) + '</div></div>';
+      if (q.betterMethod) html += '<div class="qd-section tip"><div class="qd-section-label"><i class="fas fa-star"></i> Astuce bonus</div><div>' + fmtText(q.betterMethod) + '</div></div>';
+      if (q.feedback) html += '<div class="qd-section feedback"><div class="qd-section-label"><i class="fas fa-comment-dots"></i> Commentaire</div><div class="qd-feedback-text">' + fmtText(q.feedback) + '</div></div>';
+
+      html += '</div>';
+      var qEl = document.createElement('div');
+      qEl.innerHTML = html;
+      wrap.appendChild(qEl);
     });
-    details.appendChild(recap);
-  }
+
+    if (exercise.advice) {
+      var adv = document.createElement('div');
+      adv.className = 'exercise-explanation';
+      adv.innerHTML = '<div class="explanation-label">🎯 Conseil</div><div class="explanation-text">' + fmtText(exercise.advice) + '</div>';
+      wrap.appendChild(adv);
+    }
+
+    details.appendChild(wrap);
+  });
 
   if (result && Array.isArray(result.revisionTopics) && result.revisionTopics.length > 0) {
     var topics = document.createElement('div');
@@ -4154,168 +4140,6 @@ function showResults(result) {
   }
 
   showView('resultsView');
-}
-
-function showExerciseDetail(exercise, exerciseIndex) {
-  var details = $('resultsDetails');
-  details.replaceChildren();
-  var percent = exercise.maxScore > 0 ? (exercise.score / exercise.maxScore) * 100 : 0;
-  var icon = percent >= 75 ? '✅' : percent >= 50 ? '⚠️' : '❌';
-
-  var header = document.createElement('div');
-  header.className = 'exercise-detail-header';
-  header.innerHTML =
-    '<button class="back-btn-detail" id="backToRecapBtn"><i class="fas fa-arrow-left"></i> Retour</button>' +
-    '<div class="exercise-detail-title">' +
-    '<div class="exercise-detail-icon">' + icon + '</div>' +
-    '<div><h3>Exercice ' + (exercise.number || (exerciseIndex + 1)) + (exercise.title ? ' — ' + fmtText(exercise.title) : '') + '</h3>' +
-    '<div class="exercise-detail-meta">' +
-    Math.min(Number(exercise.score || 0), Number(exercise.maxScore || 6.67)).toFixed(2) +
-    ' / ' +
-    Number(exercise.maxScore || 6.67).toFixed(2) +
-    ' pts · ' + (exercise.correctAnswers || 0) + '/' + (exercise.totalQuestions || 5) + ' correctes</div>' +
-    '</div></div>';
-  details.appendChild(header);
-
-  var questions = Array.isArray(exercise.questions) ? exercise.questions : [];
-  if (questions.length === 0) {
-    var empty = document.createElement('p');
-    empty.className = 'lead';
-    empty.textContent = 'Aucun détail disponible.';
-    details.appendChild(empty);
-  } else {
-    questions.forEach(function (q, idx) {
-      var qEl = document.createElement('div');
-      qEl.className = 'question-detail q-' + (q.status || 'pending');
-
-      var qIcon = q.status === 'correct' ? '✅' : q.status === 'wrong' ? '❌' : '⏭️';
-      var pointsClass = q.status === 'correct' ? 'full' : (Number(q.points) > 0 ? '' : 'zero');
-
-      var html = '';
-
-      html +=
-        '<div class="qd-header">' +
-        '<div class="qd-number"><span class="q-icon">' + qIcon + '</span> Question ' + fmtText(q.number || (idx + 1)) + '</div>' +
-        '<div class="qd-points ' + pointsClass + '">' + Number(q.points || 0).toFixed(2) + ' / ' + Number(q.maxPoints || 1.33).toFixed(2) + ' pt</div>' +
-        '</div>';
-
-      if (q.questionText) {
-        html +=
-          '<div class="qd-statement">' +
-          '<div class="qd-statement-label"><i class="fas fa-question-circle"></i> Énoncé</div>' +
-          '<div>' + fmtText(q.questionText) + '</div>' +
-          '</div>';
-      }
-
-      html += '<div class="qd-answers">';
-      html += '<div class="qd-answer-box student">';
-      html += '<div class="qd-answer-label">✍️ Ta réponse</div>';
-      if (q.status === 'unanswered' || !q.studentAnswer) {
-        html += '<div class="qd-answer-text muted">Pas de réponse</div>';
-      } else {
-        html += '<div class="qd-answer-text">' + fmtText(String(q.studentAnswer)) + '</div>';
-      }
-      html += '</div>';
-
-      if (q.correctAnswer) {
-        html += '<div class="qd-answer-box correct">';
-        html += '<div class="qd-answer-label">✅ Bonne réponse</div>';
-        html += '<div class="qd-answer-text">' + fmtText(String(q.correctAnswer)) + '</div>';
-        html += '</div>';
-      }
-      html += '</div>';
-
-      if (q.concept) {
-        html +=
-          '<div class="qd-section concept">' +
-          '<div class="qd-section-label"><i class="fas fa-brain"></i> Notion testée</div>' +
-          '<div>' + fmtText(q.concept) + '</div>' +
-          '</div>';
-      }
-
-      if (q.explanation) {
-        html +=
-          '<div class="qd-section explanation">' +
-          '<div class="qd-section-label"><i class="fas fa-lightbulb"></i> Explication</div>' +
-          '<div>' + fmtText(q.explanation) + '</div>' +
-          '</div>';
-      }
-
-      if (Array.isArray(q.steps) && q.steps.length > 0) {
-        html +=
-          '<div class="qd-section steps">' +
-          '<div class="qd-section-label"><i class="fas fa-list-ol"></i> Étapes du calcul</div>' +
-          '<ol>' +
-          q.steps.map(function (s) { return '<li>' + fmtText(s) + '</li>'; }).join('') +
-          '</ol>' +
-          '</div>';
-      }
-
-      if (q.whyWrong && q.status !== 'correct') {
-        html +=
-          '<div class="qd-section why-wrong">' +
-          '<div class="qd-section-label"><i class="fas fa-times-circle"></i> Pourquoi tu as raté</div>' +
-          '<div>' + fmtText(q.whyWrong) + '</div>' +
-          '</div>';
-      }
-
-      if (q.commonMistake) {
-        html +=
-          '<div class="qd-section mistake">' +
-          '<div class="qd-section-label"><i class="fas fa-triangle-exclamation"></i> Erreur classique</div>' +
-          '<div>' + fmtText(q.commonMistake) + '</div>' +
-          '</div>';
-      }
-
-      if (q.toReview) {
-        html +=
-          '<div class="qd-section review">' +
-          '<div class="qd-section-label"><i class="fas fa-book-open"></i> À revoir</div>' +
-          '<div>' + fmtText(q.toReview) + '</div>' +
-          '</div>';
-      }
-
-      if (q.betterMethod) {
-        html +=
-          '<div class="qd-section tip">' +
-          '<div class="qd-section-label"><i class="fas fa-star"></i> Astuce bonus</div>' +
-          '<div>' + fmtText(q.betterMethod) + '</div>' +
-          '</div>';
-      }
-
-      if (q.feedback) {
-        html +=
-          '<div class="qd-section feedback">' +
-          '<div class="qd-section-label"><i class="fas fa-comment-dots"></i> Commentaire</div>' +
-          '<div class="qd-feedback-text">' + fmtText(q.feedback) + '</div>' +
-          '</div>';
-      }
-
-      qEl.innerHTML = html;
-      details.appendChild(qEl);
-    });
-  }
-
-  if (exercise.explanation) {
-    var expl = document.createElement('div');
-    expl.className = 'exercise-explanation';
-    expl.innerHTML = '<div class="explanation-label">📝 Bilan de l\'exercice</div><div class="explanation-text">' + fmtText(exercise.explanation) + '</div>';
-    details.appendChild(expl);
-  }
-
-  if (exercise.advice) {
-    var advice = document.createElement('div');
-    advice.className = 'exercise-explanation';
-    advice.innerHTML = '<div class="explanation-label">🎯 Conseil</div><div class="explanation-text">' + fmtText(exercise.advice) + '</div>';
-    details.appendChild(advice);
-  }
-
-  var backBtn = document.getElementById('backToRecapBtn');
-  if (backBtn) {
-    backBtn.addEventListener('click', function () {
-      showResults(state.lastResult);
-    });
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4340,26 +4164,34 @@ async function checkActiveSession() {
     var subject = session.exam.subjects && session.exam.subjects.find(function (s) { return s.id === session.selectedSubjectId; });
     if (!subject) { await clearActiveSession(); return; }
 
+    var answeredCount = Object.keys(session.answers || {}).filter(function (k) { return k.indexOf('dissertProp:') !== 0; }).length;
+    var totalQuestions = 0;
+    (subject.exercises || []).forEach(function (ex) { totalQuestions += (ex.questions || []).length; });
     $('resumeMeta').innerHTML =
       '<div><span class="label">Matière</span><span class="value">' + escapeHtml(session.exam.subject || '—') + '</span></div>' +
       '<div><span class="label">Sujet</span><span class="value">' + escapeHtml(subject.title || 'Sujet') + '</span></div>' +
-      '<div><span class="label">Exercice</span><span class="value">' + ((Number(session.exerciseIndex) || 0) + 1) + ' / ' + EXAM_CONSTANTS.REQUIRED_EXERCISES + '</span></div>' +
-      '<div><span class="label">Réponses données</span><span class="value">' + Object.keys(session.answers || {}).length + '</span></div>';
+      '<div><span class="label">Questions</span><span class="value">' + totalQuestions + '</span></div>' +
+      '<div><span class="label">Réponses données</span><span class="value">' + answeredCount + ' / ' + totalQuestions + '</span></div>';
 
     $('resumeModal').classList.add('show');
 
     $('resumeContinueBtn').onclick = function () {
       state.exam = session.exam;
       state.selectedSubject = subject;
-      state.exerciseIndex = Number(session.exerciseIndex) || 0;
+      state.exerciseIndex = 0;
       state.answers = session.answers || {};
       state.startedAt = Number(session.startedAt) || Date.now();
-      state.remainingSeconds = Number(session.remainingSeconds) || (state.exam.duration * 60);
+      state.timedMode = Number(session.remainingSeconds) > 0;
+      state.prepMode = state.timedMode ? 'blanc' : 'entrainement';
+      state.remainingSeconds = state.timedMode ? Number(session.remainingSeconds) : 0;
       $('resumeModal').classList.remove('show');
       $('examTitle').textContent = subject.title || 'Sujet';
+      var timerEl = $('timer');
+      var modeChip = $('examModeChip');
+      if (timerEl) timerEl.style.display = state.timedMode ? '' : 'none';
       showView('examView');
-      renderExercise();
-      startTimer();
+      renderAllQuestions();
+      if (state.timedMode) startTimer();
     };
 
     $('resumeNewBtn').onclick = async function () {
@@ -4368,16 +4200,12 @@ async function checkActiveSession() {
       state.exam = null;
       state.selectedSubject = null;
       showView('dashboardView');
-      openPreparer();
     };
   } catch (e) {
     console.warn('[EXAM] checkActiveSession error:', e.message);
   }
 }
 
-$('backConfigButton').addEventListener('click', function () { showView('dashboardView'); openPreparer(); });
-$('previousButton').addEventListener('click', goPrevious);
-$('nextButton').addEventListener('click', goNext);
 $('finishButton').addEventListener('click', askFinish);
 $('cancelFinishButton').addEventListener('click', closeConfirmModal);
 
@@ -4405,9 +4233,9 @@ $('newExamButton').addEventListener('click', async function () {
   state.submitting = false;
   state.lastResult = null;
   state.notebookContext = null;
+  state.prepChapter = null;
   showView('dashboardView');
   loadDashboard();
-  openPreparer();
 });
 
 window.addEventListener('online', function () {
@@ -4429,7 +4257,7 @@ document.addEventListener('keydown', function (e) {
 // ═══════════════════════════════════════════════════════════════
 // AUTH GUARD — ✅ C2 / C3
 // ═══════════════════════════════════════════════════════════════
-initSelects();
+bindPrep();
 
 requireAuth({
   onUser: async function (user) {
@@ -4462,29 +4290,41 @@ requireAuth({
       console.warn('[EXAM] Impossible de vérifier le statut du compte :', e.code || e.message);
     }
 
+    // ✅ v8.65a — TYPE D'EXAMEN depuis le profil de l'élève (Bac D, Bac C…)
+    try {
+      var profSnap = await getDoc(doc(db, 'users', user.uid));
+      var prof = profSnap.exists() ? profSnap.data() : {};
+      var classMap = {
+        terminale_d: 'Bac D', terminale_c: 'Bac C', terminale_a: 'Bac A',
+        terminale_b: 'Bac B', premiere_d: '1ère D', premiere_c: '1ère C',
+        premiere_a: '1ère A', premiere_b: '1ère B'
+      };
+      state.profileExam = classMap[prof.classId] || (prof.exam ? 'Bac' : 'Bac');
+      var chipEl = $('examTypeLabel');
+      if (chipEl) chipEl.textContent = state.profileExam;
+      // Lien Résumé → Épreuves : présélection (matière/cours) + cahier
+      prefillFromUrl();
+      if (state.prepSubject) {
+        await loadCahierSubjects();
+        if (state.prepChapter && state.prepChapter.id) {
+          state.cahierChapters[state.prepSubject] = [{ id: state.prepChapter.id, title: state.prepChapter.title, sectionsCount: 0 }];
+          $('coursSection').style.display = 'block';
+          renderCoursList();
+        } else {
+          $('coursSection').style.display = 'block';
+          renderCoursList(true);
+          loadCahierChapters(state.prepSubject);
+        }
+        setPrepMode(state.prepMode);
+      }
+    } catch (e) { console.warn('[EXAM] profil :', e.message); }
+
     $('connectionState').textContent = 'connecté';
     $('connectionState').classList.add('online');
-    prefillFromUrl();
-    bindPreparer();
     loadDashboard();
     // ✅ v8.64a — cercle « Chargement... » sous la barre : le dashboard est prêt.
     try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {}
     await checkActiveSession();
-
-    // ✅ v8.9 — POP-UP FORCÉ du choix de pays (nouvel utilisateur seulement) :
-    // bloquant jusqu'à confirmation, puis VERROUILLÉ pour toujours. Les pays
-    // déjà confirmés (y compris depuis un autre appareil) ne le voient jamais.
-    try {
-      ArvexaCountry.ready().then(function () {
-        ArvexaCountry.maybeShowForcedModal(function () { updateChapters(); });
-        updateChapters();
-      });
-    } catch (e) { console.warn('[EXAM] Country module :', e); }
-
-    // ✅ v8.9 — re-remplir les chapitres quand le programme du pays arrive /
-    // se complète (ajouts des autres élèves du même pays en temps réel).
-    window.addEventListener('arvexa-curricula-change', function () { updateChapters(); });
-    window.addEventListener('arvexa-country-change', function () { updateChapters(); });
   },
   onNoUser: () => {
     // ✅ v8.64a — le cercle de chargement ne doit jamais rester bloqué

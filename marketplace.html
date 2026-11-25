@@ -163,6 +163,19 @@
        DEUX petits boutons côte à côte comme la page abonnement) ===== */
     .packs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
     @media (max-width: 420px) { .packs-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }
+    /* ✅ v8.65a — OFFRES CLASSÉES PAR PAGE (demande du propriétaire : « dans la
+       page market les offres il faut les classer : examens, résumés, questions »).
+       Têtes de groupe pleine largeur, comme la page abonnement. */
+    .packs-grid .cp-group-head {
+      grid-column: 1 / -1; display: flex; align-items: center; gap: 8px;
+      font-size: 13.5px; font-weight: 800; color: var(--accent-bright);
+      margin-top: 8px; padding-top: 2px;
+    }
+    .packs-grid .cp-group-head:first-child { margin-top: 0; }
+    .packs-grid .cp-group-head .cp-group-ico { font-size: 16px; }
+    .packs-grid .cp-group-head .cp-group-count {
+      margin-left: auto; font-size: 11px; font-weight: 700; color: var(--text-dim);
+    }
     .pack-card {
       position: relative; overflow: hidden;
       background: var(--bg-card);
@@ -607,38 +620,71 @@
   }
 
   // ─── Rendu des packs ───
+  // ⚡ v8.65a — OFFRES CLASSÉES PAR PAGE (demande du propriétaire : « dans la
+  // page market les offres il faut les classer pour les examens le résumé et
+  // les questions ») : groupes 📝 Examens · 📄 Résumés · 💬 Questions, puis
+  // les anciens packs globaux en dernier. Ordre repris de l'énumération du
+  // propriétaire : examens d'abord.
+  const PACK_PAGE_ORDER = [
+    { key: 'exam',   icon: '📝', label: 'Examens — page Épreuves' },
+    { key: 'resume', icon: '📄', label: 'Résumés — page Résumé' },
+    { key: 'chat',   icon: '💬', label: 'Questions — discussion IA' },
+    { key: null,     icon: '⚡', label: 'Offres globales (anciens packs)' }
+  ];
+
+  function packCardHtml(p, groupIcon) {
+    const featured = Number(p.credits) >= 100 ? ' featured' : '';
+    const badge = featured ? '<span class="pack-badge">Best-seller</span>' : '';
+    const validity = Number(p.validityDays) || 30;
+    const title = String(p.title || 'Pack').replace(/</g, '&lt;');
+    const price = Number(p.price).toLocaleString('fr-FR');
+    const unitText = p.unitLabel && Number(p.unitCount) > 0
+      ? `${Number(p.unitCount)} ${String(p.unitLabel).replace(/</g, '&lt;')}`
+      : `⚡ ${Number(p.credits)} requêtes IA`;
+    return `
+      ${badge}
+      <div class="pack-icon">${groupIcon}</div>
+      <div class="pack-name">${title}</div>
+      <div class="pack-credits">${unitText}</div>
+      <div class="pack-validity"><i class="fas fa-clock"></i> Valables ${validity} jours</div>
+      <div class="pack-price"><span class="amount">${price}</span><span class="cur">FCFA</span></div>
+      <div class="pack-actions">
+        <button class="pk-auto" title="Paiement automatique"><i class="fas fa-bolt"></i> Auto</button>
+        <a class="pk-manual" title="Paiement manuel" target="_blank" rel="noopener" href="${manualWhatsApp(title, price)}"><i class="fab fa-whatsapp"></i> Manuel</a>
+      </div>`;
+  }
+
   function renderPacks(products) {
     const grid = $('packsGrid');
     grid.replaceChildren();
-    $('packsCount').textContent = products.length ? `${products.length} packs` : '';
+    $('packsCount').textContent = products.length ? `${products.length} offres` : '';
     if (!products.length) {
       const empty = document.createElement('div');
       empty.className = 'library-empty';
-      empty.innerHTML = '<i class="fas fa-box-open"></i>Aucun pack disponible pour le moment — reviens très vite !';
+      empty.innerHTML = '<i class="fas fa-box-open"></i>Aucune offre disponible pour le moment — reviens très vite !';
       grid.appendChild(empty);
       return;
     }
+    const groups = new Map();
     products.forEach((p) => {
-      const featured = Number(p.credits) >= 100 ? ' featured' : '';
-      const badge = featured ? '<span class="pack-badge">Best-seller</span>' : '';
-      const validity = Number(p.validityDays) || 30;
-      const title = String(p.title || 'Pack').replace(/</g, '&lt;');
-      const price = Number(p.price).toLocaleString('fr-FR');
-      const card = document.createElement('div');
-      card.className = 'pack-card' + featured;
-      card.innerHTML = `
-        ${badge}
-        <div class="pack-icon"><i class="fas fa-bolt"></i></div>
-        <div class="pack-name">${title}</div>
-        <div class="pack-credits">${p.unitLabel && Number(p.unitCount) > 0 ? `${Number(p.unitCount)} ${String(p.unitLabel).replace(/</g, '&lt;')}` : `⚡ ${Number(p.credits)} requêtes IA`}</div>
-        <div class="pack-validity"><i class="fas fa-clock"></i> Valables ${validity} jours</div>
-        <div class="pack-price"><span class="amount">${price}</span><span class="cur">FCFA</span></div>
-        <div class="pack-actions">
-          <button class="pk-auto" title="Paiement automatique"><i class="fas fa-bolt"></i> Auto</button>
-          <a class="pk-manual" title="Paiement manuel" target="_blank" rel="noopener" href="${manualWhatsApp(title, price)}"><i class="fab fa-whatsapp"></i> Manuel</a>
-        </div>`;
-      card.querySelector('.pk-auto').addEventListener('click', (e) => buyPack(p.id, e.currentTarget));
-      grid.appendChild(card);
+      const key = ['resume', 'chat', 'exam'].includes(String(p.creditPage || '')) ? String(p.creditPage) : null;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(p);
+    });
+    PACK_PAGE_ORDER.forEach(({ key, icon, label }) => {
+      const list = groups.get(key) || [];
+      if (!list.length) return;
+      const head = document.createElement('div');
+      head.className = 'cp-group-head';
+      head.innerHTML = `<span class="cp-group-ico">${icon}</span> ${label} <span class="cp-group-count">${list.length}</span>`;
+      grid.appendChild(head);
+      list.forEach((p) => {
+        const card = document.createElement('div');
+        card.className = 'pack-card' + (Number(p.credits) >= 100 ? ' featured' : '');
+        card.innerHTML = packCardHtml(p, icon);
+        card.querySelector('.pk-auto').addEventListener('click', (e) => buyPack(p.id, e.currentTarget));
+        grid.appendChild(card);
+      });
     });
   }
 

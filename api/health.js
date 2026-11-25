@@ -112,7 +112,8 @@ export default async function handler(req, res) {
     }
     providers = {
       groq: await probe('https://api.groq.com/openai/v1/chat/completions', process.env.GROQ_MODEL || 'openai/gpt-oss-120b', process.env.GROQ_API_KEY),
-      openrouter: await probe('https://openrouter.ai/api/v1/chat/completions', process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b', process.env.OPENROUTER_API_KEY, {
+      // ✅ v8.65a — la sonde teste la VRAIE chaîne :free (plus gpt-oss-120b payant)
+      openrouter: await probe('https://openrouter.ai/api/v1/chat/completions', process.env.OPENROUTER_MODEL || 'particle-ai/particle-1:free', process.env.OPENROUTER_API_KEY, {
         'HTTP-Referer': (process.env.APP_ORIGIN || '').startsWith('http') ? process.env.APP_ORIGIN : 'https://arvexa-academy.vercel.app',
         'X-Title': 'ARVEXA Notebook'
       }),
@@ -127,7 +128,7 @@ export default async function handler(req, res) {
     env: checks,
     models: {
       groq: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
-      openrouter: process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b',
+      openrouter: process.env.OPENROUTER_MODEL || 'particle-ai/particle-1:free',
       mistral: process.env.MISTRAL_MODEL || 'open-mistral-nemo'
     },
     providers

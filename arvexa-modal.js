@@ -1,7 +1,7 @@
 /* ================================================================
-   ARVEXA MODAL v1.1 — v8.63a
-   Poignée « trait du milieu » + ligne entière cliquable + fermeture
-   animée fluide.
+   ARVEXA MODAL v1.2 — v8.65a
+   Ouverture « du bas vers le haut » + ligne entière cliquable +
+   fermeture en glissée descendue fluide.
 
    Demandes du propriétaire :
    (v8.54a) « sur chaque modale tu supprimes la croix à droite, à la
@@ -12,22 +12,33 @@
    de la barre doit fermer le modèle » + « la fermeture que tu as
    utilisée pour les modèles sont brutales, ne sont pas animées
    fluidement comme dans les autres pages ».
+   (v8.65a) « l'ouverture doit être comme une ouverture du bas vers le
+   haut pas juste une apparition comme une pop-up » + « la fermeture
+   doit être bien propre, sans coupures ni bugs, et lisse : lorsque
+   j'appuie sur la barre du haut la page descend directement et
+   disparaît ».
 
-   Fonctionnement v1.1 :
-   1. Les croix (.modal-close / .arvexa-confirm-close / .picker-close)
+   Fonctionnement v1.2 :
+   1. OUVERTURE ANIMÉE : chaque modale MONTE DU BAS VERS LE HAUT
+      (translateY(100%) → 0, 360 ms, courbe douce). Animation 100 % CSS :
+      elle se rejoue automatiquement à CHAQUE réaffichage (display none →
+      flex/grid), y compris pour les modales injectées plus tard —
+      plus aucune « apparition pop-up ».
+   2. Les croix (.modal-close / .arvexa-confirm-close / .picker-close)
       sont MASQUÉES (display:none) mais restent dans le DOM : un clic
       programmatique conserve TOUTE la logique de fermeture propre à
       chaque page (nettoyage, libération de garde, reset de formulaire…).
-   2. Une poignée 44×4 + une ZONE DE PRISE pleine largeur (38 px de
+   3. Une poignée 44×4 + une ZONE DE PRISE pleine largeur (38 px de
       haut) sont ajoutées en tête de CHAQUE modale : un SIMPLE TAP
       n'importe où sur la ligne du haut ferme la modale, et le
       glisser vers le bas fonctionne depuis toute la ligne.
-   3. FERMETURE ANIMÉE : glissement libéré au-delà du seuil de distance
-      ou d'un coup de vitesse ; sinon retour en douceur. Toute fermeture
-      (tap, glisser, ArvexaModal.close) joue d'abord une animation de
-      sortie douce (descente + fondu 220 ms) AVANT d'appeler la logique
-      de la page — plus aucune disparition brutale.
-   4. Détection automatique : modales présentes au chargement ET celles
+   4. FERMETURE ANIMÉE « la page descend et disparaît » : glissement
+      libéré au-delà du seuil de distance ou d'un coup de vitesse ;
+      sinon retour en douceur. Toute fermeture (tap, glisser, ArvexaModal.close)
+      joue d'abord une DESCENTE COMPLÈTE (translateY(100%) + fondu,
+      280 ms, ease-in) AVANT d'appeler la logique de la page — plus
+      aucune disparition brutale.
+   5. Détection automatique : modales présentes au chargement ET celles
       injectées plus tard (MutationObserver), sur toutes les pages qui
       chargent ce fichier.
    ================================================================ */
@@ -36,7 +47,7 @@
 
   if (window.__arvexaModalInit) return;
   window.__arvexaModalInit = true;
-  window.ARVEXA_MODAL_VERSION = '1.1';
+  window.ARVEXA_MODAL_VERSION = '1.2';
 
   var REDUCED = false;
   try { REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
@@ -55,8 +66,26 @@
   var CLOSE_BTN_SELECTOR = '.modal-close, .arvexa-confirm-close, .picker-close';
 
   var CSS = [
-    '/* ARVEXA MODAL v1.1 — poignée + ligne entière + fermeture animée (v8.63a) */',
+    '/* ARVEXA MODAL v1.2 — montée du bas + ligne entière + descente fluide (v8.65a) */',
     '.modal-close, .arvexa-confirm-close, .picker-close { display: none !important; }',
+    '',
+    '/* ✅ v8.65a — OUVERTURE « du bas vers le haut » (demande du propriétaire :',
+    '   plus aucune apparition pop-up) : la modale MONTE depuis le bas de',
+    '   l\'écran (100 % → 0) avec une courbe douce. Animation CSS pure : elle se',
+    '   rejoue automatiquement à CHAQUE affichage (display none → visible), y',
+    '   compris pour les modales injectées dynamiquement. fill-mode backwards :',
+    '   une fois terminée, l\'animation se retire — le glisser reste libre. */',
+    '@keyframes arvexaModalRise {',
+    '  from { transform: translateY(100%); opacity: 0.25; }',
+    '  55%  { opacity: 1; }',
+    '  to   { transform: translateY(0);    opacity: 1; }',
+    '}',
+    '.modal, .modal-sheet, .modal-confirm, .arvexa-confirm-modal, .arvexa-popup, .picker-sheet {',
+    '  animation: arvexaModalRise 0.36s cubic-bezier(0.22, 1, 0.36, 1) backwards !important;',
+    '}',
+    '@media (prefers-reduced-motion: reduce) {',
+    '  .modal, .modal-sheet, .modal-confirm, .arvexa-confirm-modal, .arvexa-popup, .picker-sheet { animation: none !important; }',
+    '}',
     '.arvexa-modal-handle {',
     '  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);',
     '  width: 44px; height: 4px; border-radius: 8px;',
@@ -81,8 +110,8 @@
     '   la modale descend légèrement et s\u2019estompe AVANT que la page ne la',
     '   referme — plus aucune disparition brutale. */',
     '.arvexa-modal-closing {',
-    '  transition: transform 0.22s cubic-bezier(0.4, 0, 1, 1), opacity 0.22s ease !important;',
-    '  transform: translateY(18px) scale(0.98) !important;',
+    '  transition: transform 0.28s cubic-bezier(0.55, 0, 0.85, 0.45), opacity 0.28s ease !important;',
+    '  transform: translateY(100%) !important;',
     '  opacity: 0 !important;',
     '  pointer-events: none !important;',
     '}',
@@ -128,7 +157,7 @@
 
     if (REDUCED) { finish(); return; }
     root.classList.add('arvexa-modal-closing');
-    setTimeout(finish, 230);
+    setTimeout(finish, 290);
   }
 
   function resetInline(root) {

@@ -527,32 +527,42 @@ function buildSystemPrompt(context) {
 // FOURNISSEURS IA
 // ────────────────────────────────────────────────────────────────
 function getProviders() {
+  const orHeaders = {
+    'HTTP-Referer': process.env.APP_ORIGIN || '',
+    'X-Title': 'ARVEXA School'
+  };
+  // ✅ v8.65a — chaîne :free VÉRIFIÉE EN DIRECT le 26/11/2026 (Groq 403 +
+  // gpt-oss-120b OpenRouter = modèle PAYANT → 402 compte 0 crédit : cause
+  // des échecs « erreur » en discussion/questionnaire). Relais suivants si
+  // cap partagé 429. Groq et Mistral restent en fin de chaîne si réactivés.
+  const orModel = (name, model) => ({
+    name: 'OpenRouter ' + name,
+    key: process.env.OPENROUTER_API_KEY,
+    endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+    model: model,
+    headers: orHeaders
+  });
   return [
-    {
+    process.env.OPENROUTER_API_KEY ? orModel('particle-1:free', 'particle-ai/particle-1:free') : null,
+    process.env.OPENROUTER_API_KEY ? orModel('nemotron-3-ultra:free', 'nvidia/nemotron-3-ultra-550b-a55b:free') : null,
+    process.env.OPENROUTER_API_KEY ? orModel('ernie-5.5-flash:free', 'baidu/ernie-5.5-flash-preview:free') : null,
+    process.env.OPENROUTER_API_KEY ? orModel('gemma-4-31b:free', 'google/gemma-4-31b-it:free') : null,
+    process.env.OPENROUTER_API_KEY ? orModel('ling-3.2-flash:free', 'inclusionai/ling-3.2-flash:free') : null,
+    process.env.GROQ_API_KEY ? {
       name: 'Groq',
       key: process.env.GROQ_API_KEY,
       endpoint: 'https://api.groq.com/openai/v1/chat/completions',
       model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
       headers: {}
-    },
-    {
-      name: 'OpenRouter',
-      key: process.env.OPENROUTER_API_KEY,
-      endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-      model: process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b',
-      headers: {
-        'HTTP-Referer': process.env.APP_ORIGIN || '',
-        'X-Title': 'ARVEXA School'
-      }
-    },
-    {
+    } : null,
+    process.env.MISTRAL_API_KEY ? {
       name: 'Mistral',
       key: process.env.MISTRAL_API_KEY,
       endpoint: 'https://api.mistral.ai/v1/chat/completions',
       model: process.env.MISTRAL_MODEL || 'open-mistral-nemo',
       headers: {}
-    }
-  ].filter((p) => Boolean(p.key));
+    } : null
+  ].filter(Boolean);
 }
 
 async function callProvider(provider, messages, maxTokens = 1200) {
@@ -568,6 +578,10 @@ async function callProvider(provider, messages, maxTokens = 1200) {
     };
     // gpt-oss = modèle de raisonnement : effort bas → tokens réservés au contenu
     if (/gpt-oss/.test(provider.model || '')) body.reasoning_effort = 'low';
+    // ✅ v8.65a — chaîne :free à raisonnement : exclure le raisonnement
+    if (/openrouter\.ai/.test(provider.endpoint || '')) {
+      body.reasoning = { exclude: true, max_tokens: 1000 };
+    }
 
     const result = await fetch(provider.endpoint, {
       method: 'POST',
