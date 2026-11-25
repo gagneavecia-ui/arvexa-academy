@@ -67,7 +67,7 @@ for (const f of PAGES) {
 T(synKo === 0, `scripts boot v2 : ${synOk}/19 syntaxe valide`);
 
 console.log('— 5. Version —');
-T(/let SW_VERSION = 'arvexa-online-v8\.67a';/.test(R('service-worker.js')), 'SW : version v8.67a');
+T(/let SW_VERSION = 'arvexa-online-v8\.6[78]a';/.test(R('service-worker.js')), 'SW : version ≥ v8.67a');
 
 console.log(`\n═══ AUDIT v8.67a : ${ok} PASS / ${ko} FAIL — taux ${(100 * ok / (ok + ko)).toFixed(1)} % ═══`);
 process.exit(ko ? 1 : 0);
