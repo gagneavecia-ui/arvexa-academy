@@ -416,45 +416,47 @@
   @keyframes arvBootSpinRev{to{transform:rotate(-360deg)}}
   @keyframes arvBootShimmer{to{left:100%}}
   @media (prefers-reduced-motion:reduce){.arv-boot-ring,.arv-boot-ring::after{animation-duration:1.8s}.arv-boot-bar::after{animation:none}}
+    /* ✅ v8.70a — SQUELETTE FIDÈLE (miroir de la structure réelle) piloté par
+       les données via ARVSkel : reste tant que Firebase travaille, fondu à la
+       résolution réelle (succès / vide / erreur), jamais sur un minuteur. */
     .arv-boot{align-items:flex-start;justify-content:center}
-    /* ✅ v8.69a — SKELETON : structure de page visible immédiatement,
-       les vraies données arrivent ensuite en fondu (levée vérifiée inchangée) */
-    .arv-skel{width:100%;max-width:560px;padding:calc(58px + 8px) 18px 0;display:flex;flex-direction:column;gap:12px}
-    .arv-skel-bar{position:relative;height:14px;border-radius:8px;background:rgba(212,175,55,.10);overflow:hidden}
-    .arv-skel-bar::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.16),transparent);animation:arvSkelShimmer 1.4s ease-in-out infinite}
-    .arv-skel-bar.w60{width:60%}.arv-skel-bar.w40{width:40%}.arv-skel-bar.w75{width:75%}
-    .arv-skel-hero{height:120px;border-radius:18px;background:rgba(212,175,55,.07);border:1px solid rgba(212,175,55,.12);position:relative;overflow:hidden}
-    .arv-skel-hero::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.5s ease-in-out infinite}
-    .arv-skel-cards{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-    .arv-skel-card{border-radius:16px;border:1px solid rgba(212,175,55,.10);background:rgba(212,175,55,.05);overflow:hidden;position:relative}
-    .arv-skel-card::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.6s ease-in-out infinite}
-    .arv-skel-card .h{height:42px;background:rgba(212,175,55,.08)}
-    .arv-skel-card .c{height:12px;border-radius:6px;margin:12px 14px;background:rgba(212,175,55,.10)}
-    .arv-skel-rows{display:flex;flex-direction:column;gap:10px}
-    .arv-skel-row{display:flex;gap:12px;align-items:center;border-radius:14px;border:1px solid rgba(212,175,55,.10);background:rgba(212,175,55,.05);padding:12px;position:relative;overflow:hidden}
-    .arv-skel-row::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.12),transparent);animation:arvSkelShimmer 1.6s ease-in-out infinite}
-    .arv-skel-row .av{width:40px;height:40px;border-radius:12px;background:rgba(212,175,55,.12);flex-shrink:0}
-    .arv-skel-row .ln{height:11px;border-radius:6px;background:rgba(212,175,55,.10);flex:1}
-    .arv-skel-row .ln+.ln{margin-top:7px}
-    @keyframes arvSkelShimmer{to{transform:translateX(100%)}}
-    @media (prefers-reduced-motion:reduce){.arv-skel-bar::after,.arv-skel-card::after,.arv-skel-row::after,.arv-skel-hero::after{animation:none}}
-    html[data-theme="light"] .arv-skel-bar{background:rgba(184,134,11,.12)}
-    html[data-theme="light"] .arv-skel-card,html[data-theme="light"] .arv-skel-row,html[data-theme="light"] .arv-skel-hero{background:rgba(184,134,11,.06);border-color:rgba(184,134,11,.14)}
-    html[data-theme="light"] .arv-skel-card .c,html[data-theme="light"] .arv-skel-row .av,html[data-theme="light"] .arv-skel-row .ln{background:rgba(184,134,11,.12)}
+    .arv-sk{width:100%;box-sizing:border-box;display:flex;flex-direction:column}
+    .arv-sk .b{position:relative;overflow:hidden;border-radius:8px;background:rgba(212,175,55,.10)}
+    .arv-sk .c{position:relative;overflow:hidden;border:1px solid rgba(212,175,55,.10);background:rgba(212,175,55,.05)}
+    .arv-sk .ico{position:relative;overflow:hidden;background:rgba(212,175,55,.12);flex-shrink:0}
+    .arv-sk .b::after,.arv-sk .c::after,.arv-sk .ico::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(224,184,74,.15),transparent);animation:arvSkShimmer 1.5s ease-in-out infinite}
+    @keyframes arvSkShimmer{to{transform:translateX(100%)}}
+    @media (prefers-reduced-motion:reduce){.arv-sk .b::after,.arv-sk .c::after,.arv-sk .ico::after{animation:none}}
+    html[data-theme="light"] .arv-sk .b{background:rgba(184,134,11,.13)}
+    html[data-theme="light"] .arv-sk .c{background:rgba(184,134,11,.06);border-color:rgba(184,134,11,.15)}
+    html[data-theme="light"] .arv-sk .ico{background:rgba(184,134,11,.13)}
+    .arv-sk-market{max-width:640px;padding:calc(58px + 12px) 16px 0;gap:14px}
+    .arv-sk-market .balance{border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:10px}
+    .arv-sk-market .pills{display:flex;gap:8px}
+    .arv-sk-market .pill{height:26px;flex:1;border-radius:999px}
+    .arv-sk-market .trust{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    .arv-sk-market .trust .b{height:28px;border-radius:999px}
+    .arv-sk-market .st{height:14px;width:45%;margin-top:6px}
+    .arv-sk-market .grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+    .arv-sk-market .pack{border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+    .arv-sk-market .pack .ico{width:34px;height:34px;border-radius:10px}
+    .arv-sk-market .pack .btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+    .arv-sk-market .pack .btns .b{height:30px;border-radius:10px}
+    .arv-sk-market .teaser{border-radius:18px;height:84px}
+    @media (max-width:360px){.arv-sk-market .pack .btns{grid-template-columns:1fr}}
 </style>
 <div class="arv-boot" id="bootLoader" role="status" aria-label="Chargement de la page">
-  <div class="arv-skel">
-      <div class="arv-skel-bar w40"></div>
-      <div class="arv-skel-hero"></div>
-      <div class="arv-skel-cards">
-<div class="arv-skel-card"><div class="h"></div><div class="c"></div><div class="c" style="width:55%;margin-top:0;"></div></div>
-<div class="arv-skel-card"><div class="h"></div><div class="c"></div><div class="c" style="width:55%;margin-top:0;"></div></div>
-<div class="arv-skel-card"><div class="h"></div><div class="c"></div><div class="c" style="width:55%;margin-top:0;"></div></div>
-<div class="arv-skel-card"><div class="h"></div><div class="c"></div><div class="c" style="width:55%;margin-top:0;"></div></div>
-      </div>
+  <div class="arv-sk arv-sk-market">
+    <div class="c balance"><span class="b" style="height:11px;width:40%;"></span><span class="b" style="height:30px;width:55%;"></span><span class="b" style="height:10px;width:85%;"></span><span class="pills"><span class="b pill"></span><span class="b pill"></span><span class="b pill"></span></span></div>
+    <div class="trust"><span class="b"></span><span class="b"></span><span class="b"></span></div>
+    <div class="b st"></div>
+    <div class="grid"><div class="c pack"><span class="ico"></span><span class="b" style="height:11px;width:70%;"></span><span class="b" style="height:10px;width:50%;"></span><span class="btns"><span class="b"></span><span class="b"></span></span></div><div class="c pack"><span class="ico"></span><span class="b" style="height:11px;width:64%;"></span><span class="b" style="height:10px;width:55%;"></span><span class="btns"><span class="b"></span><span class="b"></span></span></div><div class="c pack"><span class="ico"></span><span class="b" style="height:11px;width:68%;"></span><span class="b" style="height:10px;width:48%;"></span><span class="btns"><span class="b"></span><span class="b"></span></span></div><div class="c pack"><span class="ico"></span><span class="b" style="height:11px;width:60%;"></span><span class="b" style="height:10px;width:52%;"></span><span class="btns"><span class="b"></span><span class="b"></span></span></div></div>
+    <div class="b st" style="width:38%;"></div>
+    <div class="grid"><div class="c pack"><span class="ico"></span><span class="b" style="height:11px;width:66%;"></span><span class="b" style="height:10px;width:50%;"></span><span class="btns"><span class="b"></span><span class="b"></span></span></div><div class="c pack"><span class="ico"></span><span class="b" style="height:11px;width:62%;"></span><span class="b" style="height:10px;width:54%;"></span><span class="btns"><span class="b"></span><span class="b"></span></span></div></div>
+    <div class="c teaser"></div>
       <div class="arv-boot-label" style="opacity:.6;">Chargement…</div>
-    </div>
   </div>
+</div>
 <script>
 (function(){
   var t0 = Date.now();
@@ -471,6 +473,25 @@
      est consultée EN PLUS du test générique avant toute levée vérifiée. */
   var dataFn = null;
   window.__arvexaBootRequireData = function (fn) { dataFn = typeof fn === 'function' ? fn : null; };
+  /* ✅ v8.70a — GESTIONNAIRE D'ÉTATS DE DONNÉES : le squelette est piloté par
+     les données RÉELLES. La page déclare ses sections (ARVSkel.gate('packs'))
+     au début du chargement, puis marque leur résolution (ARVSkel.settled)
+     au succès, à l'état vide OU en cas d'erreur — jamais sur un minuteur. */
+  if (!window.ARVSkel) {
+    window.ARVSkel = {
+      _g: {}, _cb: [],
+      gate: function (n) { if (!(n in this._g)) this._g[n] = false; if (window.__ARVEXA_PAGE_RESTORED__) this._g[n] = true; this._fire(); },
+      settled: function (n) { this._g[n] = true; this._fire(); },
+      ready: function () { var any = false; for (var k in this._g) { any = true; if (!this._g[k]) return false; } return any; },
+      onChange: function (fn) { this._cb.push(fn); this._fire(); },
+      _fire: function () { for (var i = 0; i < this._cb.length; i++) { try { this._cb[i](); } catch (e) {} } }
+    };
+  }
+  /* ✅ v8.70a — PORTE DE DONNÉES posée DÈS LE BOOT : sans section déclarée,
+     ou avec une section en attente, le squelette RESTE. Le filet historique
+     (~9-10 s) ne sert que si le JS de la page meurt avant d'avoir déclaré
+     ses sections — jamais comme fin de chargement programmée. */
+  window.__arvexaBootRequireData(function () { return window.ARVSkel ? window.ARVSkel.ready() : false; });
   /* ✅ v8.68a — GRAPHISMES : les callbacks de révélation sont appelés quand
      l'écran de chargement se lève — chiffres et éléments sont déjà peints,
      les graphismes se tracent APRÈS l'apparition, jamais derrière le cache. */
@@ -485,8 +506,11 @@
     } catch (e) { return true; }
   }
   function looksDone(){
-    if (!pageLooksReady()) return false;
+    /* ✅ v8.70a — LES DONNÉES PRIMENT : quand une porte de données existe,
+       elle décide SEULE (le test générique texte/éléments ne peut plus lever
+       le squelette pendant que Firebase travaille — défaut signalé). */
     if (dataFn) { try { return !!dataFn(); } catch (e) { return true; } }
+    if (!pageLooksReady()) return false;
     return true;
   }
   function hideBoot(){
@@ -866,6 +890,7 @@
   }
 
   async function loadPacks() {
+    window.ARVSkel && ARVSkel.gate('packs');
     try {
       // ✅ v8.59a — SANS orderBy : where+where+orderBy exigeait un INDEX COMPOSITE
       // inexistant sur products → FAILED_PRECONDITION → le catch affichait un faux
@@ -890,6 +915,8 @@
       grid.appendChild(empty);
     } finally {
       // ⚡ v8.60a — la boutique est affichée (packs ou message) → loader retiré.
+      // ✅ v8.70a — la porte « packs » est réglée (succès, vide OU erreur).
+      try { if (window.ARVSkel) ARVSkel.settled('packs'); } catch (e) {}
       try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {}
     }
   }
@@ -1008,6 +1035,7 @@
 
   // ─── Auth ───
   onAuthStateChanged(auth, async (user) => {
+    window.ARVSkel && ARVSkel.gate('balance');
     // ⚡ v8.60a — dès que l'état d'auth est connu, on retire le loader :
     // la page statique (packs, premium, teasers) est déjà affichée.
     try { if (window.__arvexaBootHide) window.__arvexaBootHide(); } catch (e) {}
@@ -1017,13 +1045,16 @@
       $('balanceValue').textContent = '—';
       $('balanceExpiry').textContent = 'Connecte-toi pour voir ton solde et acheter des crédits.';
       renderLibrary([]);
+      try { if (window.ARVSkel) ARVSkel.settled('balance'); } catch (e) {}
       return;
     }
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
       renderBalance(snap.exists() ? snap.data() : {});
+      try { if (window.ARVSkel) ARVSkel.settled('balance'); } catch (e) {}
     } catch (e) {
       renderBalance({});
+      try { if (window.ARVSkel) ARVSkel.settled('balance'); } catch (e) {}
     }
     loadLibrary(user.uid);
   });
@@ -1062,7 +1093,10 @@
     if (!user) return;
     getDoc(doc(getFirestore(app), 'users', user.uid)).then((snap) => {
       renderBalance(snap.exists() ? snap.data() : {});
-    }).catch(() => {});
+      try { if (window.ARVSkel) ARVSkel.settled('balance'); } catch (e) {}
+    }).catch(() => {
+      try { if (window.ARVSkel) ARVSkel.settled('balance'); } catch (e) {}
+    });
   }
 </script>
 <script src="register-sw.js" defer></script>
