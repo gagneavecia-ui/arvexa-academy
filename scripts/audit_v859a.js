@@ -97,20 +97,13 @@ for (const p of pages) {
 }
 check('Tous les href .html résolvent', badLinks === 0, `${badLinks} lien(s) cassé(s)`);
 
-// ═══ 5. PRECACHE SW : chaque fichier listé existe ═══
-console.log('\n═══ 5. PRECACHE SERVICE WORKER ═══');
+// ═══ 5. SW 100 % EN LIGNE : AUCUN precache (v8.61a, demande propriétaire — ré-épinglé v8.66a) ═══
+console.log('\n═══ 5. SERVICE WORKER 100 % EN LIGNE ═══');
 const sw = read('service-worker.js');
 const precacheBlock = sw.match(/const PRECACHE = \[([\s\S]*?)\];/);
-if (precacheBlock) {
-  const files = [...precacheBlock[1].matchAll(/'\.\/([A-Za-z0-9._-]+)'/g)].map((m) => m[1]);
-  const missing = files.filter((f) => !repoFiles.has(f));
-  check(`Precache complet (${files.length} fichiers)`, missing.length === 0, `absents: ${missing.join(', ')}`);
-  check('marketplace.html dans le precache', files.includes('marketplace.html'));
-  check('abonnement.html dans le precache', files.includes('abonnement.html'));
-} else {
-  check('Bloc PRECACHE trouvé', false);
-}
-check('SW_VERSION >= v8.59a (bump v8.60a ou plus récent)', /SW_VERSION = 'arvexa-offline-v8\.(59a|6\da)'/.test(sw));
+check('Aucun bloc PRECACHE (mode 100 % en ligne)', !precacheBlock);
+check('Aucune interception fetch (réseau frais, zéro page périmée)', !sw.includes("addEventListener('fetch'"));
+check('SW_VERSION >= v8.59a (online, bump à chaque version)', /SW_VERSION = 'arvexa-online-v8\.(59a|6\da)'/.test(sw));
 
 // ═══ 6. CORRECTIFS SPÉCIFIQUES V8.59A ═══
 console.log('\n═══ 6. CORRECTIFS V8.59A ═══');

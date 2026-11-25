@@ -133,8 +133,8 @@ T('parcours.js : titre adaptatif câblé', pj.includes("'🧭 Ton parcours vers 
 T('parcours.js : puce sans faux compte à rebours (hasExam)', pj.includes('hasExam'));
 T('parcours.js : lacune remplie depuis getSmartCard', pj.includes('Lacune : '));
 const ex = read('exam.html');
-T('exam.html : « conditions de ton examen »', ex.includes('Prépare ton test dans les conditions de ton examen.'));
-T('exam.html : « Niveau Examen »', ex.includes('Niveau Examen</div>'));
+T('exam.html : page Épreuves (v8.64a, ré-épinglé v8.66a)', ex.includes('<title>ARVEXA — Épreuves</title>'));
+T('exam.html : icône épreuves dans la barre du haut', ex.includes('fa-file-circle-check'));
 const ac = read('auth-choice.html');
 T('auth-choice.html : titre multi-niveaux', ac.includes('Prépare tes examens, construis ton avenir'));
 const ot = read('outils.html');

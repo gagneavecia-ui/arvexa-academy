@@ -4,7 +4,7 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 const files = [
   'index.html', 'abonnement.html', 'notifications.html', 'profil.html',
-  'localisation.html', 'progression.html', 'marketplace.html',
+  'progression.html', 'marketplace.html',
   'ambassadeur.html', 'arv-progress.html', 'service-worker.js'
 ];
 let ok = 0, ko = 0;

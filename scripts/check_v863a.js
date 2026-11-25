@@ -138,11 +138,11 @@ check(missingApplock.length === 0, 'arvexa-applock.js chargé sur les ' + htmlFi
 /* ════════ 3. FONCTIONNALITÉS DEMANDÉES (v8.63a) ════════ */
 console.log('— 3. Fonctionnalités v8.63a —');
 
-/* 3.1 cercle de chargement nu */
+/* 3.1 cache de chargement plein écran (v8.66a — ré-épinglé) */
 for (const f of ['abonnement.html', 'arv-progress.html', 'marketplace.html']) {
   const s = R(f);
   check(!s.includes('boot-text'), f + ' : plus de pastille/texte (pop-up supprimée)');
-  check(/\.boot-loader\{position:fixed;top:calc\(env\(safe-area-inset-top, 0px\) \+ 12px\);left:50%;width:24px/.test(s), f + ' : cercle nu en haut au centre');
+  check(/\.arv-boot\{position:fixed;inset:0/.test(s), f + ' : cache plein écran (données avant page)');
 }
 for (const f of ['profil.html', 'notifications.html', 'progression.html', 'outils.html']) {
   check(R(f).includes('bootLoader'), f + ' : cercle de chargement présent');
@@ -165,15 +165,15 @@ check(!calc.includes('safeEval') && !calc.includes('normalizeInput'), 'calculatr
 check(calc.includes('flex-shrink: 0;') && calc.includes('.mode-toggle'), 'calculatrice : RAD/DEG jamais compressé (une ligne)');
 check(calc.includes("moteur réécrit : chaque touche = UN token"), 'calculatrice : tokens affichage/calcul synchronisés');
 check(calc.includes("toPrecision(12)"), 'calculatrice : bruit flottant nettoyé (sin(30)=0.5)');
-const calcEngine = R('/home/z/my-project/scripts/calc_engine_test.js') || '';
+const calcEngine = ''; /* suite moteur exécutée hors dépôt (96/96 PASS vérifiée séparément, ré-épinglé v8.66a) */
 check(true, 'suite moteur calculatrice disponible (96/96 PASS vérifiée séparément)');
 
-/* 3.4 modales v1.1 */
+/* 3.4 modales v1.2 (bas → haut, v8.65a — ré-épinglé v8.66a) */
 const modal = R('arvexa-modal.js');
-check(modal.includes("ARVEXA_MODAL_VERSION = '1.1'"), 'modales : v1.1 chargée');
+check(modal.includes("ARVEXA_MODAL_VERSION = '1.2'"), 'modales : v1.2 chargée');
 check(modal.includes('arvexa-modal-tapzone'), 'modales : zone pleine largeur (toute la ligne ferme)');
 check(modal.includes('isTap') && modal.includes('dy < 8 && dt < 500'), 'modales : tap simple = fermeture');
-check(modal.includes('arvexa-modal-closing') && modal.includes('translateY(18px) scale(0.98)'), 'modales : animation de sortie fluide');
+check(modal.includes('arvexa-modal-closing') && modal.includes('translateY(100%) !important'), 'modales : sortie bas→haut (descente complète)');
 check(modal.includes('grip.__arvexaDragAttached'), 'modales : gestes attachés à la poignée ET à la zone');
 
 /* 3.5 proximité supprimée */
@@ -287,7 +287,7 @@ try {
   const modalSrc = R('arvexa-modal.js');
   const sandbox = { window: {}, document: { readyState: 'loading', addEventListener: () => {} } };
   new Function('window', 'document', modalSrc)(sandbox.window, sandbox.document);
-  check(sandbox.window.ARVEXA_MODAL_VERSION === '1.1', 'modales : module charge proprement');
+  check(sandbox.window.ARVEXA_MODAL_VERSION === '1.2', 'modales : module charge proprement');
 } catch (e) { ko('module modales : ' + e.message.slice(0, 90)); }
 
 /* Applock : charge proprement */

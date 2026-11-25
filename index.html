@@ -1323,8 +1323,16 @@
       position: fixed; inset: 0; z-index: 20000;
       display: flex; align-items: center; justify-content: center;
       background: radial-gradient(120% 120% at 50% 0%, #16130A 0%, #0A0A0A 55%, #050505 100%);
-      opacity: 0; transition: opacity .45s ease;
+      opacity: 1; transition: opacity .45s ease;
+      /* ✅ v8.66a — STABILITÉ (demande du propriétaire) : le splash est opaque
+         DÈS LA PREMIÈRE PEINTURE — fini la séquence « page → chargement → page »
+         (avant : opacity 0 posé en HTML, .on ajouté 2 frames plus tard → le
+         squelette du contenu apparaissait d'abord, puis le splash fondait
+         par-dessus). Filet CSS pur à 8 s : même un JS mort ne peut pas
+         enfermer l'élève derrière l'écran. La sortie reste le .45s de .hide. */
+      animation: arvSplashNet .5s ease 8s forwards;
     }
+    @keyframes arvSplashNet { to { opacity: 0; visibility: hidden; pointer-events: none; } }
     html[data-theme="light"] #appSplash {
       background: radial-gradient(120% 120% at 50% 0%, #FFFFFF 0%, #F5F1E6 60%, #EFE9D9 100%);
     }

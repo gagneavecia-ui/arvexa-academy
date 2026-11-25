@@ -15,10 +15,10 @@ console.log('— 1. RÉSUMÉ (arv-progress.html) —');
 const rp = read('arv-progress.html');
 check('phrase « Continue là où tu t\'es arrêté » supprimée', !rp.includes("Continue là où tu t\\'es arrêté") && !rp.includes('Continue là où tu t\'es arrêté'));
 check('aucune div .greeting dans le rendu du dashboard', !rp.includes('<div class="greeting">'));
-check('loader instantané présent (boot-loader)', rp.includes('id="bootLoader"') && rp.includes('.boot-spinner'));
+check('cache de chargement plein écran présent (v8.66a)', rp.includes('id="bootLoader"') && rp.includes('.arv-boot-ring'));
 check('loader retiré à la 1re peinture du cahier', rp.includes('__arvexaBootHide') && rp.split('__arvexaBootHide').length >= 4);
 check('filet de sécurité 10 s', rp.includes('setTimeout(hideBoot, 10000)'));
-check('variante thème clair du loader', rp.includes('html[data-theme="light"] .boot-loader'));
+check('variante thème clair du cache', rp.includes('html[data-theme="light"] .arv-boot'));
 check('retiré aussi à onStale et onNoUser', (rp.match(/__arvexaBootHide/g) || []).length >= 5);
 
 console.log('— 2. MENU INSTANTANÉ —');
@@ -27,7 +27,7 @@ check('arvexa-menu.js existe (script classique, pas de module)', !menu.includes(
 check('garde anti double-lier', menu.includes('arvexaMenuBound') || menu.includes('dataset.arvexaMenuBound'));
 check('Échap ferme le menu', menu.includes("e.key === 'Escape'"));
 check('aria-expanded tenu à jour', menu.includes('aria-expanded'));
-for (const f of ['index.html', 'abonnement.html', 'notifications.html', 'profil.html', 'localisation.html', 'progression.html']) {
+for (const f of ['index.html', 'abonnement.html', 'notifications.html', 'profil.html', 'progression.html']) {
   const s = read(f);
   check(`${f} charge arvexa-menu.js`, s.includes('arvexa-menu.js'));
   check(`${f} : plus d'écouteur module sur menuToggle`, !s.includes("menuToggle').addEventListener") && !s.includes("menuToggle\").addEventListener"));
@@ -69,8 +69,8 @@ check('aucun token en dur côté client', !amb.includes('AAEF--QKS9'));
 
 console.log('— 6. SERVICE WORKER —');
 const sw = read('service-worker.js');
-check('SW_VERSION = v8.60a (let)', sw.includes("let SW_VERSION = 'arvexa-offline-v8.60a'"));
-check('arvexa-menu.js précaché', sw.includes("'./arvexa-menu.js'"));
+check('SW_VERSION en ligne v8.6Xa (let, ré-épinglé v8.66a)', /let SW_VERSION = 'arvexa-online-v8\.6\da';/.test(sw));
+check('Aucun precache (100 % en ligne, v8.61a+)', !sw.includes('const PRECACHE'));
 
 console.log('— 7. HYGIÈNE —');
 check('12 fonctions serverless max', fs.readdirSync('api').filter((f) => !f.startsWith('_')).length === 12);

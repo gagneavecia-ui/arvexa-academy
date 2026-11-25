@@ -22,7 +22,7 @@ console.log('[v8.58a] SW precache-first + purge cache HTML · arvexa-net supprim
 
 /* ── 1. SW : cause générale (stale HTML servi en navigation) ── */
 const sw = R('service-worker.js');
-T('SW : version arvexa-online v8.61a avec let', /let SW_VERSION = 'arvexa-online-v8\.61a';/.test(sw) && !/const SW_VERSION/.test(sw));
+T('SW : version arvexa-online v8.6Xa avec let (ré-épinglé v8.66a)', /let SW_VERSION = 'arvexa-online-v8\.6\da';/.test(sw) && !/const SW_VERSION/.test(sw));
 T('SW : aucune interception fetch (100 % réseau)', !/addEventListener\('fetch'/.test(sw));
 T('SW : branche isSlowConnection→vieux cache supprimée de la navigation', !/cached && isSlowConnection\(\)/.test(sw));
 T('SW : activate supprime TOUS les caches existants', /caches\.keys\(\)/.test(sw) && /caches\.delete\(n\)/.test(sw));
@@ -35,8 +35,8 @@ T('SW : syntaxe valide', nodeCheck('service-worker.js'));
 let netExists = true;
 try { R('arvexa-net.js'); } catch (e) { netExists = false; }
 T('arvexa-net.js supprimé du dépôt', !netExists);
-const netPages = ['index.html', 'profil.html', 'notifications.html', 'abonnement.html', 'progression.html', 'arv.html', 'localisation.html',
-  'auth-choice.html', 'login.html', 'register.html', 'onboarding.html', 'outils.html', 'exam.html', 'quotidien.html', 'arv-progress.html', 'planificateur.html', 'exam-history.html', 'ambassadeur.html', 'marketplace.html', 'ma-journee.html'];
+const netPages = ['index.html', 'profil.html', 'notifications.html', 'abonnement.html', 'progression.html', 'arv.html',
+  'auth-choice.html', 'login.html', 'register.html', 'onboarding.html', 'outils.html', 'exam.html', 'quotidien.html', 'arv-progress.html', 'planificateur.html', 'exam-history.html', 'ambassadeur.html', 'marketplace.html'];
 const leftover = netPages.filter((p) => { try { return R(p).includes('arvexa-net.js'); } catch (e) { return false; } });
 T('arvexa-net.js absent des 20 pages', leftover.length === 0, leftover.join(', '));
 
@@ -69,7 +69,7 @@ T('ambassadeur : module JS syntaxe valide (extraction)', (() => {
   try { execSync('node --check /tmp/amb_module_check.js', { stdio: 'pipe' }); return true; } catch (e) { return false; }
 })());
 T('menu : plus aucun lien ma-promo.html dans les 7 sidebars', (() => {
-  const pages = ['index.html', 'profil.html', 'notifications.html', 'abonnement.html', 'progression.html', 'arv.html', 'localisation.html'];
+  const pages = ['index.html', 'profil.html', 'notifications.html', 'abonnement.html', 'progression.html', 'arv.html'];
   const bad = pages.filter((p) => /href="ma-promo\.html"/.test(R(p)));
   return bad.length === 0;
 })());
@@ -77,11 +77,11 @@ T('menu : plus aucun lien ma-promo.html dans les 7 sidebars', (() => {
 /* ── 5. login.html : redirections (2 causes cachées) ── */
 const login = R('login.html');
 T('login : sanitizeRedirect préserve la query (?promo= / ?ref=)', login.includes('return clean + query + hash'));
-T('login : whitelist inclut ambassadeur + marketplace + localisation', /'ambassadeur\.html',\s*\n\s*'marketplace\.html',\s*\n\s*'localisation\.html'/.test(login));
+T('login : whitelist inclut ambassadeur + marketplace (proximité supprimée v8.63a)', /'ambassadeur\.html',\s*\n\s*'marketplace\.html'/.test(login) && !login.includes('localisation.html'));
 T('login : sécurité intacts (protocole, //, ..)', /test\(raw\)\) return null/.test(login) && login.includes("raw.includes('..')"));
 
 /* ── 6. Équilibre des balises des pages touchées ── */
-for (const f of ['ambassadeur.html', 'index.html', 'arv.html', 'profil.html', 'abonnement.html', 'notifications.html', 'progression.html', 'localisation.html', 'login.html']) {
+for (const f of ['ambassadeur.html', 'index.html', 'arv.html', 'profil.html', 'abonnement.html', 'notifications.html', 'progression.html', 'login.html']) {
   const body = R(f).replace(/<script[\s\S]*?<\/script>/g, '');
   let ok = true;
   for (const tag of ['div', 'section', 'a', 'button', 'ul', 'li']) {

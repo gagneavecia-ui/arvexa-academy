@@ -69,14 +69,14 @@ test('T4  auth-choice : #examens + nav ×2 + meta universelle',
   ac.includes('tous les niveaux et tous les domaines'));
 
 /* ── T5 : Marketplace dans les 7 sidebars ── */
-const menuPages = ['index.html', 'profil.html', 'notifications.html', 'abonnement.html', 'progression.html', 'arv.html', 'localisation.html'];
-// ⚡ v8.56a — la Marketplace est une VRAIE page : les 7 sidebars pointent marketplace.html
+const menuPages = ['index.html', 'profil.html', 'notifications.html', 'abonnement.html', 'progression.html', 'arv.html'];
+// ⚡ v8.56a — la Marketplace est une VRAIE page ; v8.63a — proximité supprimée (ré-épinglé v8.66a)
 const missingMenu = menuPages.filter(p => !read(p).includes('<a href="marketplace.html"><i class="fas fa-store"></i> Marketplace</a>'));
-test('T5  Marketplace présent dans les 7 menus (vrai lien v8.56a)', missingMenu.length === 0, missingMenu.join(', '));
+test('T5  Marketplace présent dans les 6 menus (vrai lien v8.56a)', missingMenu.length === 0, missingMenu.join(', '));
 
 /* ── T6 : arvexa-soon.js inclus + data-soon câblé ── */
 const soonPages = menuPages.filter(p => !read(p).includes('arvexa-soon.js'));
-test('T6  arvexa-soon.js inclus sur les 7 pages à menu', soonPages.length === 0, soonPages.join(', '));
+test('T6  arvexa-soon.js inclus sur les 6 pages à menu', soonPages.length === 0, soonPages.join(', '));
 test('T6b arvexa-soon.js syntaxe valide', nodeCheck('arvexa-soon.js'));
 
 /* ── T7 : carte Ambassadeur sur l'accueil ── */
@@ -87,7 +87,7 @@ test('T7  Ambassadeur ARVEXA : carte + lien réel ambassadeur.html (v8.56a)',
   ix.includes('gagne en fonction des abonnements'));
 
 /* ── T8 : arvexa-net.js SUPPRIMÉ des pages (v8.58a) ── */
-const netPages = ['index.html', 'profil.html', 'notifications.html', 'abonnement.html', 'progression.html', 'arv.html', 'localisation.html',
+const netPages = ['index.html', 'profil.html', 'notifications.html', 'abonnement.html', 'progression.html', 'arv.html',
   'auth-choice.html', 'login.html', 'register.html', 'onboarding.html', 'outils.html', 'exam.html', 'quotidien.html', 'arv-progress.html', 'planificateur.html', 'exam-history.html'];
 const leftoverNet = netPages.filter(p => read(p).includes('arvexa-net.js'));
 test('T8  arvexa-net.js retiré de toutes les pages', leftoverNet.length === 0, leftoverNet.join(', '));
@@ -139,7 +139,7 @@ test('T15b node --check sur TOUTES les API', badApi.length === 0, badApi.join(',
 
 /* ── T16 : équilibre HTML des pages modifiées ── */
 const edited = ['index.html', 'auth-choice.html', 'abonnement.html', 'login.html', 'outils.html', 'exam.html', 'profil.html', 'onboarding.html',
-  'profil.html', 'notifications.html', 'progression.html', 'arv.html', 'localisation.html', 'register.html', 'quotidien.html', 'arv-progress.html', 'planificateur.html', 'exam-history.html'];
+  'profil.html', 'notifications.html', 'progression.html', 'arv.html', 'register.html', 'quotidien.html', 'arv-progress.html', 'planificateur.html', 'exam-history.html'];
 const unbalanced = [];
 for (const p of [...new Set(edited)]) {
   const b = htmlBalance(p);
