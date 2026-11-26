@@ -524,3 +524,19 @@ dialog, dialog * {
     scroll-behavior: auto !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ⚡ v8.73a — CAP CHARGEMENT 2 SECONDES (arvexa-loading-cap.js)
+   Demande du propriétaire : le chargement et le squelette de chaque page
+   disparaissent à 2 secondes fixes — Firebase a ce temps pour répondre,
+   puis la page s'affiche quoi qu'il arrive (le contenu remplace le
+   squelette dès qu'il arrive, jamais d'écran bloqué).
+   ═══════════════════════════════════════════════════════════════ */
+html.arv-cap-done .arv-boot {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  transition: opacity .25s ease;
+}
+html.arv-cap-done .arv-sk { display: none !important; }
+html.arv-cap-done .arv-sk-market { display: none !important; }

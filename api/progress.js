@@ -3361,7 +3361,7 @@ async function createSection(uid, body) {
   if (!quota.allowed) {
     throw {
       status: 429,
-      message: `Limite gratuite atteinte (${quota.limit} résumés/mois). Recharge ta réserve de résumés ⚡ dans l'Abonnement ou passe Premium.`,
+      message: `Limite gratuite atteinte (${quota.limit} résumés/mois). Recharge ta réserve de résumés ⚡ dans la Marketplace ou passe Premium.`,
       code: 'FREE_SECTION_LIMIT'
     };
   }
@@ -3571,6 +3571,10 @@ async function finalizeSection(uid, { subject, chapterId, chapterRef, trimmed, q
     success: true,
     sectionId,
     meta,
+    // ⚡ v8.73a — solde renvoyé au client : le compteur de résumés restants
+    // (haut droite près du refresh) se met à jour IMMÉDIATEMENT après l'analyse.
+    creditMode: Boolean(quota && quota.creditMode),
+    creditRemaining: (quota && typeof quota.creditRemaining === 'number') ? quota.creditRemaining : undefined,
     section: {
       id: sectionId,
       title: analysis.sectionTitle || 'Section',
@@ -3708,7 +3712,7 @@ async function autoAddSection(uid, body) {
   if (!quota.allowed) {
     throw {
       status: 429,
-      message: `Limite gratuite atteinte (${quota.limit} résumés/mois). Recharge ta réserve de résumés ⚡ dans l'Abonnement ou passe Premium.`,
+      message: `Limite gratuite atteinte (${quota.limit} résumés/mois). Recharge ta réserve de résumés ⚡ dans la Marketplace ou passe Premium.`,
       code: 'FREE_SECTION_LIMIT'
     };
   }

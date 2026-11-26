@@ -29,12 +29,17 @@
 'use strict';
 
 // ─── Coût en crédits de chaque action IA (grille validée par le propriétaire) ───
+// ⚡ v8.73a — NOUVEAU BARÈME (demande du propriétaire : « un seul requête de
+// la page épreuve fait l'épreuve et la correction complète ») : 1 épreuve
+// (génération + correction complète incluse) = 1 requête. La correction
+// n'appelle consumeCredits nulle part : elle est TOUJOURS incluse.
 const COSTS = {
   chat: 1,     // 1 message Chat ARV (réserve « chat »)
-  exam: 5,     // 1 examen généré (2-4 appels IA réels côté serveur) — réserve « exam »
-  correct: 2,  // 1 correction IA d'une copie (réserve « exam », incluse dans l'examen)
+  exam: 1,     // 1 épreuve complète : génération + correction (réserve « exam »)
+  correct: 0,  // ✅ v8.73a — correction INCLUSE dans la requête de l'épreuve (0 crédit)
   planner: 5,  // 1 plan d'études IA (réserve globale héritée / Premium)
-  resume: 1    // 1 section résumée par la page Résumé — réserve « resume »
+  resume: 1    // 1 résumé complet : analyse + extraction + questionnaires +
+               // carte mentale = 1 requête — réserve « resume »
 };
 
 // ─── Pages à réserve dédiée ───

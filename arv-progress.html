@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié (barre du haut identique partout) --><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-loading-cap.js" defer></script><script src="wake-lock.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié (barre du haut identique partout) --><script src="arvexa-i18n.js" defer></script>
 <script src="arvx-ai.js" defer></script><!-- ✅ v8.38 — kit IA (OCR photos, pages PDF) pour le bouton Ajouter -->
 <script src="arvexa-sync.js" defer></script><!-- ✅ v8.0 sync Firebase des progressions (par compte) -->
 <title>ARVEXA — Résumé</title>
@@ -179,6 +179,27 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .icon-btn:hover {
   color: var(--text-light);
   background: rgba(var(--rgb-soft), 0.07);
+}
+
+/* ⚡ v8.73a — COMPTEUR DE REQUÊTES (demande du propriétaire : « en haut à
+   droite près du bouton de rafraîchissement ») : résumés restants.
+   1 résumé = analyse + extraction + questionnaires + carte mentale = 1 requête.
+   Clic → Marketplace. Premium = ∞. */
+.credits-chip {
+  display: none;
+  align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 999px;
+  border: 1px solid rgba(224, 184, 74, 0.32);
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.16), rgba(184, 134, 11, 0.05));
+  color: var(--accent-bright); font-size: 12px; font-weight: 800;
+  text-decoration: none; flex-shrink: 0; transition: var(--transition);
+}
+.credits-chip.show { display: inline-flex; }
+.credits-chip:hover { border-color: rgba(224, 184, 74, 0.55); background: rgba(184, 134, 11, 0.14); }
+.credits-chip.zero { border-color: rgba(192, 57, 43, 0.45); background: rgba(192, 57, 43, 0.10); color: var(--danger-light); }
+.credits-chip i { font-size: 11px; }
+@media (max-width: 640px) {
+  .credits-chip { padding: 6px 10px; font-size: 11px; }
 }
 
 
@@ -2688,6 +2709,27 @@ select:focus-visible,
       border: 1.5px dashed var(--mm-bd2, rgba(91, 141, 239, 0.36));
       color: var(--mm-fg, var(--text-body));
     }
+    /* ✅ v8.73a — PALETTE PAR TEINTE (data-mm) : la couleur est portée par le
+       CSS et non plus inline sur chaque carte. Deux définitions : sombre
+       (textes pastel clairs) et CLAIRE (textes encre foncés, fonds teintés
+       plus présents) — la carte mentale devient lisible en mode clair
+       (demande du propriétaire : « on n'arrive pas à lire les lettres »). */
+    .mmap-card[data-mm="0"] { --mm-bg: rgba(91,141,239,0.17); --mm-bd: rgba(91,141,239,0.62); --mm-bg2: rgba(91,141,239,0.08); --mm-bd2: rgba(91,141,239,0.36); --mm-fg: #BFD7FA; }
+    .mmap-card[data-mm="1"] { --mm-bg: rgba(58,186,117,0.16); --mm-bd: rgba(58,186,117,0.60); --mm-bg2: rgba(58,186,117,0.08); --mm-bd2: rgba(58,186,117,0.34); --mm-fg: #B8E8CF; }
+    .mmap-card[data-mm="2"] { --mm-bg: rgba(230,185,60,0.15); --mm-bd: rgba(230,185,60,0.58); --mm-bg2: rgba(230,185,60,0.08); --mm-bd2: rgba(230,185,60,0.34); --mm-fg: #F2E3B0; }
+    .mmap-card[data-mm="3"] { --mm-bg: rgba(176,123,232,0.16); --mm-bd: rgba(176,123,232,0.58); --mm-bg2: rgba(176,123,232,0.08); --mm-bd2: rgba(176,123,232,0.34); --mm-fg: #DCC4F5; }
+    .mmap-card[data-mm="4"] { --mm-bg: rgba(240,138,75,0.15); --mm-bd: rgba(240,138,75,0.58); --mm-bg2: rgba(240,138,75,0.08); --mm-bd2: rgba(240,138,75,0.34); --mm-fg: #F3CDB0; }
+    .mmap-card[data-mm="5"] { --mm-bg: rgba(75,192,200,0.15); --mm-bd: rgba(75,192,200,0.58); --mm-bg2: rgba(75,192,200,0.08); --mm-bd2: rgba(75,192,200,0.34); --mm-fg: #BCE8EC; }
+    html[data-theme="light"] .mmap-card.br { color: #2B2A22; }
+    html[data-theme="light"] .mmap-card.kid { color: #3B3A30; }
+    html[data-theme="light"] .mmap-card[data-mm="0"] { --mm-bg: rgba(91,141,239,0.13); --mm-bd: rgba(58,106,187,0.55); --mm-bg2: rgba(91,141,239,0.07); --mm-bd2: rgba(58,106,187,0.32); --mm-fg: #24406B; }
+    html[data-theme="light"] .mmap-card[data-mm="1"] { --mm-bg: rgba(58,186,117,0.12); --mm-bd: rgba(31,140,88,0.52); --mm-bg2: rgba(58,186,117,0.06); --mm-bd2: rgba(31,140,88,0.30); --mm-fg: #1C5C3B; }
+    html[data-theme="light"] .mmap-card[data-mm="2"] { --mm-bg: rgba(230,185,60,0.14); --mm-bd: rgba(154,114,9,0.52); --mm-bg2: rgba(230,185,60,0.07); --mm-bd2: rgba(154,114,9,0.30); --mm-fg: #6E5207; }
+    html[data-theme="light"] .mmap-card[data-mm="3"] { --mm-bg: rgba(176,123,232,0.12); --mm-bd: rgba(122,63,168,0.50); --mm-bg2: rgba(176,123,232,0.06); --mm-bd2: rgba(122,63,168,0.28); --mm-fg: #55297A; }
+    html[data-theme="light"] .mmap-card[data-mm="4"] { --mm-bg: rgba(240,138,75,0.13); --mm-bd: rgba(190,92,42,0.50); --mm-bg2: rgba(240,138,75,0.06); --mm-bd2: rgba(190,92,42,0.28); --mm-fg: #7E3D14; }
+    html[data-theme="light"] .mmap-card[data-mm="5"] { --mm-bg: rgba(75,192,200,0.13); --mm-bd: rgba(23,124,131,0.50); --mm-bg2: rgba(75,192,200,0.06); --mm-bd2: rgba(23,124,131,0.28); --mm-fg: #14565B; }
+    html[data-theme="light"] .mmap-card { box-shadow: 0 3px 12px rgba(74, 58, 24, 0.14); }
+    html[data-theme="light"] .mmap-wrap.mm-fs { background-color: var(--bg, #F5F1E8); }
     /* ✅ v8.42 — PLEIN ÉCRAN : tout le reste de la page est couvert, uniquement
        la carte (demande propriétaire : « toutes les autres pages vont se
        couvrir et tu vas avoir uniquement la carte »). */
@@ -3187,6 +3229,9 @@ select:focus-visible,
       <i class="fas fa-crown"></i>
       <span>Premium</span>
     </div>
+    <a href="marketplace.html" class="credits-chip" id="creditsChip" title="Tes résumés restants — 1 résumé = analyse + questionnaires + carte mentale. Recharger dans la Marketplace">
+      <i class="fas fa-bolt"></i> <span id="creditsChipValue">–</span>
+    </a>
     <button class="icon-btn" id="refreshBtn" title="Rafraîchir" aria-label="Rafraîchir">
       <i class="fas fa-rotate"></i>
     </button>
@@ -4580,10 +4625,13 @@ function mmTreeNodes(mm) {
   let idx = 1;
   safeArray(mm.steps).forEach((st, i) => {
     const col = MM_COLORS[i % MM_COLORS.length];
-    nodes.push({ id: `s${i}`, level: 1, idx: idx++, parentId: 'n0', color: col,
+    // ✅ v8.73a — colorIdx : la teinte est référencée par INDEX et appliquée
+    // en CSS (.mmap-card[data-mm="N"]) — plus de couleur inline figée. Les
+    // textes pastel clairs (#BFD7FA…) restaient illisibles en mode clair.
+    nodes.push({ id: `s${i}`, level: 1, idx: idx++, parentId: 'n0', color: col, colorIdx: i % MM_COLORS.length,
       title: String(st.title || ''), detail: String(st.detail || ''), signif: String(st.signif || '') });
     safeArray(st.children).forEach((k, ki) => {
-      nodes.push({ id: `s${i}k${ki}`, level: 2, idx: idx++, parentId: `s${i}`, color: col,
+      nodes.push({ id: `s${i}k${ki}`, level: 2, idx: idx++, parentId: `s${i}`, color: col, colorIdx: i % MM_COLORS.length,
         title: String(k.title || ''), detail: String(k.detail || ''), signif: String(k.signif || '') });
     });
   });
@@ -4676,11 +4724,12 @@ function renderMindmap(mm, posKey) {
 
   const card = (nd) => {
     const cls = nd.level === 0 ? 'root' : (nd.level === 1 ? 'br' : 'kid');
-    const style = `left:${nd.x.toFixed(1)}px;top:${nd.y.toFixed(1)}px;` + (nd.color
-      ? `--mm-bg:${nd.color.bg};--mm-bd:${nd.color.bd};--mm-bg2:${nd.color.bg2};--mm-bd2:${nd.color.bd2};--mm-fg:${nd.color.fg}`
-      : '');
+    // ✅ v8.73a — la teinte passe par data-mm (palette CSS double sombre/clair)
+    // au lieu d'inliner --mm-fg clair sur chaque carte (illisible en clair).
+    const pos = `left:${nd.x.toFixed(1)}px;top:${nd.y.toFixed(1)}px;`;
+    const tint = (nd.colorIdx !== undefined && nd.level > 0) ? ` data-mm="${nd.colorIdx}"` : '';
     const tap = nd.level === 0 ? 'Carte mère' : (nd.level === 1 ? 'Branche — explication' : 'Explication');
-    return `<button type="button" class="mmap-card ${cls}" style="${style}" data-node="${nd.id}" draggable="false">
+    return `<button type="button" class="mmap-card ${cls}" style="${pos}"${tint} data-node="${nd.id}" draggable="false">
       <span class="mm-num">${nd.idx + 1}</span>
       <span class="mm-title">${escapeHtml(nd.title)}</span>
       <span class="mm-tap"><i class="fas fa-hand-pointer"></i> ${tap}</span>
@@ -7432,6 +7481,17 @@ function openAddCourseModal(context) {
       acAnalysisMarkAllDone();
       acAnalysisStop();
       acJobStop();
+      // ⚡ v8.73a — le compteur de résumés suit la consommation : en mode
+      // crédits le serveur renvoie creditRemaining (1 résumé complet = analyse
+      // + questionnaires + carte mentale = 1 requête).
+      try {
+        if (result && typeof result.creditRemaining === 'number') {
+          const chipV = $('creditsChipValue');
+          if (chipV) chipV.textContent = String(result.creditRemaining);
+          const chipB = $('creditsChip');
+          if (chipB) chipB.classList.toggle('zero', result.creditRemaining <= 0);
+        }
+      } catch (e) {}
       try { if (window.ARVEXAWakeLock) window.ARVEXAWakeLock.release('analyse'); } catch (e) {}
       if (qid || acJob.qid) acQueueRemove(qid || acJob.qid); // généré → l'entrée sort de la file
       closeModal();
@@ -7576,7 +7636,32 @@ function updatePremiumBadge() {
   const badge = $('premiumBadge');
   if (state.isPremium) badge.classList.add('show');
   else badge.classList.remove('show');
+  updateResumeCreditsChip();
 }
+
+// ⚡ v8.73a — COMPTEUR DE RÉSUMÉS RESTANTS (haut droite, près du refresh) :
+// réserve « resume » + ancienne réserve globale en secours. 1 résumé complet
+// = analyse + extraction + questionnaires + carte mentale = 1 requête.
+// Premium = ∞. Mis à jour à chaque lecture du profil ET après chaque analyse
+// (creditRemaining renvoyé par le serveur en mode crédits).
+function updateResumeCreditsChip(userData) {
+  const chip = $('creditsChipValue');
+  const chipBox = $('creditsChip');
+  if (!chip || !chipBox) return;
+  const d = userData || state.userData || {};
+  chipBox.classList.add('show');
+  if (state.isPremium) { chip.textContent = '∞'; chipBox.classList.remove('zero'); return; }
+  let expiryMs = 0;
+  if (d.creditsExpiry && d.creditsExpiry.toDate) expiryMs = d.creditsExpiry.toDate().getTime();
+  else if (d.creditsExpiry && d.creditsExpiry.seconds) expiryMs = d.creditsExpiry.seconds * 1000;
+  const expired = expiryMs && expiryMs <= Date.now();
+  const resumeCredits = expired ? 0 : Math.max(0, Number(d.aiCreditsResume || 0));
+  const globalCredits = expired ? 0 : Math.max(0, Number(d.aiCredits || 0));
+  const total = resumeCredits + globalCredits;
+  chip.textContent = String(total);
+  chipBox.classList.toggle('zero', total === 0);
+}
+window.__arvexaUpdateResumeCredits = updateResumeCreditsChip;
 
 // ══════════════════════════════════════════════════════════════
 // TRACKING TEMPS D'ÉTUDE
@@ -7746,6 +7831,8 @@ requireAuth({
         } catch (e) {}
         state.isPremium = isPremiumUser(state.userData);
         updatePremiumBadge();
+        // ⚡ v8.73a — le compteur suit chaque lecture du profil
+        try { updateResumeCreditsChip(state.userData); } catch (e) {}
         if (state.view === 'notebooks') {
           try { paintDashboard(state.cache.dashboard || dashCacheRead() || {}); } catch (e) {}
         }

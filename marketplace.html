@@ -12,7 +12,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié --><script src="arvexa-soon.js" defer></script><script src="arvexa-contact.js"></script><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-loading-cap.js" defer></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié --><script src="arvexa-soon.js" defer></script><script src="arvexa-contact.js"></script><script src="arvexa-i18n.js" defer></script>
   <meta name="description" content="ARVEXA School - Marketplace : packs de requêtes IA et contenus premium">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -852,7 +852,7 @@
 
     $('creditsChipValue').textContent = String(total);
     $('balanceValue').innerHTML =
-      `<span style="font-size:13px">📄 ${resume} · 💬 ${chat} · 📝 ${Math.floor(exam / 5)}</span>`
+      `<span style="font-size:13px">📄 ${resume} · 💬 ${chat} · 📝 ${exam}</span>`
       + (legacy > 0 ? `<span style="font-size:12px;color:var(--text-dim)"> + ⚡ ${legacy}</span>` : "");
 
     if (total > 0 && expiryMs && !expired) {
@@ -900,12 +900,13 @@
       </div>`;
   }
 
-  /* ✅ v8.69a — demande du propriétaire : 6 cartes d'offres au lieu de 7.
-     On garde les MEILLEURES offres de chaque catégorie : 2 par page de crédits
-     (les plus gros packs, triés par valeur décroissante), 6 au total.
-     Ajuster MAX_PAR_PAGE / MAX_TOTAL pour changer la sélection. */
-  const MAX_PAR_PAGE = 2;
-  const MAX_TOTAL = 6;
+  /* ✅ v8.73a — demande du propriétaire : « remets nos offres de 100 francs,
+     200 et 500 francs, celui qu'on avait de base » + « les épreuves ont
+     jusqu'à 6 offres différentes, la même chose pour les questions, le chat
+     et les résumés ». FINI la limite « 2 par page / 6 au total » qui cachait
+     les packs de base : CHAQUE catégorie affiche JUSQU'À 6 offres, triées du
+     prix le plus bas au plus élevé — les packs 100/200/500 F sont en tête. */
+  const MAX_OFFRES_PAR_PAGE = 6;
 
   function renderPacks(products) {
     const grid = $('packsGrid');
@@ -926,11 +927,12 @@
     });
     let creees = 0;
     PACK_PAGE_ORDER.forEach(({ key, icon, label }) => {
-      if (creees >= MAX_TOTAL) return;
+      // ✅ v8.73a — jusqu'à 6 offres par catégorie, triées par PRIX CROISSANT :
+      // les offres de base 100 F / 200 F / 500 F sont toujours visibles en tête.
       const list = (groups.get(key) || [])
         .slice()
-        .sort((a, b) => Number(b.credits || 0) - Number(a.credits || 0))
-        .slice(0, MAX_PAR_PAGE);
+        .sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
+        .slice(0, MAX_OFFRES_PAR_PAGE);
       if (!list.length) return;
       const head = document.createElement('div');
       head.className = 'cp-group-head';
@@ -938,7 +940,7 @@
       grid.appendChild(head);
       list.forEach((p) => {
         const card = document.createElement('div');
-        card.className = 'pack-card' + (Number(p.credits) >= 100 ? ' featured' : '');
+        card.className = 'pack-card' + (Number(p.price) >= 1500 ? ' featured' : '');
         card.innerHTML = packCardHtml(p, icon);
         card.querySelector('.pk-auto').addEventListener('click', (e) => buyPack(p.id, e.currentTarget));
         grid.appendChild(card);

@@ -10,7 +10,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="wake-lock.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié --><script src="arvexa-i18n.js" defer></script>
+<script src="theme.js"></script><script src="arvexa-loading-cap.js" defer></script><script src="wake-lock.js"></script><script src="arvexa-sidebar.js" defer></script><!-- ✅ v8.62a — menu latéral unifié --><script src="arvexa-i18n.js" defer></script>
   <meta name="description" content="ARVEXA School — Épreuves : examens blancs et entraînements tirés de ton cours, notés sur 20 et corrigés par l'IA.">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.png" type="image/png">
@@ -190,6 +190,25 @@
       color: var(--accent-bright);
     }
     .top-btn i { font-size: 12px; }
+
+    /* ⚡ v8.73a — COMPTEUR DE REQUÊTES (demande du propriétaire : « en haut à
+       droite près du bouton de rafraîchissement ») : épreuves restantes.
+       1 requête = 1 épreuve complète (génération + correction). Clic → Marketplace. */
+    .credits-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 14px; border-radius: 999px;
+      border: 1px solid rgba(184, 134, 11, 0.35);
+      background: linear-gradient(135deg, rgba(184, 134, 11, 0.16), rgba(184, 134, 11, 0.05));
+      color: var(--accent-bright); font-weight: 800; font-size: 12.5px;
+      cursor: pointer; transition: var(--transition); text-decoration: none;
+      flex-shrink: 0;
+    }
+    .credits-chip:hover { border-color: rgba(224, 184, 74, 0.55); background: rgba(184, 134, 11, 0.14); }
+    .credits-chip.zero { border-color: rgba(192, 57, 43, 0.45); background: rgba(192, 57, 43, 0.10); color: var(--danger-light); }
+    .credits-chip i { font-size: 11px; }
+    @media (max-width: 640px) {
+      .credits-chip { padding: 8px 11px; font-size: 11.5px; }
+    }
 
     .panel {
       background: var(--bg-card);
@@ -2443,6 +2462,9 @@
           Historique
         </a>
         <div class="connection" id="connectionState">Vérification...</div>
+        <a href="marketplace.html" class="credits-chip" id="creditsChip" title="Tes épreuves restantes — recharger dans la Marketplace">
+          <i class="fas fa-bolt"></i> <span id="creditsChipValue">–</span>
+        </a>
         <button id="refreshBtn" aria-label="Rafraîchir" title="Rafraîchir">
           <i class="fas fa-sync-alt"></i>
         </button>
@@ -3464,7 +3486,7 @@ $('generateButton').addEventListener('click', generateExam);
 // FREE_EXAM_LIMIT → erreur dédiée (popup premium, pas de re-tentative).
 function examDelay(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
 async function examFetch(body, headers, onStatus) {
-  var rateRetried = false, netRetried = false;
+  var rateRetried = false, netRetries = 0;
   while (true) {
     var response = null, netError = null;
     try {
@@ -3476,10 +3498,15 @@ async function examFetch(body, headers, onStatus) {
     } catch (e) { netError = e; }
 
     if (!response) {
-      if (!netRetried && navigator.onLine) {
-        netRetried = true;
-        if (onStatus) onStatus('Connexion instable — nouvel essai…');
-        await examDelay(2500);
+      // ✅ v8.73a — DEUX re-tentatives réseau (au lieu d'une) : les connexions
+      // mobiles coupent souvent une longue requête ; l'élève ne doit PAS voir
+      // un échec définitif pour une simple coupure transitoire.
+      if (netRetries < 2 && navigator.onLine) {
+        netRetries += 1;
+        if (onStatus) onStatus(netRetries === 1
+          ? 'Connexion instable — nouvel essai…'
+          : 'Toujours instable — dernier essai automatique…');
+        await examDelay(netRetries === 1 ? 2500 : 4000);
         continue;
       }
       throw netError || new Error('NETWORK');
@@ -3660,9 +3687,24 @@ async function generateExam() {
     state.notebookContext = notebookContextPayload;
     await clearActiveSession();
 
+    // ⚡ v8.73a — le compteur suit la consommation serveur : en mode crédits
+    // le serveur renvoie creditsRemaining (1 requête = 1 épreuve + correction).
+    try {
+      if (payload.creditMode && typeof payload.creditsRemaining === 'number') {
+        var ccv = $('creditsChipValue');
+        if (ccv) ccv.textContent = String(payload.creditsRemaining);
+        var cc = $('creditsChip');
+        if (cc) cc.classList.toggle('zero', payload.creditsRemaining <= 0);
+      }
+    } catch (e) {}
+
     activateStep('genStep5', statusEl, 'Finalisation...');
     await sleep(600);
-    finishAllSteps(GENERATION_STEPS, statusEl, '✅ Tes deux sujets sont prêts !');
+    // ✅ v8.73a — le message suit le mode : 1 sujet (Entraînement) ou 2 (blanc)
+    finishAllSteps(GENERATION_STEPS, statusEl,
+      (state.exam.fromNotebook === true || state.prepMode === 'entrainement')
+        ? '✅ Ton entraînement est prêt !'
+        : '✅ Tes deux sujets sont prêts !');
     await sleep(400);
     displaySubjects();
     showView('subjectsView');
@@ -3671,7 +3713,8 @@ async function generateExam() {
     if (error.message === 'FREE_EXAM_LIMIT') {
       showView('configView');
       showPremiumPopup();
-      setStatus('configStatus', 'Limite du jour (2 examens gratuits). Recharge ta réserve d\'examens ⚡ dans l\'Abonnement ou passe Premium.', 'error');
+      setStatus('configStatus', 'Limite du jour (2 épreuves gratuites). Recharge ta réserve ⚡ dans la Marketplace — 1 requête = 1 épreuve + correction complète.', 'error');
+      try { if (window.__arvexaUpdateExamCredits) window.__arvexaUpdateExamCredits(); } catch (e) {}
     } else if (error.message === 'AUTH_REQUIRED') {
       showView('configView');
       setStatus('configStatus', 'Connecte-toi pour générer un test.', 'error');
@@ -4417,6 +4460,33 @@ document.addEventListener('keydown', function (e) {
 // ═══════════════════════════════════════════════════════════════
 bindPrep();
 
+// ⚡ v8.73a — COMPTEUR DE REQUÊTES (haut droite, près du refresh) :
+// épreuves restantes = réserve « exam » + ancienne réserve globale en secours.
+// 1 requête = 1 épreuve complète (génération + correction incluse).
+// Premium = ∞. Clic → Marketplace. Mis à jour à chaque lecture du profil ET
+// après chaque génération en mode crédits (creditsRemaining renvoyé par le serveur).
+function updateExamCreditsChip(userData) {
+  var chip = $('creditsChipValue');
+  if (!chip) return;
+  var d = userData || {};
+  if (d.premium === true || d.isUnlocked === true || d.hasDeposited === true) {
+    var end = null;
+    if (d.subscriptionEndDate && d.subscriptionEndDate.toDate) end = d.subscriptionEndDate.toDate();
+    else if (d.subscriptionEndDate && d.subscriptionEndDate.seconds) end = new Date(d.subscriptionEndDate.seconds * 1000);
+    if (!end || end.getTime() > Date.now()) { chip.textContent = '∞'; chip.parentElement.classList.remove('zero'); return; }
+  }
+  var expiryMs = 0;
+  if (d.creditsExpiry && d.creditsExpiry.toDate) expiryMs = d.creditsExpiry.toDate().getTime();
+  else if (d.creditsExpiry && d.creditsExpiry.seconds) expiryMs = d.creditsExpiry.seconds * 1000;
+  var expired = expiryMs && expiryMs <= Date.now();
+  var examCredits = expired ? 0 : Math.max(0, Number(d.aiCreditsExam || 0));
+  var globalCredits = expired ? 0 : Math.max(0, Number(d.aiCredits || 0));
+  var total = examCredits + globalCredits;
+  chip.textContent = String(total);
+  if (chip.parentElement) chip.parentElement.classList.toggle('zero', total === 0);
+}
+window.__arvexaUpdateExamCredits = updateExamCreditsChip;
+
 requireAuth({
   onUser: async function (user) {
     state.user = user;
@@ -4427,6 +4497,8 @@ requireAuth({
     try {
       const applyStatus = (snap) => {
         const userData = snap.data();
+        // ⚡ v8.73a — le compteur d'épreuves suit chaque lecture du profil
+        try { updateExamCreditsChip(userData); } catch (e) {}
 
         if (userData.accountStatus === 'blocked') {
           try { sessionStorage.setItem('arvexa_account_blocked', '1'); } catch (e) {}
@@ -4451,7 +4523,9 @@ requireAuth({
     // ✅ v8.65a — TYPE D'EXAMEN depuis le profil de l'élève (Bac D, Bac C…)
     try {
       var profSnap = await getDoc(doc(db, 'users', user.uid));
-      var prof = profSnap.exists() ? profSnap.data() : {};
+      var state_ = profSnap.exists() ? profSnap.data() : {};
+      try { updateExamCreditsChip(state_); } catch (e) {}
+      var prof = state_;
       var classMap = {
         terminale_d: 'Bac D', terminale_c: 'Bac C', terminale_a: 'Bac A',
         terminale_b: 'Bac B', premiere_d: '1ère D', premiere_c: '1ère C',

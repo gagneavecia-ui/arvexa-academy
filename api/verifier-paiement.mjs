@@ -258,7 +258,25 @@ async function rescanPaiements(req, res) {
         if (fresh.exists && fresh.data().status !== 'pending') { continue; }
 
         const sessionId = pending.saspaySessionId || null;
-        if (!sessionId) { failed++; continue; }
+        if (!sessionId) {
+          // ✅ v8.73a — un checkout SANS session SasPay (ancien format) ne
+          // pourra JAMAIS être vérifié : au-delà de 7 jours on le ferme pour
+          // ne plus gaspiller le budget RESCAN_MAX à chaque passage quotidien
+          // (18+ docs éternellement « pending » constatés le 2026-11-27).
+          const createdMs = (pending.createdAt && pending.createdAt.toDate) ? pending.createdAt.toDate().getTime() : 0;
+          if (createdMs && (Date.now() - createdMs) > 7 * 24 * 60 * 60 * 1000) {
+            await doc.ref.update({
+              status: 'failed',
+              processedAt: FieldValue.serverTimestamp(),
+              rescanClosedAt: new Date(),
+              closeReason: 'no_session_stale'
+            });
+            failed++;
+          } else {
+            stillPending++;
+          }
+          continue;
+        }
 
         const statusRes = await saspayGet(`/checkout-sessions/${encodeURIComponent(sessionId)}/status/`);
         if (statusRes.status !== 200 || !statusRes.json) { stillPending++; continue; }

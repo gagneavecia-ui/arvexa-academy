@@ -44,8 +44,9 @@ const TOTAL_POINTS = 20;
 const FREE_EXAM_LIMIT = 2;
 const POOL_COLLECTION = 'examPool';
 
-// ⚡ v1.1 — CRÉDITS IA (packs Marketplace) : au-delà des 2 examens gratuits du
-// jour, chaque génération coûte 5 crédits, débités en transaction serveur.
+// ⚡ v1.1 — CRÉDITS IA (packs Marketplace) : au-delà des 2 épreuves gratuites du
+// jour, chaque épreuve complète (génération + correction incluse) coûte 1
+// requête (v8.73a), débitée en transaction serveur.
 const { COSTS, consumeCredits } = require('./_credits');
 
 // ✅ v8.65a — TESTÉ EN DIRECT le 26/11/2026 : les relais :free d'OpenRouter
@@ -461,10 +462,13 @@ function repairAllEscapes(raw) {
   return String(raw).replace(/(?<!\\)\\(?!["\\/bfnrtu])/g, '\\\\');
 }
 
-async function callProvider(provider, prompt, maxTokens, temperature) {
+async function callProvider(provider, prompt, maxTokens, temperature, timeoutMs) {
   if (!maxTokens) maxTokens = MAX_TOKENS.PROVIDER_DEFAULT;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45000); // ✅ Augmenté à 45s
+  // ✅ v8.73a — timeout par appel borné (45 s par défaut) ; generateWithFallback
+  // passe le temps RESTANT du budget global pour que la fonction rentre
+  // TOUJOURS avant le plateau Vercel (fini l'écran de chargement sans fin).
+  const timeout = setTimeout(() => controller.abort(), Math.max(5000, Math.min(45000, Number(timeoutMs) || 45000)));
   try {
     console.log(`[AI] ${provider.name} | prompt: ${prompt.length} car | max_tokens: ${maxTokens}`);
 
@@ -1237,6 +1241,11 @@ function generationPromptFromNotebook(config, notebookContext, avoidStatements, 
   const diffRules = diffRulesByCat[config.difficulty] || diffRulesByCat.medium;
   const variationBlock = buildVariationBlock(config.subject, avoidStatements);
 
+  const hasAnySubjectCount = single ? 'UN SEUL' : 'DEUX';
+  const gradation = single
+    ? ''
+    : 'GRADATION OBLIGATOIRE : le Sujet 2 doit être VISIBLEMENT plus difficile que le Sujet 1.';
+
   return `Tu es un professeur expert du BAC en Afrique francophone.
 
 ${PEDAGOGY_RULES_BY_CATEGORY[category] || PEDAGOGY_RULES_CALC}
@@ -1245,11 +1254,11 @@ ${specificRules}
 NATURE DE CETTE MATIÈRE : ${CATEGORY_LABELS[category] || ''}. Respecte STRICTEMENT ce régime.
 ADHÉRENCE MATIÈRE ABSOLUE : tous les exercices portent UNIQUEMENT sur ${subjectLabel} et le contenu du cahier exigé — tout contenu appartenant à une autre matière ou à un autre domaine = échec.
 
-L'élève a étudié un chapitre dans son cahier. Génère DEUX sujets basés STRICTEMENT sur ce contenu.
+L'élève a étudié un chapitre dans son cahier. Génère ${hasAnySubjectCount} sujet(s) basé(s) STRICTEMENT sur ce contenu.
 
 Chapitre : ${notebookContext.chapterTitle}
 Matière : ${subjectLabel}
-DIFFICULTÉ : c'est TOI, professeur, qui juges le niveau juste — de la maîtrise du cours lu ci-dessous jusqu'au niveau BAC. GRADATION OBLIGATOIRE : le Sujet 2 doit être VISIBLEMENT plus difficile que le Sujet 1.
+DIFFICULTÉ : c'est TOI, professeur, qui juges le niveau juste — de la maîtrise du cours lu ci-dessous jusqu'au niveau BAC. ${gradation}
 
 ═══════════════════════════════════════════════════════════════
 CONTENU DU CHAPITRE ÉTUDIÉ
@@ -1265,7 +1274,19 @@ ${LATEX_RULES}
 ${SOLVE_FIRST_PROTOCOL}
 
 FORMAT JSON :
-{
+${single
+    ? `{
+  "subject": "${config.subject}",
+  "level": "${config.level}",
+  "duration": ${config.duration},
+  "totalPoints": 20,
+  "chapter": "${config.chapter}",
+  "fromNotebook": true,
+  "subjects": [
+    { "id": "subject_1", "title": "Entraînement — ${notebookContext.chapterTitle}", "level": "consolidation", "instructions": "...", "exercises": [] }
+  ]
+}`
+    : `{
   "subject": "${config.subject}",
   "level": "${config.level}",
   "duration": ${config.duration},
@@ -1276,11 +1297,13 @@ FORMAT JSON :
     { "id": "subject_1", "title": "Sujet 1 — Consolidation", "level": "consolidation", "instructions": "...", "exercises": [] },
     { "id": "subject_2", "title": "Sujet 2 — Approfondissement", "level": "approfondissement", "instructions": "...", "exercises": [] }
   ]
-}
+}`}
 
-${STRUCTURE_CONTROL.replace('__NB_SUJETS__', single ? '1 objet' : '2 objets')}
+${STRUCTURE_CONTROL.replace('__NB_SUJETS__', single ? 'UN objet EXACTEMENT' : '2 objets EXACTEMENT')}
 
-${single ? 'UN SEUL sujet est attendu dans "subjects" (entraînement sur le cours : l\'élève traite ce sujet unique).' : ''}
+${single
+    ? '⚠️ UN SEUL sujet est attendu dans "subjects" — le tableau "subjects" doit contenir EXACTEMENT 1 objet, jamais 2 (entraînement sur le cours : l\'élève traite ce sujet unique).'
+    : '⚠️ EXACTEMENT 2 sujets sont attendus dans "subjects" — jamais 1, jamais 3.'}
 Réponds UNIQUEMENT avec le JSON.`;
 }
 
@@ -1486,9 +1509,12 @@ function repairQuestion(question, subjectName, eIdx, qIdx, forceChoice) {
   return question;
 }
 
-function repairExamStructure(exam, subjectName) {
+function repairExamStructure(exam, subjectName, expectedSubjects) {
   if (!exam || typeof exam !== 'object') return null;
   const supportsChoices = CHOICE_SUBJECTS.has(subjectName);
+  // ✅ v8.73a — Entraînement (1 sujet attendu) : on ne clone JAMAIS un sujet
+  // unique en « Sujet 2 » — l'élève doit voir SON sujet unique, pas deux copies.
+  const wantSubjects = Number(expectedSubjects) === 1 ? 1 : 2;
 
   if (!Array.isArray(exam.subjects)) {
     if (Array.isArray(exam.exams)) exam.subjects = exam.exams;
@@ -1496,7 +1522,7 @@ function repairExamStructure(exam, subjectName) {
     else return null;
   }
   if (exam.subjects.length === 0) return null;
-  if (exam.subjects.length === 1) {
+  if (exam.subjects.length === 1 && wantSubjects === 2) {
     const copy = JSON.parse(JSON.stringify(exam.subjects[0]));
     copy.id = 'subject_2';
     copy.title = 'Sujet 2 — Approfondissement';
@@ -1504,7 +1530,7 @@ function repairExamStructure(exam, subjectName) {
     copy.instructions = 'Approfondit votre maîtrise.';
     exam.subjects.push(copy);
   }
-  exam.subjects = exam.subjects.slice(0, 2);
+  exam.subjects = exam.subjects.slice(0, wantSubjects);
 
   exam.subjects.forEach((subject, sIdx) => {
     if (!subject.id) subject.id = 'subject_' + (sIdx + 1);
@@ -1646,7 +1672,12 @@ function repairExamStructure(exam, subjectName) {
   return exam;
 }
 
-function validateGeneratedExam(exam, subjectName) {
+function validateGeneratedExam(exam, subjectName, expectedSubjects) {
+  // ✅ v8.73a — le nombre de sujets attendu dépend du MODE : 2 en Examen blanc,
+  // EXACTEMENT 1 en Entraînement (le prompt ne demande qu'un seul sujet).
+  // Avant : la validation exigeait TOUJOURS 2 sujets → chaque épreuve
+  // Entraînement conforme à 1 sujet était rejetée → « n'aboutit jamais ».
+  const wantSubjects = Number(expectedSubjects) === 1 ? 1 : 2;
   const supportsChoices = CHOICE_SUBJECTS.has(subjectName);
   const validQuestion = (q) => {
     // ✅ v4.15 — une question SANS énoncé est inacceptable pour l'élève : invalide.
@@ -1654,7 +1685,7 @@ function validateGeneratedExam(exam, subjectName) {
     if (!supportsChoices || q.type !== 'choice') return ['text', 'number', 'formula', 'choice', 'drawing'].indexOf(q.type) !== -1;
     return Array.isArray(q.options) && q.options.length === 4 && ['A', 'B', 'C', 'D'].indexOf(q.correctAnswer) !== -1;
   };
-  return exam && Array.isArray(exam.subjects) && exam.subjects.length === 2 &&
+  return exam && Array.isArray(exam.subjects) && exam.subjects.length === wantSubjects &&
     exam.subjects.every((s) => {
       const exs = s.exercises;
       if (!Array.isArray(exs) || exs.length < 2 || exs.length > 6) return false;
@@ -1682,7 +1713,7 @@ function countEmptyQuestions(exam) {
   return n;
 }
 
-function isNearMiss(exam, subjectName) {
+function isNearMiss(exam, subjectName, expectedSubjects) {
   const empty = countEmptyQuestions(exam);
   if (empty === 0 || empty > NEAR_MISS_MAX_EMPTY) return false;
   const lenient = JSON.parse(JSON.stringify(exam));
@@ -1691,10 +1722,10 @@ function isNearMiss(exam, subjectName) {
       if (!String(q.text || '').trim()) q.text = 'placeholder';
     })
   ));
-  return validateGeneratedExam(lenient, subjectName);
+  return validateGeneratedExam(lenient, subjectName, expectedSubjects);
 }
 
-function patchExamFromPoolQuestions(exam, subjectName, poolExercises, chapter) {
+function patchExamFromPoolQuestions(exam, subjectName, poolExercises, chapter, expectedSubjects) {
   if (!exam || !Array.isArray(poolExercises) || !poolExercises.length) return null;
   const seen = new Set();
   exam.subjects.forEach((s) => (s.exercises || []).forEach((ex) => {
@@ -1743,7 +1774,7 @@ function patchExamFromPoolQuestions(exam, subjectName, poolExercises, chapter) {
   });
 
   if (!patched) return null;
-  return repairExamStructure(exam, subjectName);
+  return repairExamStructure(exam, subjectName, expectedSubjects);
 }
 
 // ═════════════════════════════════════════════════════════════
@@ -2083,12 +2114,16 @@ function applyVerification(exam, verification) {
   return exam;
 }
 
-async function generateWithFallback(prompt, subjectName, poolLoader, chapter) {
+async function generateWithFallback(prompt, subjectName, poolLoader, chapter, expectedSubjects) {
   const providers = getProviders();
   if (!providers.length) throw new Error('provider_missing');
 
   const startTime = Date.now();
-  const TIME_BUDGET_MS = 85000;
+  // ✅ v8.73a — budget ramené à 60 s (< maxDuration 90) : même sur les
+  // fournisseurs lents, le handler RENTRE TOUJOURS par lui-même (épreuve ou
+  // repli propre) — fini les réponses coupées par le plateau qui laissaient
+  // l'élève sur un écran de chargement sans fin (« ça n'aboutit jamais »).
+  const TIME_BUDGET_MS = 60000;
   const errors = [];
 
   for (let i = 0; i < providers.length; i++) {
@@ -2101,26 +2136,29 @@ async function generateWithFallback(prompt, subjectName, poolLoader, chapter) {
     const provider = providers[i];
     try {
       console.log('[AI] Tentative ' + provider.name + '...');
-      let rawExam = await callProvider(provider, prompt, MAX_TOKENS.GENERATE, GEN_TEMPERATURE);
-      rawExam = repairExamStructure(rawExam, subjectName);
+      const remainingMs = Math.max(6000, TIME_BUDGET_MS - (Date.now() - startTime));
+      let rawExam = await callProvider(provider, prompt, MAX_TOKENS.GENERATE, GEN_TEMPERATURE, remainingMs);
+      rawExam = repairExamStructure(rawExam, subjectName, expectedSubjects);
 
       // ✅ v5.0 — validité structurelle + CONFORMITÉ DE RÉGIME (valideurs v5.0)
-      if (validateGeneratedExam(rawExam, subjectName) &&
+      if (validateGeneratedExam(rawExam, subjectName, expectedSubjects) &&
           validateContentCompliance(rawExam, subjectName, chapter)) {
 
         // ✅ v5.0 — PASSE DE RÉSOLUTION : l'IA traite l'examen AVANT livraison.
-        // Budget : on ne lance la vérification que si ≥ 30 s de marge restent.
-        if (Date.now() - startTime < TIME_BUDGET_MS - 30000) {
+        // ✅ v8.73a — on ne lance la vérification que si la génération a été
+        // RAPIDE (marge ≥ 25 s devant le budget 60 s) : une génération lente
+        // livre SANS la passe plutôt que de dépasser le délai côté élève.
+        if (Date.now() - startTime < TIME_BUDGET_MS - 25000) {
           const verification = await verifyWithFallback(rawExam, subjectName, chapter);
           if (verification) {
             rawExam = applyVerification(rawExam, verification);
-            rawExam = repairExamStructure(rawExam, subjectName);
+            rawExam = repairExamStructure(rawExam, subjectName, expectedSubjects);
           }
         }
 
         // Re-validation après vérification ; si la passe a dégradé l'examen,
         // le fournisseur suivant reprend la main.
-        if (validateGeneratedExam(rawExam, subjectName) &&
+        if (validateGeneratedExam(rawExam, subjectName, expectedSubjects) &&
             validateContentCompliance(rawExam, subjectName, chapter)) {
           console.log('[AI] OK ' + provider.name + ' (vérifié)');
           return { exam: rawExam, provider: provider.name };
@@ -2129,11 +2167,11 @@ async function generateWithFallback(prompt, subjectName, poolLoader, chapter) {
       }
 
       // ✅ v4.15 — rattrapage "presque complet" via le pool avant de rejeter
-      if (isNearMiss(rawExam, subjectName) && typeof poolLoader === 'function') {
+      if (isNearMiss(rawExam, subjectName, expectedSubjects) && typeof poolLoader === 'function') {
         const pool = await poolLoader().catch(() => null);
         if (pool && pool.length) {
-          const patched = patchExamFromPoolQuestions(rawExam, subjectName, pool, chapter);
-          if (patched && validateGeneratedExam(patched, subjectName) &&
+          const patched = patchExamFromPoolQuestions(rawExam, subjectName, pool, chapter, expectedSubjects);
+          if (patched && validateGeneratedExam(patched, subjectName, expectedSubjects) &&
               validateContentCompliance(patched, subjectName, chapter)) {
             console.log('[AI] OK ' + provider.name + ' (+rattrapage pool)');
             return { exam: patched, provider: provider.name + '+pool' };
@@ -2507,13 +2545,16 @@ CONTRAT :
 
 // ✅ v8.65a — même chaîne de secours que correctWithFallback, mais pour les
 // lots : valide un tableau "corrections" (JSON plat) au lieu de "exercises".
-async function correctChunkWithFallback(prompt) {
+async function correctChunkWithFallback(prompt, deadlineMs) {
   const providers = getProviders();
   if (!providers.length) throw new Error('provider_missing');
   const errors = [];
   for (const provider of providers) {
     try {
-      const result = await callProvider(provider, prompt, MAX_TOKENS.CORRECT);
+      // ✅ v8.73a — chaque appel reçoit le temps RESTANT du budget correction
+      // (la fonction doit renvoyer avant le plateau Vercel, sinon 504).
+      const remaining = deadlineMs ? Math.max(6000, deadlineMs - Date.now()) : undefined;
+      const result = await callProvider(provider, prompt, MAX_TOKENS.CORRECT, undefined, remaining);
       if (!result || typeof result !== 'object') { errors.push(provider.name + ': résultat non-objet'); continue; }
       if (!Array.isArray(result.corrections) || result.corrections.length === 0) {
         errors.push(provider.name + ': corrections vide ou invalide');
@@ -2788,10 +2829,21 @@ async function correctExamHybrid(exam, subjectId, answers, uid, notebookContext)
       let aiMerged = 0;
       const collectedTopics = [];
       let collectedFeedback = null;
+      // ✅ v8.73a — BUDGET CORRECTION 70 s (< maxDuration 90) : les lots après
+      // le délai sont corrigés localement — l'élève reçoit TOUJOURS sa copie
+      // corrigée (fini « jamais les épreuves jusqu'à la correction »).
+      const CORR_DEADLINE = Date.now() + 70000;
       for (let ci = 0; ci < chunks.length; ci++) {
         const isLast = ci === chunks.length - 1;
+        if (Date.now() > CORR_DEADLINE - 8000) {
+          console.warn('[CORRECT] budget dépassé avant le lot ' + (ci + 1) + '/' + chunks.length + ' → correction locale du reste');
+          // ✅ les questions restées « pending » reçoivent la correction locale
+          // (ne touche QUE les pending : les lots déjà corrigés par l'IA sont préservés)
+          localFallbackCorrection(deterministicResults);
+          break;
+        }
         const prompt = correctionChunkPrompt(chunks[ci], notebookContext, isLast);
-        const aiResponse = await correctChunkWithFallback(prompt);
+        const aiResponse = await correctChunkWithFallback(prompt, CORR_DEADLINE);
         const corrections = (aiResponse && Array.isArray(aiResponse.corrections)) ? aiResponse.corrections : [];
         mergeAiCorrectionsFlat(deterministicResults, corrections);
         aiMerged += corrections.length;
@@ -3196,7 +3248,9 @@ module.exports = async function handler(request, response) {
       if (!creditUsed) {
         return response.status(429).json({
           success: false,
-          error: 'Limite du jour atteinte (2 examens gratuits). Recharge ta réserve d\'examens ⚡ dans l\'Abonnement ou passe Premium.',
+          // ✅ v8.73a — 1 requête = 1 épreuve complète (génération + correction) ;
+          // les packs se rechargent dans la Marketplace (plus dans l'Abonnement).
+          error: 'Limite du jour atteinte (2 épreuves gratuites). Recharge ta réserve d\'épreuves ⚡ dans la Marketplace (1 requête = 1 épreuve + correction complète) ou passe Premium.',
           code: 'FREE_EXAM_LIMIT', used: reservation.used, limit: FREE_EXAM_LIMIT,
           creditsRemaining: creditRemaining
         });
@@ -3239,7 +3293,7 @@ module.exports = async function handler(request, response) {
           .where('subject', '==', body.subject).limit(80).get();
         return snap.docs.map((d) => d.data() || {});
       };
-      const genResult = await generateWithFallback(prompt, body.subject, poolLoader, body.chapter);
+      const genResult = await generateWithFallback(prompt, body.subject, poolLoader, body.chapter, notebookContext ? 1 : 2);
       let exam = genResult.exam;
 
       exam = deepClean(exam);
