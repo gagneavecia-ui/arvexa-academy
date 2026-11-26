@@ -773,6 +773,69 @@ module.exports = async function handler(request, response) {
   }
 
   const body = request.body && typeof request.body === 'object' ? request.body : {};
+
+  /* ═══ ⚡ v8.72a — OBJECTIF D'INSCRIPTION (IA) ═══
+     Demande du propriétaire : « lors de l'inscription si l'utilisateur
+     saisit son niveau "ton objectif" ne change pas — on connecte l'IA pour
+     choisir en fonction du niveau choisi pour ne pas laisser vide ».
+     Appelé par register.html APRÈS la création du compte auth (jeton
+     Firebase OBLIGATOIRE — pas d'IA gratuite anonyme, audit v8.69a).
+     Plafond strict : 6 appels / uid / jour, 0 crédit (micro-génération
+     unique, une seule ligne). Le client garde TOUJOURS un objectif local
+     en secours : le champ n'est jamais vide même si l'IA échoue. */
+  if (body.task === 'objectif') {
+    const niveau = String(body.niveau || '').trim().slice(0, 120);
+    if (!niveau) return jsonError(response, 400, 'Niveau manquant.');
+
+    const { db: dbObj, FieldValue: FVObj } = getAdminServices();
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const refObj = dbObj.collection('users').doc(user.uid);
+      const allowed = await dbObj.runTransaction(async (tx) => {
+        const snap = await tx.get(refObj);
+        const d = snap.data() || {};
+        let count = d.objectifReqDate === today ? (Number(d.objectifReqCount) || 0) : 0;
+        if (count >= 6) return false;
+        tx.set(refObj, {
+          objectifReqDate: today,
+          objectifReqCount: count + 1,
+          updatedAt: FVObj.serverTimestamp()
+        }, { merge: true });
+        return true;
+      });
+      if (!allowed) return jsonError(response, 429, 'Trop de demandes pour aujourd\u2019hui.');
+    } catch (limitError) {
+      console.error('Objectif rate-limit error:', limitError.message);
+      return jsonError(response, 503, 'Service temporairement indisponible.');
+    }
+
+    const objectifSys = 'Tu choisis l\u2019objectif d\u2019un \u00e9l\u00e8ve de la plateforme ARVEXA School (Niger, Afrique de l\u2019Ouest). '
+      + 'R\u00e9ponds UNIQUEMENT par l\u2019objectif en fran\u00e7ais : maximum 9 mots, sans guillemets, sans point final, aucun autre texte. '
+      + 'Il doit \u00eatre pr\u00e9cis, motivant et adapt\u00e9 au niveau donn\u00e9. Exemples :\n'
+      + '- niveau "Terminale D" \u2192 "D\u00e9crocher le BAC D"\n'
+      + '- niveau "3\u1d49" \u2192 "R\u00e9ussir le BEPC"\n'
+      + '- niveau "L1 Droit" \u2192 "R\u00e9ussir ta premi\u00e8re ann\u00e9e de droit"\n'
+      + '- niveau "CAP couture" \u2192 "R\u00e9ussir ton CAP de couture"\n'
+      + '- niveau "Concours police" \u2192 "R\u00e9ussir le concours de police"';
+    try {
+      const result = await generateWithFallback([
+        { role: 'system', content: objectifSys },
+        { role: 'user', content: 'Niveau de l\u2019\u00e9l\u00e8ve : ' + niveau }
+      ]);
+      let objectif = String(result.reply || '').trim();
+      // Nettoyage : une seule ligne, sans guillemets ni préfixe « Objectif : »
+      objectif = objectif.split('\n')[0]
+        .replace(/^[\u00ab\u00bb\u201c\u201d"'`\s]+|[\u00ab\u00bb\u201c\u201d"'`\s.]+$/g, '')
+        .replace(/^objectif\s*[:\-\u2013]\s*/i, '')
+        .slice(0, 90).trim();
+      if (!objectif) throw new Error('objectif_vide');
+      return response.status(200).json({ success: true, objectif: objectif });
+    } catch (aiError) {
+      console.error('Objectif AI error:', aiError.message);
+      return jsonError(response, 502, 'IA indisponible \u2014 objectif local utilis\u00e9.');
+    }
+  }
+
   const userMessage = String(body.message || '').trim();
   const conversationId = body.conversationId || null;
   /* ✅ v8.54a — images jointes (vision) : dataURL validés, 2 max */

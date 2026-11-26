@@ -104,6 +104,38 @@
       flex-shrink: 0;
     }
 
+    /* ⚡ v8.72a — COMMENT ÇA MARCHE (élément manquant de la boutique :
+       rassurer l'acheteur en 3 étapes avant les packs) */
+    .howto { display: grid; gap: 9px; }
+    .howto-step {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: 14px;
+      background: rgba(255,255,255,.02); border: 1px solid rgba(224,184,74,.14);
+    }
+    .howto-step .hs-num {
+      width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 900; color: var(--bg-dark);
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+    }
+    .howto-step .hs-txt b { display: block; font-size: 13px; font-weight: 800; color: var(--text-light); }
+    .howto-step .hs-txt span { font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
+
+    /* ⚡ v8.72a — SUPPORT WhatsApp (élément manquant, modèle abonnement) */
+    .support-box {
+      text-align: center; margin-top: 6px;
+      padding: 14px 16px; border-radius: 16px;
+      background: rgba(255,255,255,.02); border: 1px solid rgba(224,184,74,.14);
+    }
+    .support-box .sb-title { font-size: 12.5px; font-weight: 600; color: var(--text-dim); }
+    .support-box .sb-title i { color: var(--accent-bright); margin-right: 4px; }
+    .support-box .sb-wa {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 7px; font-size: 14px; font-weight: 700;
+      color: #25D366; text-decoration: none;
+    }
+    .support-box .sb-wa:active { opacity: .75; }
+
     .container { max-width: 640px; margin: 0 auto; padding: 18px 16px 0; }
 
     /* ===== BANDEAU STATUT ===== */
@@ -640,6 +672,23 @@
       </div>
     </div>
 
+    <!-- ═══ COMMENT ÇA MARCHE (⚡ v8.72a — élément manquant de la boutique) ═══ -->
+    <div class="section-title"><i class="fas fa-circle-question"></i> Comment ça marche <span>3 étapes</span></div>
+    <div class="howto">
+      <div class="howto-step">
+        <span class="hs-num">1</span>
+        <span class="hs-txt"><b>Choisis ton pack</b><span>Résumés, questions ou examens — tu paies seulement la page que tu utilises.</span></span>
+      </div>
+      <div class="howto-step">
+        <span class="hs-num">2</span>
+        <span class="hs-txt"><b>Paie par Mobile Money</b><span>Paiement sécurisé SasPay — ou via WhatsApp avec l'équipe si tu préfères.</span></span>
+      </div>
+      <div class="howto-step">
+        <span class="hs-num">3</span>
+        <span class="hs-txt"><b>C'est activé automatiquement</b><span>Tes requêtes arrivent sur ton compte dès la confirmation, même si tu fermes l'app.</span></span>
+      </div>
+    </div>
+
     <!-- ═══ CONFIANCE (page accueillante qui pousse à acheter) ═══ -->
     <div class="trust-row">
       <span class="trust-chip"><i class="fas fa-zap"></i> Activation instantanée</span>
@@ -723,6 +772,14 @@
       </div>
       <i class="fas fa-chevron-right arrow"></i>
     </a>
+
+    <!-- ═══ SUPPORT (⚡ v8.72a — élément manquant de la boutique) ═══ -->
+    <div class="support-box">
+      <div class="sb-title"><i class="fas fa-headset"></i> Un souci avec un achat ? Notre équipe répond vite</div>
+      <a class="sb-wa" href="https://wa.me/22774872082" target="_blank" rel="noopener noreferrer">
+        <i class="fab fa-whatsapp"></i> <span data-contact-phone>+227 74 87 20 82</span>
+      </a>
+    </div>
 
   </div>
 

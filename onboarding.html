@@ -1115,9 +1115,18 @@
 
     // ✅ v8.34 — plus de session/durée : l'objectif est déduit de la
     // classe (CL.goal). L'examYear des anciens comptes reste honoré.
-    userGoal.textContent = CL
-      ? CL.goal(data.classId, data.examYear)
-      : `BAC ${data.examYear || getBacYear()}`;
+    // ⚡ v8.72a — OBJECTIF CHOISI PAR L'IA (demande du propriétaire) : si le
+    // profil porte un objectif réel (users/{uid}.goal, écrit à l'inscription
+    // par l'IA selon le niveau — jamais « Ton objectif »), il prime ;
+    // sinon repli sur le registre des classes (jamais vide).
+    const goalAi = typeof data.goal === 'string' ? data.goal.trim() : '';
+    if (goalAi && goalAi.length > 1 && !/ton objectif/i.test(goalAi)) {
+      userGoal.textContent = goalAi;
+    } else {
+      userGoal.textContent = CL
+        ? CL.goal(data.classId, data.examYear)
+        : `BAC ${data.examYear || getBacYear()}`;
+    }
 
     skeletonLoading.style.display = 'none';
     dynamicContent.style.display = 'block';

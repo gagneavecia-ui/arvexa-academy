@@ -68,7 +68,7 @@ for (const f of [...PAGES, 'index.html']) {
 }
 
 console.log('— 7. Version —');
-T(/let SW_VERSION = 'arvexa-online-v8\.68a';/.test(R('service-worker.js')), 'SW : version v8.68a');
+T(/let SW_VERSION = 'arvexa-online-v8\.(68|69|[789]\d)a';/.test(R('service-worker.js')), 'SW : version ≥ v8.68a');
 
 console.log('— 8. Syntaxe —');
 let syn = 0, synKo = 0;

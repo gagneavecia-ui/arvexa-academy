@@ -1219,101 +1219,32 @@
     .modal .secure-text i { color: var(--success-light); margin-right: 4px; }
 
     /* ============================================================
-       ⚡ v8.57a — RECHARGES DE REQUÊTES (packs de crédits IA)
+       ⚡ v8.72a — REQUÊTES IA → MARKETPLACE (demande du propriétaire :
+       « dans la page abonnement supprime les offres d'achat de requêtes
+       et ajoute un bouton pour accéder à la marketplace »). Les packs,
+       le solde par page et l'achat vivent désormais UNIQUEMENT dans
+       marketplace.html — ici : une simple porte d'entrée élégante.
        ============================================================ */
-    .credits-section { margin-top: 20px; }
-    .credits-balance {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      padding: 16px 18px; border-radius: 18px;
+    .market-cta {
+      display: flex; align-items: center; gap: 14px;
+      margin-top: 22px; padding: 18px 20px; border-radius: 18px;
       background: linear-gradient(135deg, rgba(184,134,11,.16), rgba(20,20,20,.8));
       border: 1px solid rgba(224,184,74,.35);
+      text-decoration: none; transition: transform .18s ease, border-color .18s ease;
     }
-    .credits-balance .cb-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-    .credits-balance .cb-icon {
-      width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    .market-cta:hover, .market-cta:focus-visible { border-color: rgba(224,184,74,.6); transform: translateY(-1px); }
+    .market-cta .mc-icon {
+      width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 19px; color: #0A0A0A;
       background: linear-gradient(135deg, var(--accent-bright), var(--accent));
     }
-    .credits-balance .cb-body b { display: block; font-size: 20px; font-family: 'Playfair Display', serif; }
-    .credits-balance .cb-body span { font-size: 11px; color: var(--text-dim); }
-    .credits-balance .cb-tag {
-      font-size: 10.5px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase;
-      padding: 6px 11px; border-radius: 99px; flex-shrink: 0;
-      background: rgba(224,184,74,.14); color: var(--accent-bright); border: 1px solid rgba(224,184,74,.3);
+    .market-cta .mc-body { flex: 1; min-width: 0; }
+    .market-cta .mc-body h3 {
+      font-size: 15px; font-weight: 800; color: var(--text-light);
+      display: flex; align-items: center; gap: 8px; margin: 0;
     }
-    .credits-title-row { margin-top: 26px; }
-    .credits-title-row h2 {
-      font-size: 16.5px; font-weight: 800; color: var(--accent-bright);
-      display: flex; align-items: center; gap: 9px;
-    }
-    .credits-title-row p { font-size: 12.5px; color: var(--text-dim); margin-top: 7px; line-height: 1.6; }
-    .credits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 14px; }
-    @media (max-width: 420px) { .credits-grid { grid-template-columns: 1fr; } }
-    .credits-loading { grid-column: 1 / -1; text-align: center; padding: 26px 12px; color: var(--text-dim); font-size: 12.5px; }
-    .credits-empty { grid-column: 1 / -1; text-align: center; padding: 26px 16px; color: var(--text-dim); font-size: 12.5px; border-radius: 16px; background: rgba(255,255,255,.02); border: 1px dashed rgba(184,134,11,.25); }
-    /* ⚡ v8.64a — lignes de solde par page + têtes de groupe de packs */
-    .credits-balance .cbp-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
-    .credits-balance .cbp-row .cbp-ico { font-size: 15px; flex: 0 0 auto; }
-    .credits-balance .cbp-row .cbp-lbl { font-size: 12px; color: var(--text-dim); flex: 1; min-width: 0; }
-    .credits-balance .cbp-row .cbp-val { font-size: 15px; font-weight: 800; color: var(--accent-bright); }
-    .credits-balance .cb-body b { font-size: 20px; font-family: 'Playfair Display', serif; }
-    .credits-balance .cbp-expired { display: block; font-size: 11px; color: #d98a3d; margin-top: 6px; }
-    .credits-grid .cp-group-head {
-      grid-column: 1 / -1; display: flex; align-items: center; gap: 8px;
-      font-size: 13px; font-weight: 800; color: var(--accent-bright);
-      margin-top: 6px; padding-top: 4px;
-    }
-    .credits-grid .cp-group-head:first-child { margin-top: 0; }
-    .credits-grid .cp-group-head .cp-group-ico { font-size: 16px; }
-    .credit-pack {
-      position: relative; overflow: hidden;
-      padding: 17px 15px; border-radius: 18px;
-      background: var(--bg-card); border: 1px solid rgba(224,184,74,.22);
-      transition: transform .1s;
-    }
-    .credit-pack.featured { border-color: rgba(224,184,74,.5); }
-    .credit-pack .cp-badge {
-      position: absolute; top: 12px; right: 12px; font-size: 9.5px; font-weight: 800;
-      letter-spacing: .5px; text-transform: uppercase; padding: 4px 9px; border-radius: 99px;
-      background: linear-gradient(135deg, var(--accent-bright), var(--accent)); color: var(--bg-dark);
-    }
-    .credit-pack .cp-icon { font-size: 21px; }
-    .credit-pack .cp-name { font-size: 15px; font-weight: 800; margin-top: 6px; }
-    .credit-pack .cp-credits { font-size: 13px; color: var(--accent-bright); font-weight: 700; margin-top: 2px; }
-    .credit-pack .cp-validity { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-    .credit-pack .cp-price { margin-top: 9px; }
-    .credit-pack .cp-price .amount { font-size: 21px; font-weight: 900; font-family: 'Playfair Display', serif; }
-    .credit-pack .cp-price .cur { font-size: 12px; font-weight: 700; color: var(--text-dim); margin-left: 3px; }
-    /* ✅ v8.61a — DEUX PETITS BOUTONS par carte (identiques à la marketplace)
-       : Auto = tunnel de paiement automatique · Manuel = WhatsApp prérempli. */
-    .credit-pack .pack-actions {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
-      margin-top: 9px;
-    }
-    .credit-pack .pk-auto, .credit-pack .pk-manual {
-      padding: 8px 4px; border-radius: 9px; border: none; cursor: pointer;
-      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center; gap: 5px;
-      transition: filter .2s, transform .1s, background-color .2s, border-color .2s;
-      min-height: 33px; touch-action: manipulation;
-      text-decoration: none;
-    }
-    .credit-pack .pk-auto {
-      color: var(--bg-dark);
-      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-      box-shadow: 0 3px 12px rgba(224,184,74,.18);
-    }
-    .credit-pack .pk-auto:active { transform: scale(.96); }
-    .credit-pack .pk-auto[disabled] { filter: grayscale(.6); opacity: .6; cursor: wait; }
-    .credit-pack .pk-manual {
-      background: rgba(37,211,102,.08);
-      color: #25D366;
-      border: 1px solid rgba(37,211,102,.30);
-    }
-    .credit-pack .pk-manual:active { transform: scale(.96); background: rgba(37,211,102,.14); }
-    html[data-theme="light"] .credit-pack .pk-auto { color: #FFF8E7; background: linear-gradient(135deg, #B8860B, #9A7209); }
-    .credits-note { font-size: 11px; color: var(--text-dim); margin-top: 12px; line-height: 1.6; }
-    .credits-note i { color: var(--success-light); margin-right: 4px; }
+    .market-cta .mc-body p { font-size: 12px; color: var(--text-dim); margin-top: 5px; line-height: 1.55; }
+    .market-cta .mc-arrow { color: var(--accent-bright); font-size: 14px; flex-shrink: 0; }
 
     /* ============================================================
        SUPPORT
@@ -1882,33 +1813,19 @@
 
       </div>
 
-      <!-- ═══ v8.57a — VENTE DE REQUÊTES IA (packs) ═══
-           ⚡ v8.64a — REQUÊTES PAR PAGE : 3 réserves distinctes (résumés /
-           questionnaires / examens) + ancienne réserve globale héritée. -->
-      <div class="credits-section" id="creditsSection">
-        <div class="credits-balance" id="creditsBalanceCard">
-          <div class="cb-left">
-            <div class="cb-icon">⚡</div>
-            <div class="cb-body" id="creditsBalancesRows">
-              <b id="creditsBalanceValue">—</b>
-              <span id="creditsBalanceExpiry">Requêtes IA disponibles</span>
-            </div>
-          </div>
-          <span class="cb-tag" id="creditsBalanceTag">Gratuit</span>
-        </div>
-
-        <div class="credits-title-row">
-          <h2><i class="fas fa-bolt"></i> Recharges de requêtes</h2>
-          <p>Chaque page a sa réserve : résumés, questionnaires de discussion, examens. Paye à la carte la page que tu utilises le plus. Sans abonnement, sans engagement.</p>
-        </div>
-        <div class="credits-grid" id="creditsGrid">
-          <div class="arv-sk arv-sk-abo" style="max-width:none;padding:0;gap:13px"><div class="cgrid"><div class="c ccard"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span class="b" style="height:11px;width:65%"></span><span class="b" style="height:10px;width:45%"></span><div class="btns"><span class="b"></span><span class="b"></span></div></div><div class="c ccard"><span class="ico" style="width:30px;height:30px;border-radius:9px"></span><span class="b" style="height:11px;width:58%"></span><span class="b" style="height:10px;width:50%"></span><div class="btns"><span class="b"></span><span class="b"></span></div></div></div><div style="text-align:center;opacity:.7;font-size:12px">Chargement des packs…</div></div>
-        </div>
-        <p class="credits-note">
-          <i class="fas fa-shield-halved"></i> Paiement sécurisé — requêtes ajoutées automatiquement
-          à ton compte dès la confirmation, même si tu fermes l'app.
-        </p>
-      </div>
+      <!-- ═══ ⚡ v8.72a — REQUÊTES IA → MARKETPLACE ═══
+           Demande du propriétaire : les offres d'achat de requêtes quittent
+           la page abonnement ; un bouton mène vers la marketplace où
+           vivent les packs par page (résumés / questionnaires / examens),
+           les abonnements et le solde détaillé. -->
+      <a class="market-cta" id="marketCta" href="marketplace.html">
+        <span class="mc-icon"><i class="fas fa-store"></i></span>
+        <span class="mc-body">
+          <h3><i class="fas fa-bolt"></i> Recharges de requêtes IA</h3>
+          <p>Packs par page — résumés, questionnaires, examens — et abonnements Premium, à découvrir dans la Marketplace.</p>
+        </span>
+        <i class="fas fa-chevron-right mc-arrow"></i>
+      </a>
 
       <div class="support-section">
         <div class="support-title">
@@ -3044,11 +2961,9 @@ if (statut === 'succes') {
           if (data && data.ok && data.activated) {
             const snap = await getDoc(doc(db, 'users', currentUser?.uid || '—'), { source: 'server' });
             if (snap.exists()) {
-              renderCreditsBalance(snap.data());
               const st = getUserState(snap.data());
               if (st === 'premium') routeToScreen(snap.data());
             }
-            loadCreditsPacks();
           }
         } catch (e) { /* silencieux */ }
       }, delay);
@@ -3069,7 +2984,6 @@ if (statut === 'succes') {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid), { source: 'server' });
         if (snap.exists()) {
-          renderCreditsBalance(snap.data());
           const st = getUserState(snap.data());
           if (st === 'premium') {
             clearInterval(succWatch);
@@ -3218,7 +3132,6 @@ function loadUserData(user) {
         routeToScreen(data);
         // ⚡ v8.57a — solde de requêtes toujours à jour (le webhook crédite
         // users/{uid}.aiCredits : l'onSnapshot repeint tout seul la carte).
-        renderCreditsBalance(data);
         try { if (window.ARVSkel) ARVSkel.settled('abonnement-user'); } catch (e) {}
       } else {
         const cached = getCachedUserData(user.uid);
@@ -3227,7 +3140,6 @@ function loadUserData(user) {
         } else {
           showScreen('free');
         }
-        renderCreditsBalance({});
         try { if (window.ARVSkel) ARVSkel.settled('abonnement-user'); } catch (e) {}
       }
     },
@@ -3238,205 +3150,11 @@ function loadUserData(user) {
       } else {
         showScreen('free');
       }
-      renderCreditsBalance({});
       try { if (window.ARVSkel) ARVSkel.settled('abonnement-user'); } catch (e) {}
     }
   );
 }
 
-// ================================================================
-// ⚡ v8.57a — RECHARGES DE REQUÊTES (packs de crédits IA)
-// Le solde vit dans users/{uid}.aiCredits ; les packs dans la collection
-// `products` (type:'credits', status:'approved', écrits par l'admin).
-// Le prix est TOUJOURS relu côté serveur par /api/creer-checkout —
-// le client n'envoie que l'identifiant du pack. Paiement SasPay identique
-// à l'abonnement : le webhook crédite automatiquement les requêtes.
-// ================================================================
-/* ⚡ v8.64a — REQUÊTES PAR PAGE (demande du propriétaire) : 3 réserves
-   distinctes — résumés (aiCreditsResume), questionnaires/discussion
-   (aiCreditsChat), examens (aiCreditsExam) — + l'ancienne réserve globale
-   héritée (aiCredits) consommée en secours après les réserves de page. */
-function renderCreditsBalance(data) {
-  const rowsEl = document.getElementById('creditsBalancesRows');
-  const tagEl = document.getElementById('creditsBalanceTag');
-  if (!rowsEl) return;
-  const premium = data?.premium === true || data?.isUnlocked === true;
-
-  let expiryMs = 0;
-  if (data?.creditsExpiry?.toDate) expiryMs = data.creditsExpiry.toDate().getTime();
-  else if (data?.creditsExpiry?.seconds) expiryMs = data.creditsExpiry.seconds * 1000;
-  const expired = expiryMs && expiryMs < Date.now();
-
-  if (premium) {
-    rowsEl.innerHTML = '<b>∞</b><span>Requêtes IA illimitées sur toutes les pages avec ton abonnement Premium</span>';
-    tagEl.textContent = 'Premium';
-    return;
-  }
-
-  const resume = Math.max(0, Number(data?.aiCreditsResume || 0));
-  const chat = Math.max(0, Number(data?.aiCreditsChat || 0));
-  const exam = Math.max(0, Number(data?.aiCreditsExam || 0));
-  const globalLegacy = expired ? 0 : Math.max(0, Number(data?.aiCredits || 0));
-  const total = resume + chat + exam + globalLegacy;
-
-  const rowHtml = (icon, label, value) =>
-    `<div class="cbp-row"><span class="cbp-ico">${icon}</span><span class="cbp-lbl">${label}</span><b class="cbp-val">${value}</b></div>`;
-
-  let html = '';
-  html += rowHtml('📄', 'Résumés', resume);
-  html += rowHtml('💬', 'Questionnaires', chat);
-  html += rowHtml('📝', 'Examens', exam);
-  if (globalLegacy > 0) html += rowHtml('⚡', 'Global (ancien pack)', globalLegacy);
-  rowsEl.innerHTML = html;
-
-  if (expired && total === 0) {
-    html += '';
-    rowsEl.insertAdjacentHTML('beforeend', '<span class="cbp-expired">Packs expirés — recharge ci-dessous pour retrouver tes requêtes.</span>');
-  }
-  tagEl.textContent = total > 0 ? 'À la carte' : 'Gratuit';
-}
-
-async function loadCreditsPacks() {
-  const grid = document.getElementById('creditsGrid');
-  if (!grid) return;
-  window.ARVSkel && ARVSkel.gate('abonnement-packs');
-  try {
-    // ✅ v8.59a — SANS orderBy : where+where+orderBy exigeait un INDEX COMPOSITE
-    // inexistant sur products → FAILED_PRECONDITION → faux « problème de
-    // connexion » (signalement propriétaire). Égalités seules = aucun index
-    // requis ; le tri se fait côté client.
-    const snap = await getDocs(query(
-      collection(db, 'products'),
-      where('type', '==', 'credits'),
-      where('status', '==', 'approved')
-    ));
-    const products = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
-    grid.replaceChildren();
-    if (!products.length) {
-      const empty = document.createElement('div');
-      empty.className = 'credits-empty';
-      empty.textContent = 'Aucun pack disponible pour le moment — reviens très vite !';
-      grid.appendChild(empty);
-      try { if (window.ARVSkel) ARVSkel.settled('abonnement-packs'); } catch (e) {}
-      return;
-    }
-    // ⚡ v8.64a — packs groupés PAR PAGE : résumés / questionnaires / examens,
-    // puis (s'il en reste) les anciens packs globaux. L'ordre suit la vie de
-    // l'élève : résumer, discuter, s'évaluer.
-    const PAGE_ORDER = [
-      { key: 'resume', icon: '📄', label: 'Résumés — page Résumé' },
-      { key: 'chat',   icon: '💬', label: 'Questionnaires — discussion IA' },
-      { key: 'exam',   icon: '📝', label: 'Examens — page Épreuves' },
-      { key: null,     icon: '⚡', label: 'Global (anciens packs)' }
-    ];
-    const groups = new Map();
-    products.forEach((p) => {
-      const key = ['resume', 'chat', 'exam'].includes(String(p.creditPage || '')) ? String(p.creditPage) : null;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(p);
-    });
-    PAGE_ORDER.forEach(({ key, icon, label }) => {
-      const list = groups.get(key) || [];
-      if (!list.length) return;
-      const head = document.createElement('div');
-      head.className = 'cp-group-head';
-      head.innerHTML = `<span class="cp-group-ico">${icon}</span> ${label}`;
-      grid.appendChild(head);
-      list.forEach((p) => {
-        const featured = Number(p.credits) >= 100;
-        const validity = Number(p.validityDays) || 30;
-        // ⚡ v8.64a — unité naturelle du pack (résumés / questions / examens) ;
-        // les examens coûtent 5 crédits pièce → on affiche le NOMBRE d'examens.
-        const hasUnit = Boolean(p.unitLabel && Number(p.unitCount) > 0);
-        const unitText = hasUnit
-          ? `${Number(p.unitCount)} ${String(p.unitLabel).replace(/</g, '&lt;')}`
-          : `${Number(p.credits)} requêtes`;
-        const card = document.createElement('div');
-        card.className = 'credit-pack' + (featured ? ' featured' : '');
-        card.innerHTML = `
-          ${featured ? '<span class="cp-badge">Best-seller</span>' : ''}
-          <div class="cp-icon">${icon}</div>
-          <div class="cp-name">${String(p.title || 'Pack').replace(/</g, '&lt;')}</div>
-          <div class="cp-credits">${unitText}</div>
-          <div class="cp-validity">Valables ${validity} jours</div>
-          <div class="cp-price"><span class="amount">${Number(p.price).toLocaleString('fr-FR')}</span><span class="cur">FCFA</span></div>
-          <div class="pack-actions">
-            <button class="pk-auto" title="Paiement automatique"><i class="fas fa-bolt"></i> Auto</button>
-            <a class="pk-manual" title="Paiement manuel" target="_blank" rel="noopener" href="${manualWhatsApp(String(p.title || 'Pack'), Number(p.price).toLocaleString('fr-FR'))}"><i class="fab fa-whatsapp"></i> Manuel</a>
-          </div>`;
-        card.querySelector('.pk-auto').addEventListener('click', (e) => buyCreditsPack(p.id, e.currentTarget));
-        grid.appendChild(card);
-      });
-    });
-    try { if (window.ARVSkel) ARVSkel.settled('abonnement-packs'); } catch (e) {}
-  } catch (e) {
-    console.error('Chargement packs requêtes :', e);
-    grid.replaceChildren();
-    const err = document.createElement('div');
-    err.className = 'credits-empty';
-    err.textContent = 'Boutique indisponible — vérifie ta connexion puis rafraîchis.';
-    grid.appendChild(err);
-    try { if (window.ARVSkel) ARVSkel.settled('abonnement-packs'); } catch (e) {}
-  }
-}
-
-async function buyCreditsPack(productId, btn) {
-  if (!currentUser) { redirectToLogin(); return; }
-  const original = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirection…';
-  try {
-    /* ✅ v8.69a — checkout authentifié : le serveur déduit l'uid du TOKEN */
-    const idToken = await currentUser.getIdToken(true);
-    const res = await fetch('/api/creer-checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
-      // 🔒 le montant est relu côté serveur dans Firestore — le client ne
-      // transmet que l'identifiant du pack (kind:'credits').
-      body: JSON.stringify({
-        uid: currentUser.uid,
-        kind: 'credits',
-        productId,
-        customerEmail: currentUser.email || 'eleve@arvexaschool.com',
-        customerName: userData?.fullName || userData?.firstName || 'Élève ARVEXA'
-      })
-    });
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); } catch (e) { throw new Error('Erreur serveur.'); }
-    if (!res.ok || !data.ok || !data.checkoutUrl) {
-      throw new Error(data.error || 'Paiement indisponible.');
-    }
-    window.location.href = data.checkoutUrl;
-  } catch (err) {
-    console.error(err);
-    btn.disabled = false;
-    btn.innerHTML = original;
-    window.arvexaConfirm({
-      title: 'Paiement indisponible',
-      message: 'Impossible de lancer le paiement : <strong>' + String(err.message || 'réessaie dans un instant.').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) + '</strong>',
-      icon: '❌',
-      confirmText: 'OK',
-      showCancel: false,
-      variant: 'danger'
-    });
-  }
-}
-
-loadCreditsPacks();
-
-// ✅ v8.61a — achat MANUEL par WhatsApp (identique à la marketplace) : le
-// numéro est la source unique arvexa-contact.js — jamais codé en dur ici.
-function manualWhatsApp(label, price) {
-  const phone = (window.ARVEXA_CONTACT && window.ARVEXA_CONTACT.phoneRaw) || '22774872082';
-  const user = currentUser;
-  const who = user && user.email ? user.email : '';
-  const txt = `Bonjour ARVEXA ! Je veux acheter : ${label} (${price} FCFA).`
-    + (who ? ` Mon compte : ${who}.` : '')
-    + ' Merci de me donner les instructions de paiement.';
-  return `https://wa.me/${phone}?text=${encodeURIComponent(txt)}`;
-}
 // ================================================================
 // AUTH ROBUSTE — Anti-flash
 // ================================================================

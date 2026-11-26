@@ -83,7 +83,11 @@
     licence1: 'Réussir ta licence',
     licence2: 'Réussir ta licence',
     licence3: 'Réussir ta licence',
-    custom: 'Ton objectif'
+    // ⚡ v8.72a — plus jamais le placeholder « Ton objectif » comme VALEUR
+    // (demande du propriétaire : l'objectif ne doit jamais rester vide ni
+    // générique). Les nouveaux comptes reçoivent users/{uid}.goal choisi
+    // par l'IA à l'inscription ; ici : repli raisonnable pour les anciens.
+    custom: 'Réussir ton année'
   };
 
   // Ordre officiel de la modale d'inscription (v8.34, liste validée).

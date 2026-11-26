@@ -1934,10 +1934,32 @@
       note: 'Deuxième année de licence : on renforce tes acquis et ta méthode de travail.' },
     licence3: { short: 'L3', long: 'Licence 3', exam: '', examLabel: 'Réussir ta licence',
       note: 'Dernière année de licence : objectif réussir et préparer la suite.' },
-    custom: { short: 'Ta classe', long: 'Classe personnalisée', exam: '', examLabel: 'Ton objectif',
+    custom: { short: 'Ta classe', long: 'Classe personnalisée', exam: '', examLabel: 'Réussir ton année',
       note: 'Ta classe à toi : ARVEXA adapte son aide à ce que tu prépares — examen, études ou niveau professionnel.' }
   };
   const SERIES_INFO = { A: 'Lettres', C: 'Sciences maths', D: 'Sciences exp' };
+
+  /* ⚡ v8.72a — OBJECTIF LOCAL INTELLIGENT (jamais vide).
+     Demande du propriétaire : l'objectif doit changer selon le niveau choisi,
+     jamais rester sur un placeholder. Cette fonction donne une valeur
+     instantanée (récap de l'étape 5) et sert de filet de sécurité si l'IA
+     ne répond pas : le champ n'est JAMAIS vide ni « Ton objectif ». */
+  function deriveObjectifLocal(cid, customText) {
+    if (cid === 'custom') {
+      const t = String(customText || '').trim();
+      if (!t) return 'Progresser dans tes études';
+      if (/\bbac( ?\+?[0-9]*)?\b|baccalaur[eé]at/i.test(t)) return 'Décrocher ton BAC';
+      if (/\bbepc\b/i.test(t)) return 'Réussir le BEPC';
+      if (/concours/i.test(t)) return 'Réussir ton concours';
+      if (/master|m1|m2/i.test(t)) return 'Réussir ton master';
+      if (/licence|l1|l2|l3|universit/i.test(t)) return 'Réussir ta licence';
+      if (/\bcap\b|formation|certificat|dipl[oô]me/i.test(t)) return 'Réussir ta formation';
+      if (/professionnel|apprenti|stage/i.test(t)) return 'Monter en compétence';
+      return 'Réussir ton année de ' + t.slice(0, 30);
+    }
+    const info = CLASS_INFO[cid];
+    return info ? info.examLabel : 'Progresser dans tes études';
+  }
 
   // ================================================================
   // INDICATIFS — LES 54 PAYS D'AFRIQUE (liste identique à whatsapp.html)
@@ -2425,9 +2447,10 @@
     $('recapClass').textContent = cid === 'custom'
       ? (state.values.customClass.trim() || 'Ta classe')
       : (info ? `${info.short} (${info.long})` : '—');
-    // ✅ v8.34 — plus de durée : objectif simple selon le domaine
-    // (« BEPC », « BAC », « BAC en vue », « Réussir ta licence »…).
-    $('recapExam').textContent = info ? info.examLabel : '—';
+    // ⚡ v8.72a — objectif adapté au niveau choisi (plus jamais « Ton objectif »
+    // pour une classe libre) : valeur locale instantanée, affinée par l'IA
+    // à la création du compte (profil users/{uid}.goal).
+    $('recapExam').textContent = deriveObjectifLocal(cid, state.values.customClass);
     const serieRow = $('recapSerieRow');
     if (cid === 'terminale' && state.values.series) {
       serieRow.style.display = 'flex';
@@ -2933,6 +2956,35 @@
   const credential = await createUserWithEmailAndPassword(auth, emailValue, passwordValue);
   const user = credential.user;
 
+  /* ⚡ v8.72a — OBJECTIF CHOISI PAR L'IA (demande du propriétaire).
+     Le compte auth existe → jeton disponible : on demande à l'IA un objectif
+     court adapté au niveau saisi (« Terminale D », « CAP couture »…).
+     Filet de sécurité : objectif LOCAL déjà calculé, donc le champ n'est
+     JAMAIS vide, même IA lente/panne (timeout 9 s, aucune blocage). */
+  let objectifValue = deriveObjectifLocal(classIdValue, customClassValue);
+  let objectifSource = 'local';
+  try {
+    const niveauLabel = classIdValue === 'custom'
+      ? (customClassValue || classInfo.long)
+      : (classInfo.long + (classInfo.exam ? ' — examen ' + classInfo.exam.toUpperCase() : ''));
+    const idTokenObj = await user.getIdToken(true);
+    const ctlObj = new AbortController();
+    const timerObj = setTimeout(() => ctlObj.abort(), 9000);
+    const respObj = await fetch('/api/arv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idTokenObj },
+      body: JSON.stringify({ task: 'objectif', niveau: niveauLabel })
+    });
+    clearTimeout(timerObj);
+    if (respObj.ok) {
+      const dObj = await respObj.json();
+      if (dObj && dObj.success && typeof dObj.objectif === 'string' && dObj.objectif.trim()) {
+        objectifValue = dObj.objectif.trim().slice(0, 90);
+        objectifSource = 'ai';
+      }
+    }
+  } catch (objErr) { console.warn('Objectif IA indisponible, objectif local gardé :', objErr.message); }
+
   // 2. Création du profil Firestore (avec retry automatique)
   const profileData = {
     uid: user.uid,
@@ -2946,6 +2998,10 @@
     classId: classIdValue,
     // Examen national associé : bepc (3ᵉ) | bac (terminale) | '' (aucun)
     exam: examValue,
+    // ⚡ v8.72a — objectif choisi par l'IA selon le niveau (filet local si IA
+    // indisponible) : affiché sur l'onboarding, l'accueil et le profil.
+    goal: objectifValue,
+    goalSource: objectifSource,
     // ✅ v8.31 — étape WhatsApp intégrée : numéro E.164 + pays + indicatif
     whatsapp: whatsappValue,
     whatsappCountry: whatsappCountryValue,
