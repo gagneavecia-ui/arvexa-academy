@@ -271,26 +271,49 @@
     </div>
   `;
 
-  // ── Injection (uniquement si la page n'a pas déjà sa propre modale)
-  let overlay = document.getElementById('arvexaConfirmModal');
-  const ownedByPage = !!overlay && typeof window.arvexaConfirm === 'function';
-
-  if (!overlay) {
+  // ── Injection + câblage de la modale.
+  //    ✅ v1.2 SPA — la modale vit dans <body> : à chaque navigation instantanée
+  //    le corps du document est remplacé et l'ancienne modale se retrouve
+  //    détachée. Avant : les références capturées au premier chargement
+  //    pointaient vers un élément fantôme → plus aucun pop-up après la 1ʳᵉ
+  //    navigation. Maintenant : setupOverlay() ré-injecte et re-câble une
+  //    modale FRAÎCHE à chaque fois qu'elle est absente du document courant
+  //    (relance après chaque échange de corps via « arvexa:after-spa-swap »).
+  function injectMarkup() {
     try {
-      const style = document.createElement('style');
-      style.setAttribute('data-arvexa-confirm', '');
-      style.textContent = CSS;
-      document.head.appendChild(style);
+      if (!document.querySelector('style[data-arvexa-confirm]')) {
+        const style = document.createElement('style');
+        style.setAttribute('data-arvexa-confirm', '');
+        style.textContent = CSS;
+        document.head.appendChild(style);
+      }
       document.body.insertAdjacentHTML('beforeend', MARKUP);
-      overlay = document.getElementById('arvexaConfirmModal');
+      return document.getElementById('arvexaConfirmModal');
     } catch (e) {
       console.error('[ArvexaConfirm] injection impossible:', e);
-      return;
+      return null;
     }
   }
 
-  // ── API uniforme (ne remplace jamais celle d'une page qui l'a déjà)
-  if (!ownedByPage) {
+  // ── Échap global : enregistré UNE seule fois, il retrouve la modale
+  //    active dans le document COURANT (jamais de doublon, jamais de
+  //    référence fantôme).
+  if (!window.__arvexaConfirmEscWired) {
+    window.__arvexaConfirmEscWired = true;
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const ov = document.getElementById('arvexaConfirmModal');
+      if (ov && ov.classList.contains('show') && typeof window.__arvexaConfirmClose === 'function') {
+        window.__arvexaConfirmClose();
+      }
+    });
+  }
+
+  function setupOverlay() {
+    let overlay = document.getElementById('arvexaConfirmModal');
+    if (!overlay || !overlay.isConnected) overlay = injectMarkup();
+    if (!overlay) return;
+
     const titleEl = overlay.querySelector('#arvexaConfirmTitle');
     const msgEl = overlay.querySelector('#arvexaConfirmMessage');
     const iconEl = overlay.querySelector('#arvexaConfirmIcon');
@@ -304,23 +327,11 @@
     let cancelCallback = null;
     let confirmed = false;
 
-    window.arvexaConfirm = function (options) {
-      options = options || {};
-      titleEl.textContent = options.title || 'Confirmation';
-      msgEl.innerHTML = options.message || 'Es-tu sûr de vouloir continuer ?';
-      iconEl.textContent = options.icon || '⚠️';
-      okText.textContent = options.confirmText || 'Confirmer';
-      cancelBtn.textContent = options.cancelText || 'Annuler';
-      cancelBtn.style.display = options.showCancel === false ? 'none' : '';
-      const variant = options.variant === 'primary' ? 'primary' : 'danger';
-      iconBox.className = 'arvexa-confirm-icon-box ' + (variant === 'primary' ? '' : 'danger');
-      okBtn.className = 'arvexa-confirm-btn ' + variant;
-      confirmCallback = options.onConfirm || null;
-      cancelCallback = options.onCancel || null;  // ✅ v8.5 — Annuler/Échap/extérieur
+    function openArvexaConfirm() {
       confirmed = false;
       overlay.classList.add('show');
       document.body.style.overflow = 'hidden';
-    };
+    }
 
     function closeArvexaConfirm() {
       overlay.classList.remove('show');
@@ -342,10 +353,54 @@
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeArvexaConfirm();
     });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && overlay.classList.contains('show')) closeArvexaConfirm();
-    });
+
+    // Repère anti-double-câblage : ce nœud exact est câblé
+    overlay.__arvexaConfirmWired = true;
+
+    // API uniforme — toujours la version fraîche (auto-réparée)
+    window.__arvexaConfirmClose = closeArvexaConfirm;
+    window.arvexaConfirm = function (options) {
+      // Auto-réparation à l'appel : si la modale a été détachée entre-temps
+      // (navigation SPA), on re-câble une modale neuve AVANT de l'afficher.
+      if (!overlay.isConnected) { setupOverlay(); return window.arvexaConfirm(options); }
+      options = options || {};
+      titleEl.textContent = options.title || 'Confirmation';
+      msgEl.innerHTML = options.message || 'Es-tu sûr de vouloir continuer ?';
+      iconEl.textContent = options.icon || '⚠️';
+      okText.textContent = options.confirmText || 'Confirmer';
+      cancelBtn.textContent = options.cancelText || 'Annuler';
+      cancelBtn.style.display = options.showCancel === false ? 'none' : '';
+      const variant = options.variant === 'primary' ? 'primary' : 'danger';
+      iconBox.className = 'arvexa-confirm-icon-box ' + (variant === 'primary' ? '' : 'danger');
+      okBtn.className = 'arvexa-confirm-btn ' + variant;
+      confirmCallback = options.onConfirm || null;
+      cancelCallback = options.onCancel || null;  // ✅ v8.5 — Annuler/Échap/extérieur
+      openArvexaConfirm();
+    };
   }
+
+  function ensureOverlay() {
+    const ov = document.getElementById('arvexaConfirmModal');
+    if (ov && ov.isConnected && ov.__arvexaConfirmWired) return;
+    setupOverlay();
+  }
+
+  // Modale présente au chargement ? on câble tout de suite (premier écran,
+  // repli MPA — une navigation classique recharge tout le document).
+  if (document.getElementById('arvexaConfirmModal')) {
+    const ov0 = document.getElementById('arvexaConfirmModal');
+    if (!ov0.__arvexaConfirmWired && typeof window.arvexaConfirm !== 'function') setupOverlay();
+  } else {
+    setupOverlay();
+  }
+
+  // ✅ v1.2 SPA — après CHAQUE échange de corps : si la modale n'existe plus
+  // dans le nouveau document (ou n'est pas câblée), on la reconstruit.
+  // Les pages qui posent leur propre version de window.arvexaConfirm la
+  // réinstallent elles-mêmes (leur module se ré-exécute) et passent avant.
+  document.addEventListener('arvexa:after-spa-swap', () => {
+    setTimeout(ensureOverlay, 50);
+  });
 
   // ── Déconnexion standard : session nettoyée + redirection auth-choice.html
   const SESSION_KEYS_LOCAL = ['arvexa_session', 'arvexa_user_data', 'arvexa_last_uid'];

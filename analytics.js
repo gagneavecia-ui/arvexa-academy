@@ -280,16 +280,7 @@
           sons: 'sons',
           diagnostic: 'diagnostic',
           onboarding: 'onboarding',
-          'auth-choice': 'auth_choice',
-          // ✅ v8.61a — pages manquantes de la carte complète (toutes les
-          // activités doivent être journalisées, sans exception)
-          marketplace: 'marketplace',
-          ambassadeur: 'ambassadeur',
-          localisation: 'localisation',
-          parcours: 'parcours',
-          'forgot-password': 'forgot_password',
-          register: 'register',
-          login: 'login'
+          'auth-choice': 'auth_choice'
         };
 
         const feature = featureMap[page];
@@ -672,7 +663,9 @@ async function startTracking(uid) {
         const getApp = appMod.getApp;
         const getAuth = authMod.getAuth;
         const onAuthStateChanged = authMod.onAuthStateChanged;
-        // ✅ v8.61a — cache MÉMOIRE uniquement (100 % en ligne, zéro IndexedDB)
+        const initializeFirestore = fsMod.initializeFirestore;
+        const persistentLocalCache = fsMod.persistentLocalCache;
+        const persistentSingleTabManager = fsMod.persistentSingleTabManager;
         const getFirestore = fsMod.getFirestore;
 
         // Réutiliser l'app existante si possible, sinon créer
@@ -683,11 +676,16 @@ async function startTracking(uid) {
         auth = getAuth(app);
 
         try {
-          db = getFirestore(app);
+          db = initializeFirestore(app, {
+            localCache: persistentLocalCache({
+              tabManager: persistentSingleTabManager()
+            })
+          });
         } catch (e) {
           // Si déjà initialisé → récupérer l'instance
           db = getFirestore(app);
         }
+
         // Écouter l'utilisateur Firebase
         onAuthStateChanged(auth, (user) => {
           try {
@@ -710,6 +708,11 @@ async function startTracking(uid) {
     // LANCEMENT DIFFÉRÉ (pour ne pas ralentir la page)
     // ─────────────────────────────────────────────────────────────
     function boot() {
+      // ✅ v1.2 SPA — le DOMContentLoaded synthétique du moteur relance ce
+      // boot à chaque navigation : sans garde, les écouteurs de cycle de
+      // vie (visibilitychange / pagehide…) s'empileraient à chaque page.
+      if (window.__ARVX_ANALYTICS_BOOTED__) return;
+      window.__ARVX_ANALYTICS_BOOTED__ = true;
       // Attendre 3 secondes avant de démarrer
       setTimeout(() => {
         initFirebase();
