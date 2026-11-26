@@ -2,17 +2,11 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-    <title>ARVEXA School — Accueil</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
-    <link rel="preconnect" href="https://firebaseinstallations.googleapis.com" crossorigin>
-    <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
-    <link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
+    <title>ARVEXA Academy</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0A0A">
 <script>(function(){try{if(localStorage.getItem('arvexa-theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})();</script>
-<script src="theme.js"></script><script src="arvexa-loading-cap.js" defer></script><script>/* ✅ v8.67a — retours de session : l'écran de chargement de l'accueil ne se montre JAMAIS (premier chargement uniquement, demande du propriétaire). Marque posée AVANT la 1ʳᵉ peinture. */try{if(sessionStorage.getItem('arvexa_splash_seen')==='1')document.documentElement.classList.add('arv-return')}catch(e){}</script><script src="arvexa-soon.js" defer></script><script src="arvexa-i18n.js" defer></script><script src="arvexa-menu.js" defer></script><!-- ⚡ v8.60a — menu instantané, n'attend jamais Firebase -->
+<script src="theme.js"></script><script src="arvexa-i18n.js" defer></script>
 <script src="arvexa-sync.js" defer></script><!-- ✅ v8.0 sync Firebase des progressions (par compte) -->
   <meta name="description" content="ARVEXA School - Tableau de bord">
   <link rel="manifest" href="manifest.json">
@@ -24,10 +18,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <script src="analytics.js"></script>
   <script src="register-sw.js" defer></script>
+  <script src="offline.js" defer></script>
 
   <script src="register-fcm-sw.js" defer></script>
   <script src="bac-date.js"></script>
-  <script src="arvexa-classes.js"></script><!-- ✅ v8.35 — registre des classes pour le héros (BEPC / BAC / objectif) -->
+  <script src="programmes.js"></script>
 
   <link rel="stylesheet" href="arvexa-ui.css">
   <style>
@@ -327,29 +322,6 @@
       box-shadow: 0 8px 28px rgba(184, 134, 11, 0.4);
     }
     .avis-btn-inline:active { transform: translateY(0) scale(0.98); }
-
-    /* ✅ v8.55a — AMBASSADEUR ARVEXA : carte d'accueil luxueuse (bouton seul,
-       la page du programme sera conçue plus tard). Même langage visuel que
-       la carte avis : liseré doré, halo radial, bouton pilule doré. */
-    .amb-card { position: relative; overflow: hidden; }
-    .amb-card::before {
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 50% at 85% 0%, rgba(224, 184, 74, 0.16), transparent 65%);
-      pointer-events: none;
-    }
-    .amb-head { display: flex; align-items: center; gap: 14px; }
-    .amb-ico {
-      width: 46px; height: 46px; flex: 0 0 46px; border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, var(--accent-bright), var(--accent));
-      color: var(--on-gold); font-size: 19px;
-      box-shadow: 0 6px 20px rgba(184, 134, 11, 0.35);
-    }
-    .amb-title { font-family: var(--font-serif); font-size: 1.12rem; font-weight: 700; color: var(--text-light); }
-    .amb-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
-    .amb-text { margin-top: 12px; font-size: 13.5px; line-height: 1.65; color: var(--text-dim); }
-    .amb-text strong { color: var(--accent-bright); font-weight: 600; }
-    /* ✅ v8.58a — .amb-badge (badge « Nouveau ») retiré avec son élément HTML */
 
     .subscription-reminder { margin-top: 14px; }
     .sub-card {
@@ -971,22 +943,6 @@
     }
     .cd-hero-greeting .shimmer { color: var(--accent-bright); font-style: italic; }
     .cd-hero-note { color: var(--text-muted); font-weight: 400; }
-    /* ✅ v8.50b — trois points de chargement du héros : visibles uniquement
-       le temps que le VRAI niveau choisi soit résolu depuis la copie locale
-       (arvexa_session, zéro réseau), puis remplacés par la peinture
-       immédiate du seed / majHeroClasse(). Plus jamais de « BAC 2027 »
-       affiché en dur avant le vrai niveau. */
-    .hero-dots { display: inline-flex; align-items: center; gap: .22em; vertical-align: middle; }
-    .hero-dots i {
-      width: .34em; height: .34em; border-radius: 50%;
-      background: currentColor; display: inline-block;
-      animation: heroDotPulse 1.1s ease-in-out infinite;
-    }
-    .hero-dots i:nth-child(2) { animation-delay: .18s; }
-    .hero-dots i:nth-child(3) { animation-delay: .36s; }
-    .cd-hero-title .hero-dots i { background: var(--accent-bright); width: .3em; height: .3em; }
-    @keyframes heroDotPulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { .hero-dots i { animation: none; opacity: .55; } }
     .countdown-status {
       font-size: 11px; font-weight: 600;
       padding: 4px 12px; border-radius: 999px;
@@ -1039,7 +995,6 @@
       font-size: 22px; font-weight: 700;
       color: var(--text-muted); padding-bottom: 10px;
     }
-
     .hero-quote {
       position: relative; margin-top: 16px; padding: 2px 0 0 16px;
       border-left: 2px solid rgba(224,184,74,0.35);
@@ -1102,45 +1057,6 @@
       font-size: 10px; font-weight: 600; color: var(--text-muted); line-height: 1.3;
     }
     .badge-item.unlocked .badge-name { color: var(--text-light); }
-
-    /* ============================================================
-       ✅ v8.51a — CARTE « TON PARCOURS » EN DUR : les styles ps-* sont
-       maintenant écrits STATIQUEMENT dans la feuille de l'index (le
-       squelette HTML l'est aussi) — la carte est complète et stylée dès
-       la première image, sans attendre parcours.js (qui garde sa propre
-       injection pour la page plan, sans conflit : mêmes règles).
-       ============================================================ */
-    .parcours-card { --pc-b: var(--accent-bright, #E0B84A); position: relative; overflow: hidden; }
-    .ps-wrap { display: flex; flex-direction: column; gap: 9px; cursor: pointer; font-family: Inter, sans-serif; }
-    .ps-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .ps-title { display: inline-flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; color: var(--text-dim, #8A8A7A); }
-    .ps-title i { color: var(--accent-bright, #E0B84A); font-size: 11px; }
-    .ps-bac { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: .5px; color: var(--accent-bright, #E0B84A); background: rgba(var(--rgb-soft, 224, 184, 74), .10); border: 1px solid rgba(var(--rgb-soft, 224, 184, 74), .22); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
-    .ps-phrase { font-size: 13.5px; font-weight: 600; line-height: 1.5; color: var(--text-light, #F5F0E8); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    .ps-phrase em { font-style: normal; color: var(--accent-bright, #E0B84A); font-weight: 700; }
-    .ps-meta { display: flex; align-items: center; gap: 9px; }
-    .ps-time { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: var(--text-dim, #8A8A7A); white-space: nowrap; }
-    .ps-time i { color: var(--accent-bright, #E0B84A); font-size: 10.5px; }
-    .ps-bar { flex: 1; height: 4px; border-radius: 999px; background: var(--bg-surface, #141414); overflow: hidden; }
-    .ps-bar-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent, #B8860B), var(--accent-bright, #E0B84A)); transition: width .5s ease; box-shadow: 0 0 8px rgba(224, 184, 74, .35); }
-    .ps-pct { font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent-bright, #E0B84A); min-width: 30px; text-align: right; }
-    .ps-cta { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 700; color: var(--text-light, #F5F0E8); background: linear-gradient(135deg, rgba(var(--rgb-soft, 224, 184, 74), .14), rgba(var(--rgb-soft, 224, 184, 74), .07)); border: 1px solid rgba(var(--rgb-soft, 224, 184, 74), .28); border-radius: 999px; padding: 9px 14px; transition: transform .2s ease, background .2s ease; overflow: hidden; white-space: nowrap; }
-    .ps-cta > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ps-cta i { margin-left: auto; color: var(--accent-bright, #E0B84A); flex-shrink: 0; }
-    .ps-wrap:active .ps-cta { transform: scale(.985); background: rgba(var(--rgb-soft, 224, 184, 74), .18); }
-    /* ✅ v8.53a — carte « Ton parcours » améliorée (demande du propriétaire :
-       « améliore la carte ton parcours vers le bac ») : rangée de stats EN
-       DUR (temps total · série · sections), chip lacune, traitement premium
-       (liseré doré dégradé + halo doux). Le squelette reste fixé à la
-       page — parcours.js ne met que les valeurs à jour. */
-    .parcours-card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(135deg, rgba(var(--rgb-soft, 224, 184, 74), .50), rgba(var(--rgb-soft, 224, 184, 74), .10) 42%, rgba(var(--rgb-soft, 224, 184, 74), .30)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
-    .parcours-card::after { content: ''; position: absolute; width: 170px; height: 170px; right: -55px; top: -65px; background: radial-gradient(circle, rgba(var(--rgb-soft, 224, 184, 74), .15), transparent 65%); pointer-events: none; }
-    .ps-stats { display: flex; gap: 8px; }
-    .ps-stat { flex: 1; min-width: 0; background: rgba(255, 255, 255, .035); border: 1px solid rgba(255, 255, 255, .07); border-radius: 12px; padding: 8px 6px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
-    .ps-stat strong { font-size: 13.5px; font-weight: 800; color: var(--text-light, #F5F0E8); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ps-stat span { font-size: 9.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-dim, #8A8A7A); }
-    .ps-lacune { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 600; color: var(--accent-bright, #E0B84A); background: rgba(var(--rgb-soft, 224, 184, 74), .08); border: 1px dashed rgba(var(--rgb-soft, 224, 184, 74), .30); border-radius: 11px; padding: 7px 10px; overflow-wrap: anywhere; }
-    .ps-lacune i { flex-shrink: 0; }
 
     /* ============================================================
        INSTALLATION PWA
@@ -1329,16 +1245,8 @@
       position: fixed; inset: 0; z-index: 20000;
       display: flex; align-items: center; justify-content: center;
       background: radial-gradient(120% 120% at 50% 0%, #16130A 0%, #0A0A0A 55%, #050505 100%);
-      opacity: 1; transition: opacity .45s ease;
-      /* ✅ v8.66a — STABILITÉ (demande du propriétaire) : le splash est opaque
-         DÈS LA PREMIÈRE PEINTURE — fini la séquence « page → chargement → page »
-         (avant : opacity 0 posé en HTML, .on ajouté 2 frames plus tard → le
-         squelette du contenu apparaissait d'abord, puis le splash fondait
-         par-dessus). Filet CSS pur à 8 s : même un JS mort ne peut pas
-         enfermer l'élève derrière l'écran. La sortie reste le .45s de .hide. */
-      animation: arvSplashNet .5s ease 8s forwards;
+      opacity: 0; transition: opacity .45s ease;
     }
-    @keyframes arvSplashNet { to { opacity: 0; visibility: hidden; pointer-events: none; } }
     html[data-theme="light"] #appSplash {
       background: radial-gradient(120% 120% at 50% 0%, #FFFFFF 0%, #F5F1E6 60%, #EFE9D9 100%);
     }
@@ -1352,36 +1260,10 @@
       animation: splashSpin 1s linear infinite;
     }
     .splash-word {
-      font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700;
-      color: #F5EFE0; letter-spacing: 2px;
+      font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700;
+      color: var(--text-light); letter-spacing: 2px;
     }
     .splash-word em { color: var(--accent-bright); font-style: italic; }
-    /* ✅ v8.67a — modèle UNIFORME avec les 19 pages (cache arv-boot v8.66a) :
-       contre-anneau doré + barre shimmer + libellé, mêmes valeurs. */
-    .splash-ring::after {
-      content: ''; position: absolute; inset: 9px; border-radius: 50%;
-      border: 2px solid rgba(212, 175, 55, 0.08);
-      border-bottom-color: rgba(212, 175, 55, 0.45);
-      animation: splashSpinRev 1.4s linear infinite;
-    }
-    @keyframes splashSpinRev { to { transform: rotate(-360deg); } }
-    .splash-bar {
-      width: 130px; height: 2px; border-radius: 2px;
-      background: rgba(212, 175, 55, 0.14); overflow: hidden; position: relative;
-    }
-    .splash-bar::after {
-      content: ''; position: absolute; top: 0; left: -40%; width: 40%; height: 100%;
-      background: linear-gradient(90deg, transparent, #D4AF37, transparent);
-      animation: splashShimmer 1.3s ease-in-out infinite;
-    }
-    @keyframes splashShimmer { to { left: 100%; } }
-    .splash-label { font-size: 12.5px; font-weight: 600; letter-spacing: .02em; color: rgba(236, 231, 220, 0.85); }
-    html[data-theme="light"] .splash-word { color: #3A3428; }
-    html[data-theme="light"] .splash-label { color: rgba(80, 72, 52, 0.8); }
-    /* ✅ v8.67a — retours dans la session : JAMAIS d'écran de chargement
-       (la marque .arv-return est posée avant la 1ʳᵉ peinture par le <head>). */
-    html.arv-return #appSplash { opacity: 0; visibility: hidden; pointer-events: none; animation: none; }
-    @media (prefers-reduced-motion: reduce) { .splash-ring, .splash-ring::after { animation-duration: 1.8s; } .splash-bar::after { animation: none; } }
     @keyframes splashSpin { to { transform: rotate(360deg); } }
 
     /* Contenu « en dur » : caché jusqu'à la restauration instantanée
@@ -1404,41 +1286,21 @@
     html[data-theme="light"] #bgSyncPill { background: rgba(255, 253, 247, 0.95); color: #3A3428; }
     #bgSyncPill.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #bgSyncPill i { color: var(--accent-bright); animation: splashSpin 1.6s linear infinite; }
-  
-    /* ✅ v8.69a — mode clair : mini-cartes « temps total · série · sections » */
-    html[data-theme="light"] .ps-stat { background: rgba(122,90,8,.05); border-color: rgba(184,134,11,.16); }
-</style>
-<script src="arvexa-applock.js" defer></script>
+  </style>
+<script src="./arvexa-spa.js" defer></script><!-- ARVEXA SPA : navigation instantanée -->
 </head>
 <body>
-
-<!-- ✅ v8.67a — DEMANDES DU PROPRIÉTAIRE : « le modèle de chargement me plaît,
-     rends-le uniforme aussi avec l'accueil » + « uniquement au premier
-     chargement de l'index, jamais à un retour ». Le splash garde sa mécanique
-     v8.3/v8.51a (1ʳᵉ ouverture de la session, trois portes, filet 6 s) avec le
-     modèle VISUEL uniforme v8.66a (anneau double + shimmer) ; les retours dans
-     la session ne montrent plus AUCUN écran (marque .arv-return posée avant
-     la 1ʳᵉ peinture, contenu restauré instantanément). -->
 
   <!-- ============================================================
        SPLASH — écran de chargement lié à l'index uniquement.
        ✅ v8.3 — 1er chargement de la session uniquement (marqueur
        sessionStorage « arvexa_splash_seen ») ; retours ensuite :
        supprimé avant la première peinture (zéro flash).
-       ✅ v8.51a — « NE PAS DISPARAÎTRE AVANT QUE TOUT SOIT EN PLACE »
-       (demande du propriétaire : l'écran de chargement « ne doit pas
-       disparaître si toutes les données n'ont pas été mises en place ») :
-       trois PORTES — profil (accueil peint), badges (réalisations
-       peintes), parcours (carte peinte). Le splash ne se dissipe QUAND
-       toutes les portes sont passées ; filet à 6 s pour ne jamais
-       enfermer l'élève derrière un écran d'attente.
        ============================================================ -->
   <div id="appSplash" aria-hidden="true">
     <div class="splash-inner">
       <span class="splash-ring"></span>
       <div class="splash-word">ARVEXA <em>School</em></div>
-      <span class="splash-bar" aria-hidden="true"></span>
-      <div class="splash-label">Chargement...</div>
     </div>
   </div>
   <script>
@@ -1449,15 +1311,12 @@
      ✅ v5.6 — ÉCRAN DE CHARGEMENT RÉTABLI : il s'affiche à CHAQUE
      ouverture (y compris HORS LIGNE) mais ne bloque JAMAIS l'entrée :
      il se dissipe dès que sa durée minimale est jouée (contenu déjà
-     peint derrière) — plus jamais de suppression avant peinture.
-     ✅ v8.51a — la dissipation attend les TROIS PORTES (profil, badges,
-     parcours) : contenu partiel impossible. */
+     peint derrière) — plus jamais de suppression avant peinture. */
   (function () {
     var MIN_SPLASH_MS = 1200; // durée de branding — 1er chargement uniquement
-    var GATES_FORCE_MS = 6000; // ✅ v8.51a — filet : jamais enfermé plus de 6 s
     /* ✅ v8.3 — « écran de chargement uniquement au PREMIER chargement ».
        Un marqueur de SESSION décide : présent → retour dans la session,
-       le splash n'est retiré qu'une fois les données peintes (v8.51a). */
+       le splash est retiré AVANT la première peinture (zéro flash). */
     var firstLoad = true;
     try {
       firstLoad = sessionStorage.getItem('arvexa_splash_seen') !== '1';
@@ -1469,41 +1328,18 @@
       sp.classList.add('hide');
       setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 600);
     }
-    /* ✅ v8.51a — PORTES « DONNÉES COMPLÈTES ». __arvexaReady('profile' |
-       'badges' | 'parcours') est appelé par chaque sous-système QUAND sa
-       peinture est terminée ; le splash ne sort que les trois fermées. */
-    var G = window.__ARVEXA_GATES__ = { profile: false, badges: false, parcours: false, __out: false };
-    function gatesDone() { return G.profile && G.badges && G.parcours; }
-    function tryDismiss() {
-      var sp = document.getElementById('appSplash');
-      if (!sp || !gatesDone()) return;
-      var elapsed = Date.now() - (window.__ARVEXA_SPLASH_TS__ || Date.now());
-      var wait = firstLoad ? Math.max(0, MIN_SPLASH_MS - elapsed) : 0;
-      setTimeout(function () { removeSplash(document.getElementById('appSplash')); }, wait);
-    }
-    window.__arvexaReady = function (name) {
-      if (!G || !(name in G) || G[name]) return;
-      G[name] = true;
-      if (G.__out) tryDismiss();
-    };
-    /* Helper GLOBAL : demande la dissipation du splash — qui n'aura lieu
-       QUE quand toutes les portes sont passées (v8.51a). Idempotent —
+    /* Helper GLOBAL : dissipe le splash en respectant la durée minimale
+       (1er chargement) ou immédiatement (retours, v8.3). Idempotent —
        appelé par la restauration instantanée, par le module (hideSplash)
        et par le filet anti-blocage. */
     window.__arvexaSplashOut = function () {
       var sp = document.getElementById('appSplash');
-      if (!sp || G.__out) return;
-      G.__out = true;
-      if (!gatesDone()) {
-        /* ✅ v8.51a — filet : au bout de 6 s on laisse entrer quoi qu'il
-           arrive (données partielles acceptées plutôt qu'écran bloqué). */
-        setTimeout(function () {
-          if (!gatesDone()) { G.profile = G.badges = G.parcours = true; }
-          try { document.documentElement.classList.add('ready'); } catch (e) {}
-          removeSplash(document.getElementById('appSplash'));
-        }, GATES_FORCE_MS);
-      }
-      tryDismiss();
+      if (!sp || sp.__arvexaOut) return;
+      sp.__arvexaOut = true;
+      if (!firstLoad) { removeSplash(sp); return; }
+      var elapsed = Date.now() - (window.__ARVEXA_SPLASH_TS__ || Date.now());
+      var wait = Math.max(0, MIN_SPLASH_MS - elapsed);
+      setTimeout(function () { removeSplash(document.getElementById('appSplash')); }, wait);
     };
     var snap = null;
     try {
@@ -1544,16 +1380,13 @@
     }
     window.__ARVEXA_SPLASH_TS__ = Date.now();
     if (!firstLoad) {
-      /* ✅ v8.51a — RETOUR dans la session : le splash N'EST PLUS supprimé
-         avant la 1ʳᵉ peinture (demande du propriétaire : « elle ne doit pas
-         disparaître si toutes les données n'ont pas été mises en place »).
-         Il reste en place (invisible tant que .on n'est pas posé) jusqu'à
-         ce que les TROIS portes soient passées — profil + badges peints
-         par la restauration instantanée, carte parcours par parcours.js ;
-         filet 6 s dans __arvexaSplashOut. Si une snapshot est dispo, le
-         contenu complet est restauré DERRIÈRE lui. */
+      /* ✅ v8.3 — RETOUR dans la session : splash supprimé avant la
+         1ʳᵉ peinture ; si une snapshot est dispo, accueil instantané. */
+      var sp0 = document.getElementById('appSplash');
+      if (sp0 && sp0.parentNode) sp0.parentNode.removeChild(sp0);
       if (snap) {
         document.documentElement.classList.add('instant');
+        document.documentElement.classList.add('ready');
         window.__ARVEXA_INSTANT__ = snap;
       }
       return;
@@ -1567,9 +1400,7 @@
           if (sp) sp.classList.add('on');
         });
       });
-      /* ✅ v8.51a — filet CONTENU (distinct du splash) : le contenu placé
-         derrière le splash n'est jamais masqué plus de 600 ms. La sortie du
-         splash elle-même attend les trois portes (profil/badges/parcours). */
+      /* Filet de sécurité : jamais de contenu masqué plus de 600 ms */
       setTimeout(function () {
         document.documentElement.classList.add('ready');
         window.__arvexaSplashOut();
@@ -1585,89 +1416,6 @@
   })();
   </script>
 
-  <script>
-  /* ================================================================
-     ✅ v8.51a — RÉALISATIONS « EN DUR » (demande du propriétaire : « on va
-     les mettre en dur et fixer à la page… les cartes et symboles seront en
-     dur mais toujours connectées pour voir tes réalisations »). Les 9
-     badges sont ÉCRITS STATIQUEMENT dans le HTML (#badgesScroll) — plus
-     aucune reconstruction du DOM : la peinture se limite à basculer la
-     classe « unlocked » selon les données réelles (cache de la page
-     Résumé arvexa_dash_cache_v1 + activité quotidienne de l'appareil).
-     Source UNIQUE partagée par la restauration instantanée ET le module
-     Firebase — plus jamais deux listes de badges divergentes.
-     ================================================================ */
-  window.ARVEXA_BADGE_CHECKS = {
-    first:     { check: function (st) { return st.sections >= 1; } },
-    five:      { check: function (st) { return st.sections >= 5; } },
-    fifteen:   { check: function (st) { return st.sections >= 15; } },
-    thirty:    { check: function (st) { return st.sections >= 30; } },
-    subjects3: { check: function (st) { return st.subjects >= 3; } },
-    hour1:     { check: function (st) { return st.minutes >= 60; } },
-    hours5:    { check: function (st) { return st.minutes >= 300; } },
-    streak3:   { check: function (st) { return st.streak >= 3; } },
-    streak7:   { check: function (st) { return st.streak >= 7; } }
-  };
-  window.__arvexaBadgeStats = function () {
-    /* ✅ v8.63a — RÉALISATIONS 100 % FIREBASE (demande propriétaire : « les
-       réalisations doivent être stockées sur Firebase comme ça même si tu
-       changes de compte les vrais réalisations sont mis à jour directement
-       sans faire appel au cache ») : les stats viennent d'abord du dashboard
-       FRAIS récupéré depuis Firestore pour le compte CONNECTÉ
-       (__arvexaFbDash, estampillé uid par fetchBadgeDashboard). Le cache
-       local ne sert qu'au tout premier rendu (avant la réponse Firebase) et
-       SEULEMENT s'il appartient au même compte — jamais de mélange. */
-    var dash = null;
-    var curUid = '';
-    try { curUid = window.__ARVEXA_CURRENT_UID || ''; } catch (e) { curUid = ''; }
-    var fb = window.__arvexaFbDash || null;
-    if (fb && fb.summary && (!fb._uid || (curUid && fb._uid === curUid))) {
-      dash = fb;
-    }
-    if (!dash) {
-      try { dash = JSON.parse(localStorage.getItem('arvexa_dash_cache_v1') || 'null'); } catch (e) { dash = null; }
-      if (dash && dash._uid && curUid && dash._uid !== curUid) dash = null;
-    }
-    var fromFb = !!(dash && dash === fb);
-    var summary = (dash && dash.summary) || {};
-    var studyTime = (dash && dash.studyTime) || {};
-    var dashStreak = (dash && dash.streak && Number(dash.streak.current || 0)) || 0;
-    /* Série de l'appareil (arvexa_daily_activity) — même logique que le
-       module (computeStreak) : jours consécutifs actifs, aujourd'hui toléré. */
-    var activity = {};
-    try { activity = JSON.parse(localStorage.getItem('arvexa_daily_activity') || '{}') || {}; } catch (e) { activity = {}; }
-    var dayStr = function (dt) {
-      return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
-    };
-    var streak = 0;
-    var cursor = new Date();
-    var isActive = function (dt) { return (Number(activity[dayStr(dt)]) || 0) > 0; };
-    if (!isActive(cursor)) cursor.setDate(cursor.getDate() - 1);
-    while (isActive(cursor) && streak < 365) { streak++; cursor.setDate(cursor.getDate() - 1); }
-    return {
-      sections: Number(summary.totalSections || 0) || 0,
-      subjects: Number(summary.subjectsCount || 0) || 0,
-      minutes: Number(studyTime.totalMinutes || 0) || 0,
-      streak: fromFb ? dashStreak : Math.max(dashStreak, streak)
-    };
-  };
-  window.__arvexaPaintBadges = function () {
-    var bsc = document.getElementById('badgesScroll');
-    if (!bsc) return;
-    var st = window.__arvexaBadgeStats();
-    var items = bsc.querySelectorAll('.badge-item');
-    for (var i = 0; i < items.length; i++) {
-      var key = items[i].getAttribute('data-badge');
-      var c = key && window.ARVEXA_BADGE_CHECKS[key];
-      if (c) {
-        try { items[i].classList.toggle('unlocked', !!c.check(st)); } catch (e) {}
-      }
-    }
-    /* ✅ v8.51a — PORTE BADGES : les réalisations sont peintes → la porte
-       du splash « badges » peut se fermer. Idempotent. */
-    try { if (window.__arvexaReady) window.__arvexaReady('badges'); } catch (e) {}
-  };
-  </script>
 
   <!-- ===== BACKGROUND ===== -->
   <div class="gradient-bg"></div>
@@ -1683,13 +1431,15 @@
     <a href="index.html" class="logo">ARVEX<span>A School</span></a>
     <nav class="nav">
       <a href="index.html" class="active"><i class="fas fa-home"></i> Accueil</a>
-      <a href="progression.html"><i class="fas fa-chart-line"></i> Progression</a>
+      <a href="ma-journee.html"><i class="fas fa-calendar-day"></i> Ma journée</a>
+      <a href="parcours.html"><i class="fas fa-route"></i> Mon parcours</a>
       <a href="profil.html"><i class="fas fa-user"></i> Mon profil</a>
       <a href="abonnement.html"><i class="fas fa-crown"></i> Mon abonnement</a>
       <a href="notifications.html"><i class="fas fa-bell"></i> Notifications</a>
       <a href="arv-progress.html"><i class="fas fa-graduation-cap"></i> Résumé</a>
       <a href="outils.html"><i class="fas fa-toolbox"></i> Outils</a>
-      <a href="marketplace.html"><i class="fas fa-store"></i> Marketplace</a>
+      <a href="classement.html"><i class="fas fa-trophy"></i> Classement</a>
+      <a href="localisation.html"><i class="fas fa-location-dot"></i> À proximité</a>
       <div class="nav-divider"></div>
       <a href="#" class="avis-link" id="avisLinkSidebar">
         <i class="fas fa-star"></i> Donner mon avis
@@ -1741,52 +1491,128 @@
         <section class="countdown-card" aria-labelledby="countdownTitle">
           <div class="hero-date"><i class="fas fa-calendar-day"></i><span id="heroDateText">—</span></div>
           <div class="cd-hero-head">
-            <h1 class="cd-hero-title" id="countdownTitle" aria-label="Chargement de ton niveau"><span class="hero-dots" role="status"><i></i><i></i><i></i></span></h1>
+            <h1 class="cd-hero-title" id="countdownTitle">BAC 2027</h1>
             <span class="countdown-status early" id="countdownStatus">🌱 Tu as le temps</span>
           </div>
           <div class="countdown-date" id="countdownDate">Date indicative</div>
           <p class="cd-hero-greeting">
-            <span id="heroGreeting">Bonsoir</span>, <span class="shimmer" id="heroName">Élève</span><span class="cd-hero-note" id="heroNote"><span class="hero-dots" role="status" aria-label="Chargement"><i></i><i></i><i></i></span></span>
+            <span id="heroGreeting">Bonsoir</span>, <span class="shimmer" id="heroName">Élève</span><span class="cd-hero-note"> — chaque jour compte vers ton BAC.</span>
           </p>
           <div class="progress-track">
             <div class="progress-fill early" id="progressFill" style="width: 0%"></div>
           </div>
+          <div class="countdown-display">
+            <div class="cd-block primary">
+              <span class="cd-number" id="cdDays">--</span>
+              <span class="cd-label">Jours</span>
+            </div>
+            <span class="cd-separator">:</span>
+            <div class="cd-block">
+              <span class="cd-number" id="cdHours">--</span>
+              <span class="cd-label">Heures</span>
+            </div>
+            <span class="cd-separator">:</span>
+            <div class="cd-block">
+              <span class="cd-number" id="cdMinutes">--</span>
+              <span class="cd-label">Minutes</span>
+            </div>
+            <span class="cd-separator">:</span>
+            <div class="cd-block">
+              <span class="cd-number" id="cdSeconds">--</span>
+              <span class="cd-label">Secondes</span>
+            </div>
+          </div>
           <div class="hero-quote">
-            <span id="heroQuoteText"><span class="hero-dots" role="status" aria-label="Chargement"><i></i><i></i><i></i></span></span>
+            <span id="heroQuoteText">« Chaque jour compte vers ton BAC. »</span>
             <span class="quote-author" id="heroQuoteAuthor">— ARVEXA School</span>
           </div>
         </section>
 
         <!-- ============================================================
-             BLOC 3 — PARCOURS (Modèle A « Ton parcours vers le BAC »)
-             ✅ v8.51a — CARTE EN DUR (demande du propriétaire : « on va les
-             mettre en dur et fixer à la page ») : le squelette complet
-             (en-tête, phrase, métrique, action) est ÉCRIT STATIQUEMENT —
-             plus aucun re-rendu au chargement, la carte existe dès la
-             première image. parcours.js ne fait que METTRE À JOUR les
-             valeurs (phrase, temps, trait, %, cta) sans reconstruire le
-             DOM ; les données restent vivantes (cache + getSmartCard).
+             BLOC 0.5 — QUESTION DU JOUR + SÉRIE 🔥 (v8.23 — P0 rétention)
              ============================================================ -->
-        <div class="section-title"><h3 id="parcoursTitle">🧭 Ton parcours</h3></div>
-        <div class="next-card parcours-card pc-wrap" id="parcoursCard">
-          <div class="ps-wrap" id="psWrap">
-            <div class="ps-head">
-              <span class="ps-title"><i class="fas fa-route"></i> Ton parcours</span>
-              <span class="ps-bac" id="psBac" style="display:none"><i class="fas fa-flag-checkered"></i> <span id="psBacTxt">…</span></span>
-            </div>
-            <div class="ps-phrase" id="psPhrase">Ton parcours se prépare…</div>
-            <div class="ps-stats">
-              <div class="ps-stat"><strong id="psStatTime">…</strong><span>temps total</span></div>
-              <div class="ps-stat"><strong id="psStatStreak">…</strong><span>série 🔥</span></div>
-              <div class="ps-stat"><strong id="psStatSections">…</strong><span>sections</span></div>
-            </div>
-            <div class="ps-meta">
-              <span class="ps-bar"><span class="ps-bar-fill" id="psBarFill" style="width:0%"></span></span>
-              <span class="ps-pct" id="psPct">…</span>
-            </div>
-            <div class="ps-lacune" id="psLacune" style="display:none"><i class="fas fa-crosshairs"></i><span id="psLacuneTxt"></span></div>
-            <div class="ps-cta" id="psCtaEl"><span><i class="fas fa-location-dot"></i> <span id="psCta">Ouvrir le Résumé</span></span><i class="fas fa-arrow-right"></i></div>
-          </div>
+        <a href="quotidien.html" id="qjCard" style="display:flex;align-items:center;gap:13px;margin:14px 0 0;padding:15px 16px;background:linear-gradient(135deg,rgba(184,134,11,.14),rgba(184,134,11,.04));border:1px solid rgba(224,184,74,.28);border-radius:16px;text-decoration:none;box-shadow:0 10px 30px rgba(0,0,0,.25)">
+          <span style="font-size:30px;line-height:1;flex-shrink:0">🎯</span>
+          <span style="flex:1;min-width:0">
+            <span style="display:block;font-size:16px;font-weight:800;color:var(--text-light,#F5F0E8);overflow-wrap:anywhere">Question du jour</span>
+            <span style="display:block;font-size:12.5px;color:var(--text-dim,#8A8A7A);margin-top:3px;overflow-wrap:anywhere" id="qjSub">4 questions · une par matière · 90 secondes</span>
+          </span>
+          <span id="qjStreak" aria-label="Série de jours consécutifs" style="flex-shrink:0;background:rgba(224,184,74,.12);border:1px solid rgba(224,184,74,.35);color:var(--accent-bright,#E0B84A);font-size:13px;font-weight:800;border-radius:999px;padding:7px 12px;white-space:nowrap">🔥 0</span>
+        </a>
+        <!-- RELANCE INTELLIGENTE (v8.24 — P1) : max 1 rappel/jour, seulement si la
+             question du jour n'est pas faite et qu'il est 7h ou plus. Dismissible. -->
+        <div id="qjNudge" style="display:none;align-items:center;gap:10px;margin:8px 0 0;padding:10px 12px;background:rgba(224,184,74,.07);border:1px dashed rgba(224,184,74,.35);border-radius:12px">
+          <span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--text-light,#F5F0E8);overflow-wrap:anywhere">⏰ Ta question du jour t'attend — 90 s pour garder ta série 🔥</span>
+          <button id="qjNudgeClose" type="button" aria-label="Masquer" style="flex-shrink:0;width:28px;height:28px;border-radius:8px;border:none;background:rgba(255,255,255,.06);color:var(--text-dim,#8A8A7A);font-size:13px;cursor:pointer;line-height:1">✕</button>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <a href="ma-journee.html" style="font-size:12.5px;font-weight:800;color:var(--accent-bright,#E0B84A);text-decoration:none;overflow-wrap:anywhere">📅 Voir ma journée complète →</a>
+        </div>
+        <script>
+        (function () {
+          function dayKey(d) {
+            var dt = (d instanceof Date) ? d : new Date();
+            var m = String(dt.getMonth() + 1).padStart(2, '0');
+            var j = String(dt.getDate()).padStart(2, '0');
+            return dt.getFullYear() + '-' + m + '-' + j;
+          }
+          function qjFaitAujourdhui() {
+            try {
+              var e = JSON.parse(localStorage.getItem('arvexa-quotidien-v1') || '{}');
+              return e && e.lastDone === dayKey();
+            } catch (err) { return false; }
+          }
+          /* RELANCE INTELLIGENTE (v8.24) : bandeau « question du jour pas faite »,
+             affiché AU MAXIMUM 1 fois par jour (date mémorisée dans
+             localStorage 'arvexa-nudge-v1'), seulement à partir de 7h,
+             et jamais si la question du jour est déjà faite. La décision est
+             prise UNE SEULE FOIS par vue de page (majQJ tourne plusieurs fois :
+             DOMContentLoaded, event série, pageshow) — sinon la 2e passe
+             masquerait le bandeau qu'elle vient d'afficher. */
+          var nudgeDecide = false;
+          function majNudge() {
+            var box = document.getElementById('qjNudge');
+            if (!box || nudgeDecide) return;
+            nudgeDecide = true;
+            var today = dayKey();
+            var vu = '';
+            try { vu = (JSON.parse(localStorage.getItem('arvexa-nudge-v1') || '{}') || {}).date || ''; } catch (err) {}
+            if (qjFaitAujourdhui() || vu === today || new Date().getHours() < 7) {
+              box.style.display = 'none';
+              return;
+            }
+            box.style.display = 'flex';
+            try { localStorage.setItem('arvexa-nudge-v1', JSON.stringify({ date: today })); } catch (err) {}
+          }
+          function majQJ() {
+            if (!window.ARVEXA_STREAK) return;
+            var st = window.ARVEXA_STREAK.get();
+            var chip = document.getElementById('qjStreak');
+            var sub = document.getElementById('qjSub');
+            if (chip) chip.textContent = '🔥 ' + (st.count || 0);
+            if (sub) sub.textContent = st.activeToday ? "✅ Fait pour aujourd'hui — reviens demain à 7h" : '4 questions · une par matière · 90 secondes';
+            majNudge();
+          }
+          window.addEventListener('DOMContentLoaded', majQJ);
+          document.addEventListener('arvexa-streak-change', majQJ);
+          window.addEventListener('pageshow', majQJ);
+          var nudgeClose = document.getElementById('qjNudgeClose');
+          if (nudgeClose) nudgeClose.addEventListener('click', function () {
+            var box = document.getElementById('qjNudge');
+            if (box) box.style.display = 'none';
+            try { localStorage.setItem('arvexa-nudge-v1', JSON.stringify({ date: dayKey() })); } catch (err) {}
+          });
+        })();
+        </script>
+
+
+        <!-- ============================================================
+             BLOC 3 — PARCOURS (Modèle A « Ton parcours vers le BAC »)
+             ============================================================ -->
+        <div class="section-title"><h3>🧭 Ton parcours vers le BAC</h3></div>
+        <div class="next-card parcours-card" id="parcoursCard">
+          <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--text-light,#F5F0E8);margin:12px 0 8px;overflow-wrap:anywhere">Chargement de ton parcours…</div>
+          <div style="font-size:13px;color:var(--text-dim,#8A8A7A)"><i class="fas fa-route" style="color:var(--accent-bright,#E0B84A)"></i>&nbsp; Une seule route, 57 étapes, zéro hésitation — toutes les matières mélangées jusqu'au BAC.</div>
         </div>
 
         <!-- ============================================================
@@ -1808,66 +1634,23 @@
           </a>
           <a href="exam.html" class="tool-card">
             <div class="icon-badge"><i class="fas fa-stopwatch"></i></div>
-            <div class="name">Épreuves</div>
+            <div class="name">Test moi</div>
           </a>
           <a href="arv-progress.html" class="tool-card">
             <div class="icon-badge"><i class="fas fa-graduation-cap"></i></div>
             <div class="name">Résumé</div>
           </a>
-          <a href="arv.html" class="tool-card">
-            <div class="icon-badge"><i class="fas fa-comments"></i></div>
-            <div class="name">Chat IA</div>
+          <a href="outils.html" class="tool-card tool-more">
+            <div class="icon-badge"><i class="fas fa-toolbox"></i></div>
+            <div class="name">Plus d'outils</div>
           </a>
         </div>
 
         <!-- ============================================================
              BLOC 5bis — RÉALISATIONS
-             ✅ v8.51a — LES 9 BADGES EN DUR : squelette statique fixé à la
-             page (icône + nom écrits dans le HTML), plus aucune liste
-             reconstruite au chargement — la peinture se limite à la classe
-             « unlocked » (moteur partagé __arvexaPaintBadges).
              ============================================================ -->
         <div class="section-title"><h3>🏆 Tes réalisations</h3></div>
-        <div class="badges-scroll" id="badgesScroll" aria-label="Badges débloqués">
-          <div class="badge-item" data-badge="first"><div class="badge-coin">🧠</div><div class="badge-name">Premier résumé</div></div>
-          <div class="badge-item" data-badge="five"><div class="badge-coin">📚</div><div class="badge-name">5 sections résumées</div></div>
-          <div class="badge-item" data-badge="fifteen"><div class="badge-coin">🎓</div><div class="badge-name">15 sections résumées</div></div>
-          <div class="badge-item" data-badge="thirty"><div class="badge-coin">🏅</div><div class="badge-name">30 sections résumées</div></div>
-          <div class="badge-item" data-badge="subjects3"><div class="badge-coin">🗂️</div><div class="badge-name">3 matières explorées</div></div>
-          <div class="badge-item" data-badge="hour1"><div class="badge-coin">⏱️</div><div class="badge-name">1 heure d'étude</div></div>
-          <div class="badge-item" data-badge="hours5"><div class="badge-coin">💎</div><div class="badge-name">5 heures d'étude</div></div>
-          <div class="badge-item" data-badge="streak3"><div class="badge-coin">🔥</div><div class="badge-name">Série de 3 jours</div></div>
-          <div class="badge-item" data-badge="streak7"><div class="badge-coin">🚀</div><div class="badge-name">Série de 7 jours</div></div>
-        </div>
-
-        <!-- ============================================================
-             BLOC 5ter — AMBASSADEUR ARVEXA (✅ v8.55a)
-             Demande du propriétaire : bouton « Ambassadeur ARVEXA » sur
-             l'accueil, placé en flux naturel (après les réalisations, avant
-             l'avis), SANS casser l'apparence luxueuse. La page du programme
-             (gains sur les abonnements…) sera conçue plus tard : le bouton
-             affiche un toast « bientôt disponible » (arvexa-soon.js).
-             ============================================================ -->
-        <div class="section-title"><h3>🤝 Ambassadeur ARVEXA</h3></div>
-        <div class="next-card avis-card amb-card">
-          <div class="amb-head">
-            <div class="amb-ico"><i class="fas fa-handshake"></i></div>
-            <div>
-              <div class="amb-title">Deviens Ambassadeur ARVEXA</div>
-              <div class="amb-sub">Partage · accompagne · gagne</div>
-            </div>
-          </div>
-          <div class="amb-text">
-            Recommande ARVEXA autour de toi et <strong>gagne en fonction des abonnements</strong>
-            de tes camarades — commissions, avantages exclusifs et rang d'ambassadeur.
-          </div>
-          <a class="avis-btn-inline" href="ambassadeur.html"
-             style="text-decoration:none;display:inline-flex;align-items:center;gap:8px;color:inherit">
-            <i class="fas fa-crown"></i> Découvrir le programme
-          </a>
-          <!-- ✅ v8.58a — badge « Nouveau » retiré (demande du propriétaire :
-               « le badge nouveau sur la carte ambassadeur, tu enlèves ces badges ») -->
-        </div>
+        <div class="badges-scroll" id="badgesScroll" aria-label="Badges débloqués"></div>
 
         <!-- ============================================================
              BLOC 6 — AVIS
@@ -1893,7 +1676,7 @@
             <div class="sub-icon"><i class="fas fa-crown"></i></div>
             <div class="sub-content">
               <div class="sub-title" id="subTitle">🔓 Débloque tout ARVEXA School</div>
-              <div class="sub-text" id="subText">Accède à tout ARVEXA : résumés, questions, cartes mentales, outils et plus encore avec Premium.</div>
+              <div class="sub-text" id="subText">Accède à tous les chapitres, exercices, corrections et plus de fonctionnalités avec Premium.</div>
               <div class="sub-expiry" id="subExpiry" style="display:none;"></div>
             </div>
             <a href="abonnement.html" class="sub-btn" id="subBtn">Voir les offres</a>
@@ -2031,68 +1814,10 @@
   /* RESTAURATION INSTANTE — réapplique la snapshot de session sur le DOM
      avant même le chargement des modules Firebase (CDN). Le module
      re-validera ensuite discrètement via Firestore (onSnapshot). */
-  /* ✅ v8.50a — PROFIL FIGÉ EN LOCAL (zéro Firebase pour la carte) : dès
-     l'inscription (register.html), classe/série/classe libre/prénom sont
-     écrits dans arvexa_session. Ici ils sont relis AVANT tout le reste pour
-     peindre « BAC 2027 » / « BEPC 2027 » / objectif + le prénom dès la
-     première image ; onSnapshot rafraîchit la copie locale en arrière-plan. */
-  (function () {
-    try {
-      var sess = null;
-      try { sess = JSON.parse(localStorage.getItem('arvexa_session') || 'null'); } catch (e0) { sess = null; }
-      if (!sess || !sess.classId) {
-        // Anciens comptes : pas encore de copie locale → cache utilisateur
-        var uid0 = null;
-        try { uid0 = localStorage.getItem('arvexa_last_uid'); } catch (e1) {}
-        if (uid0) {
-          try {
-            var cache0 = JSON.parse(localStorage.getItem('arvexa_user_data') || 'null');
-            if (cache0 && cache0._uid === uid0 && cache0.classId) {
-              sess = sess || {};
-              sess.classId = cache0.classId;
-              sess.series = cache0.series || '';
-              sess.customClass = cache0.customClass || '';
-              if (cache0.firstName) sess.firstName = cache0.firstName;
-            }
-          } catch (e2) {}
-        }
-      }
-      if (sess && sess.classId && !window.ARVEXA_USER_PROFILE) {
-        window.ARVEXA_USER_PROFILE = {
-          classId: sess.classId,
-          series: sess.series || '',
-          customClass: sess.customClass || ''
-        };
-      }
-      if (sess && sess.firstName) window.__ARVEXA_SEED_NAME__ = sess.firstName;
-    } catch (e3) {}
-
-    /* ✅ v8.50b — PEINTURE IMMÉDIATE DU HÉROS depuis la graine locale :
-       remplace les trois points de chargement par le VRAI niveau choisi
-       (titre + note « chaque jour compte… ») avant même le module — plus
-       aucun flash « BAC 2027 » pour un élève de 3ᵉ / L1 / classe libre. */
-    try {
-      var CLs = window.ARVEXA_CLASSES;
-      var profS = window.ARVEXA_USER_PROFILE || {};
-      var cidS = profS.classId || 'terminale_d';
-      var edS = (typeof window.ARVEXA_getExamDate === 'function') ? window.ARVEXA_getExamDate() : null;
-      var ctS = document.getElementById('countdownTitle');
-      if (ctS && CLs && CLs.goal) ctS.textContent = CLs.goal(cidS, edS ? edS.getFullYear() : null);
-      var estBacS = (CLs ? CLs.exam(cidS) : 'BAC') === 'BAC';
-      var nnS = document.getElementById('heroNote');
-      if (nnS) nnS.textContent = estBacS ? ' — chaque jour compte vers ton BAC.' : ' — chaque jour compte vers ton objectif.';
-    } catch (eH) {}
-  })();
-
   window.__arvexaApplyInstant = function () {
     var snap = window.__ARVEXA_INSTANT__;
     if (!snap || !snap.userData) return;
     var d = snap.userData;
-    try {
-      if (d.classId && !window.ARVEXA_USER_PROFILE) {
-        window.ARVEXA_USER_PROFILE = { classId: d.classId, series: d.series || '', customClass: d.customClass || '' };
-      }
-    } catch (eSeed) {}
     function $(id) { return document.getElementById(id); }
     try {
       var h = new Date().getHours();
@@ -2144,9 +1869,9 @@
 
        l'identique via Firestore (aucun changement visible).
 
-       ⚠ Garder synchronisé avec majHeroClasse()/majODJ()/renderHero()/
+       ⚠ Garder synchronisé avec updateCountdown()/renderHero()/
 
-       renderBadges() du module.
+       renderProgress()/renderBadges() du module.
 
        ================================================================ */
 
@@ -2174,62 +1899,77 @@
 
 
 
-    /* — Héros calé sur la CLASSE de l'élève (✅ v8.35) : titre « BEPC 2027 »
-       / « BAC 2027 » / objectif par domaine, ligne d'info (échéance d'examen
-       ou vraie classe complète), pastille d'état. Le compteur J/H/M/S
-       n'existe plus : remplacé partout par l'Objectif du jour. — */
+    /* — Compte à rebours BAC (identique au module) — */
 
     try {
 
-      var CLx = window.ARVEXA_CLASSES || null;
+      function dashExamDate() {
 
-      var profx = window.ARVEXA_USER_PROFILE || {};
+        if (typeof window.ARVEXA_getExamDate === 'function') return window.ARVEXA_getExamDate();
 
-      var classIdX = profx.classId || 'terminale_d';
+        var n = new Date(), y = n.getFullYear(), j = new Date(y, 5, 1);
 
-      var examX = CLx ? CLx.exam(classIdX) : 'BAC';
+        return n < j ? j : new Date(y + 1, 5, 1);
 
-      var examDtX = (typeof window.ARVEXA_getExamDate === 'function') ? window.ARVEXA_getExamDate() : null;
+      }
+
+      var now = new Date(), exam = dashExamDate(), diffMs = exam - now;
 
       var ct = $('countdownTitle');
 
-      if (ct) ct.textContent = (CLx && CLx.goal) ? CLx.goal(classIdX, examDtX ? examDtX.getFullYear() : null) : ('BAC ' + (examDtX ? examDtX.getFullYear() : ''));
+      if (ct) ct.textContent = 'BAC ' + exam.getFullYear();
 
       var cd = $('countdownDate');
 
       if (cd) {
 
-        if (examX && examDtX) {
+        try { cd.textContent = 'Échéance : ' + exam.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); }
 
-          try { cd.textContent = 'Échéance : ' + examDtX.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); }
-
-          catch (e2) { cd.textContent = 'Date indicative'; }
-
-        } else {
-
-          cd.textContent = 'Classe : ' + (CLx ? CLx.full(classIdX, profx.customClass || '', profx.series || '') : 'Terminale D');
-
-        }
+        catch (e2) { cd.textContent = 'Date indicative'; }
 
       }
 
       var pf = $('progressFill'), cs = $('countdownStatus');
 
-      if (examX && examDtX) {
+      if (diffMs <= 0) {
 
-        var diffMs = examDtX - new Date();
+        var dJ = $('cdDays'), hJ = $('cdHours'), mJ = $('cdMinutes'), sJ = $('cdSeconds');
 
-        var days = Math.max(0, Math.floor(diffMs / 86400000));
+        if (dJ) dJ.textContent = '0';
+
+        if (hJ) hJ.textContent = '00';
+
+        if (mJ) mJ.textContent = '00';
+        if (sJ) sJ.textContent = '00';
+
+        if (pf) { pf.style.width = '100%'; pf.className = 'progress-fill critical'; }
+
+        if (cs) { cs.textContent = "🎉 C'est le jour J !"; cs.className = 'countdown-status critical'; }
+
+      } else {
+
+        var days = Math.floor(diffMs / 86400000);
+
+        var hours = Math.floor((diffMs % 86400000) / 3600000);
+
+        var mins = Math.floor((diffMs % 3600000) / 60000);
+
+        var dE = $('cdDays'); if (dE) dE.textContent = days;
+
+        var hE = $('cdHours'); if (hE) hE.textContent = String(hours).padStart(2, '0');
+
+        var mE = $('cdMinutes'); if (mE) mE.textContent = String(mins).padStart(2, '0');
+        var secs = Math.floor((diffMs % 60000) / 1000); var sE = $('cdSeconds'); if (sE) sE.textContent = String(secs).padStart(2, '0');
+
+        var exY = exam.getFullYear(), exM = exam.getMonth();
+
+        var start = new Date(exM < 8 ? exY - 1 : exY, 8, 1);
+
+        var total = exam - start, elapsed = now - start;
+
+        var progress = total > 0 ? Math.min(100, Math.max(0, (elapsed / total) * 100)) : 0;
 
         if (pf) {
-
-          var exY = examDtX.getFullYear(), exM = examDtX.getMonth();
-
-          var start = new Date(exM < 8 ? exY - 1 : exY, 8, 1);
-
-          var total = examDtX - start, elapsed = new Date() - start;
-
-          var progress = total > 0 ? Math.min(100, Math.max(0, (elapsed / total) * 100)) : 0;
 
           var pc = 'early';
 
@@ -2260,12 +2000,6 @@
           cs.className = 'countdown-status ' + msg.c;
 
         }
-
-      } else if (cs) {
-
-        cs.className = 'countdown-status';
-
-        cs.textContent = '✨ Prêt à apprendre';
 
       }
 
@@ -2369,26 +2103,106 @@
 
 
 
-    /* — Badges réalisations —
-       ✅ v8.51a : badges EN DUR dans le HTML → plus aucune reconstruction
-       ici : un simple appel au moteur partagé __arvexaPaintBadges()
-       (bascule « unlocked » + PORTE BADGES fermée à l'intérieur).
-       L'ancienne liste v8.43 (Première section / Toutes matières…) est
-       retirée — une seule source de vérité, alignée sur le module. */
+    /* — Badges réalisations (localStorage, identique au module) — */
 
-    try { if (window.__arvexaPaintBadges) window.__arvexaPaintBadges(); } catch (e) {}
+    try {
 
-    /* ✅ v8.51a — PORTE PROFIL : l'accueil est peint depuis la snapshot
-       (salutation, héros, classe, abonnement, compteurs) → la porte
-       « profil » peut se fermer. Idempotent. */
-    try { if (window.__arvexaReady) window.__arvexaReady('profile'); } catch (e) {}
+      var bsc = $('badgesScroll');
+
+      if (bsc) {
+
+        var BADGES = [
+
+          { icon: '📖', name: 'Première section', check: function (st) { return st.totalParts >= 1; } },
+
+          { icon: '📚', name: '5 sections', check: function (st) { return st.totalParts >= 5; } },
+
+          { icon: '🎓', name: '15 sections', check: function (st) { return st.totalParts >= 15; } },
+
+          { icon: '🏅', name: '30 sections', check: function (st) { return st.totalParts >= 30; } },
+
+          { icon: '🌍', name: 'Toutes matières', check: function (st) { return st.subjectsTouched >= 4; } },
+
+          { icon: '🔥', name: 'Série de 3 jours', check: function (st) { return st.streak >= 3; } },
+
+          { icon: '🚀', name: 'Série de 7 jours', check: function (st) { return st.streak >= 7; } },
+
+          { icon: '💎', name: 'Programme complet', check: function (st) { return st.chaptersRead >= st.chaptersTotal; } }
+
+        ];
+
+        var activity = {};
+
+        try { activity = JSON.parse(localStorage.getItem('arvexa_daily_activity') || '{}') || {}; } catch (e2) { activity = {}; }
+
+        var dashDayStr = function (dt) {
+
+          return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+
+        };
+
+        var streak = 0;
+
+        var cursor = new Date();
+
+        var dashActive = function (dt) { return (Number(activity[dashDayStr(dt)]) || 0) > 0; };
+
+        if (!dashActive(cursor)) cursor.setDate(cursor.getDate() - 1);
+
+        while (dashActive(cursor) && streak < 365) { streak++; cursor.setDate(cursor.getDate() - 1); }
+
+        var chaptersRead = 0, subjectsTouched = 0, chaptersTotal = 0;
+
+        Object.keys(CH).forEach(function (k) {
+
+          chaptersTotal += CH[k];
+
+          var count = Object.keys(per[k]).length;
+
+          if (count > 0) { subjectsTouched++; chaptersRead += count; }
+
+        });
+
+        var st = { totalParts: parts.length, subjectsTouched: subjectsTouched, chaptersRead: chaptersRead, chaptersTotal: chaptersTotal, streak: streak };
+
+        bsc.textContent = '';
+
+        BADGES.forEach(function (b) {
+
+          var item = document.createElement('div');
+
+          item.className = 'badge-item' + (b.check(st) ? ' unlocked' : '');
+
+          var coin = document.createElement('div');
+
+          coin.className = 'badge-coin';
+
+          coin.textContent = b.icon;
+
+          var nm = document.createElement('div');
+
+          nm.className = 'badge-name';
+
+          nm.textContent = b.name;
+
+          item.appendChild(coin);
+
+          item.appendChild(nm);
+
+          bsc.appendChild(item);
+
+        });
+
+      }
+
+    } catch (e) {}
+
+
 
     /* Tout est peint depuis le cache : révéler le contenu */
 
     document.documentElement.classList.add('ready');
-    /* ✅ v5.6 — contenu prêt derrière le splash : demander sa dissipation
-       (✅ v8.51a — elle n'aura lieu QUE quand les trois portes sont fermées,
-       filet 6 s sinon) */
+    /* ✅ v5.6 — contenu prêt derrière le splash : le laisser se dissiper */
     if (typeof window.__arvexaSplashOut === 'function') window.__arvexaSplashOut();
   };
   window.__arvexaApplyInstant();
@@ -2467,7 +2281,7 @@
   //  - focus-visible rétabli
   // ================================================================
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
   import {
     getAuth,
     onAuthStateChanged,
@@ -2481,7 +2295,11 @@
     getToken,
     onMessage
   } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-messaging.js";
-  import {doc,
+  import {    getFirestore,
+    initializeFirestore,
+    persistentLocalCache,
+    persistentSingleTabManager,
+    doc,
     getDoc,
     onSnapshot,
     collection,
@@ -2491,8 +2309,8 @@
     getDocs,
     addDoc,
     updateDoc,
-    serverTimestamp,
-    getFirestore} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
   // ================================================================
   // CONFIG
@@ -2506,17 +2324,14 @@
     appId: "1:920108330053:web:f532d71cbc2c824bc7472c"
   };
 
-  const app = initializeApp(firebaseConfig);
+  const app = (getApps().find(a => a.name === '[DEFAULT]') || initializeApp(firebaseConfig));
   const auth = getAuth(app);
 
-  // ✅ v8.43 — jeton exposé pour la carte intelligente (parcours.js) :
-  // l'accueil compare le temps passé entre chapitres/sections (getSmartCard).
-  window.__arvexaGetIdToken = async () => {
-    try { return auth.currentUser ? await getIdToken(auth.currentUser, false) : null; }
-    catch (e) { return null; }
-  };
-
-  const db = getFirestore(app);
+  const db = (function(){try{return initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentSingleTabManager()
+    })
+  })}catch(_spa){return getFirestore(app)}})();
 
   let messaging = null;
   try {
@@ -2555,13 +2370,6 @@
       localStorage.removeItem(USER_DATA_KEY);
       localStorage.removeItem(LAST_UID_KEY);
       localStorage.removeItem('arvexa_index_snapshot_persist'); /* ✅ v5.4 */
-      /* ✅ v8.63a — caches de réalisations / carte intelligente PURGÉS à la
-         déconnexion : le prochain compte ne doit JAMAIS voir les données
-         du précédent (réalisations = Firebase uniquement). */
-      localStorage.removeItem('arvexa_dash_cache_v1');
-      localStorage.removeItem('arv_smart_cache_v1');
-      try { window.__arvexaFbDash = null; } catch (e) {}
-      try { window.__ARVEXA_CURRENT_UID = null; } catch (e) {}
       sessionStorage.removeItem(SESSION_KEY);
       sessionStorage.removeItem('redirectAfterLogin');
       sessionStorage.removeItem(INDEX_SNAPSHOT_KEY);
@@ -2590,22 +2398,6 @@
   }
 
   // ================================================================
-  // ✅ v8.50a — FIGE la classe/examen/prénom dans arvexa_session : l'accueil
-  // affiche la vraie carte (BAC 2027 / BEPC 2027 / objectif) sans aucun appel
-  // Firebase. Le snapshot Firestore rafraîchit cette copie locale.
-  function freezeExamInfoToSession(data) {
-    try {
-      if (!data) return;
-      const sess = JSON.parse(localStorage.getItem('arvexa_session') || '{}') || {};
-      if (data.classId) sess.classId = data.classId;
-      if (typeof data.exam !== 'undefined') sess.exam = data.exam || '';
-      if (typeof data.series !== 'undefined') sess.series = data.series || '';
-      if (typeof data.customClass !== 'undefined') sess.customClass = data.customClass || '';
-      if (data.firstName) sess.firstName = data.firstName;
-      localStorage.setItem('arvexa_session', JSON.stringify(sess));
-    } catch (e) {}
-  }
-
   // ✅ v8.28 — ÉCONOMIE FIRESTORE : PORTES JOUR (day-gate)
   // Demande propriétaire : « réduire les appels Firebase — la 1re fois
   // qu'on ouvre la page dans la journée, on charge, on affiche, puis on
@@ -2751,7 +2543,12 @@
   // ================================================================
   // CONSTANTES
   // ================================================================
-  // ✅ v8.50a — constantes matières retirées (ancien parcours déconnecté).
+  const SUBJECTS = [
+    { key: 'mathematiques', name: 'Mathématiques', chapters: 11, icon: 'fa-square-root-variable' },
+    { key: 'physique', name: 'Physique', chapters: 17, icon: 'fa-bolt' },
+    { key: 'chimie', name: 'Chimie', chapters: 9, icon: 'fa-flask' },
+    { key: 'svt', name: 'SVT', chapters: 20, icon: 'fa-dna' }
+  ];
 
   const VAPID_KEY = 'BKx2iXs_mlCDdDjh_JxsjOQiOlW1-95pJi8myJCr503pB8TkFjJ8bZfpZ7Fv9pYyV_O9_Ca_fbwkO5eGPrnWaHA';
   const FCM_DISMISSED_KEY = 'arvexa_fcm_dismissed';
@@ -2804,86 +2601,102 @@
     });
   }
 
-  if (!window.__ARVEXA_INSTANT__) {
-    // ✅ v8.50a — prénom déjà connu localement : peinture immédiate (pas de squelette)
-    if (window.__ARVEXA_SEED_NAME__) {
-      try {
-        const gS = getGreeting();
-        greetingText.textContent = gS.text;
-        greetingEmoji.textContent = gS.emoji;
-        const hgS = document.getElementById('heroGreeting');
-        if (hgS) hgS.textContent = gS.text;
-        [userFirstName, document.getElementById('heroName')].forEach((el) => {
-          if (!el) return;
-          el.classList.remove('loading');
-          el.textContent = window.__ARVEXA_SEED_NAME__;
-        });
-      } catch (eS) {}
-    } else {
-      showProfileLoading();
+  if (!window.__ARVEXA_INSTANT__) showProfileLoading();
+
+  // ================================================================
+  // COMPTE À REBOURS BAC
+  // ================================================================
+  const cdDays = document.getElementById('cdDays');
+  const cdHours = document.getElementById('cdHours');
+  const cdMinutes = document.getElementById('cdMinutes');
+  const cdSeconds = document.getElementById('cdSeconds');
+  const progressFill = document.getElementById('progressFill');
+  const countdownStatus = document.getElementById('countdownStatus');
+  const countdownTitle = document.getElementById('countdownTitle');
+  const countdownDate = document.getElementById('countdownDate');
+
+  function getExamDate() {
+    if (typeof window.ARVEXA_getExamDate === 'function') {
+      return window.ARVEXA_getExamDate();
     }
+    const now = new Date();
+    const year = now.getFullYear();
+    const juneThisYear = new Date(year, 5, 1);
+    if (now < juneThisYear) return juneThisYear;
+    return new Date(year + 1, 5, 1);
   }
 
-  // ================================================================
-  // HÉROS PAR CLASSE (✅ v8.36)
-  // Le titre suit la vraie classe de l'élève via ARVEXA_CLASSES :
-  // « BEPC 2027 » (3ᵉ), « BAC 2027 » (Terminale), « Collège en route »,
-  // « BAC en vue », « Réussir ta licence », « Ton objectif » (classe
-  // libre) ; ligne d'info = échéance d'examen ou classe complète.
-  // PAS de compteur J/H/M/S et PAS d'« objectif du jour » dans le héros
-  // (demande propriétaire) ; ✅ v8.50a : la carte « Question du jour » qui
-  // était sous le héros est supprimée — l'outil reste dans Outils/menu.
-  // ================================================================
-  function majHeroClasse() {
+  function getSchoolYearStart(examDate) {
+    const examYear = examDate.getFullYear();
+    const examMonth = examDate.getMonth();
+    const startYear = examMonth < 8 ? examYear - 1 : examYear;
+    return new Date(startYear, 8, 1);
+  }
+
+  function getCountdownMessages(days) {
+    if (days <= 0) return { emoji: '🎉', message: 'C\'est le jour J ! Bonne chance !', class: 'critical' };
+    if (days < 7) return { emoji: '🏆', message: 'C\'est maintenant ! Dernière ligne droite', class: 'critical' };
+    if (days < 15) return { emoji: '🚀', message: 'Sprint final, donne tout', class: 'critical' };
+    if (days < 30) return { emoji: '🔥', message: 'Concentre-toi, chaque jour compte', class: 'late' };
+    if (days < 60) return { emoji: '⚡', message: 'Accélère, c\'est le moment clé', class: 'mid' };
+    if (days < 90) return { emoji: '📚', message: 'Bon rythme, continue comme ça', class: 'mid' };
+    return { emoji: '🌱', message: 'Tu as le temps, commence tranquillement', class: 'early' };
+  }
+
+  function updateCountdown() {
+    const now = new Date();
+    const exam = getExamDate();
+    const diffMs = exam - now;
+
+    countdownTitle.textContent = 'BAC ' + exam.getFullYear();
     try {
-      const CL = window.ARVEXA_CLASSES;
-      const prof = window.ARVEXA_USER_PROFILE || {};
-      const classId = prof.classId || 'terminale_d';
-      const exam = CL ? CL.exam(classId) : 'BAC';
-      const examDt = (typeof window.ARVEXA_getExamDate === 'function') ? window.ARVEXA_getExamDate() : null;
-      const ct = document.getElementById('countdownTitle');
-      if (ct && CL) ct.textContent = CL.goal(classId, examDt ? examDt.getFullYear() : null);
-      const cd = document.getElementById('countdownDate');
-      if (cd) {
-        if (exam && examDt) {
-          try { cd.textContent = 'Échéance : ' + examDt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); }
-          catch (e) { cd.textContent = 'Date indicative'; }
-        } else {
-          cd.textContent = 'Classe : ' + (CL ? CL.full(classId, prof.customClass || '', prof.series || '') : 'Terminale D');
-        }
-      }
-      const cs = document.getElementById('countdownStatus');
-      const track = document.querySelector('.progress-track');
-      if (!exam) {
-        if (cs) { cs.className = 'countdown-status'; cs.textContent = '✨ Prêt à apprendre'; }
-        if (track) track.style.display = 'none';
-      } else if (examDt) {
-        const days = Math.max(0, Math.floor((examDt - new Date()) / 86400000));
-        const msg = days < 7 ? { e: '🏆', m: "C'est maintenant ! Dernière ligne droite", c: 'critical' }
-                : days < 15 ? { e: '🚀', m: 'Sprint final, donne tout', c: 'critical' }
-                : days < 30 ? { e: '🔥', m: 'Concentre-toi, chaque jour compte', c: 'late' }
-                : days < 60 ? { e: '⚡', m: "Accélère, c'est le moment clé", c: 'mid' }
-                : days < 90 ? { e: '📚', m: 'Bon rythme, continue comme ça', c: 'mid' }
-                : { e: '🌱', m: 'Tu as le temps, commence tranquillement', c: 'early' };
-        if (cs) { cs.textContent = msg.e + ' ' + msg.m; cs.className = 'countdown-status ' + msg.c; }
-        if (track) track.style.display = '';
-      }
-      // ✅ v8.50b — note « chaque jour compte… » peinte SANS condition :
-      // avec les trois points de chargement initiaux, l'ancienne garde
-      // /ton BAC/i ne matchait plus rien (textContent vide) et la note
-      // serait restée sur les points pour les classes BAC.
-      const estBac = classId === 'terminale' || classId === 'terminale_d';
-      const note = document.querySelector('.cd-hero-note');
-      if (note) note.textContent = estBac ? ' — chaque jour compte vers ton BAC.' : ' — chaque jour compte vers ton objectif.';
-      const q = document.getElementById('heroQuoteText');
-      if (q && /ton BAC/i.test(q.textContent)) q.textContent = '« Chaque jour compte vers ton objectif. »';
-    } catch (e) { /* silencieux : le héros doit toujours s'afficher */ }
+      countdownDate.textContent = 'Échéance : ' + exam.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) {
+      countdownDate.textContent = 'Date indicative';
+    }
+
+    if (diffMs <= 0) {
+      cdDays.textContent = '0';
+      cdHours.textContent = '00';
+      cdMinutes.textContent = '00';
+      cdSeconds.textContent = '00';
+      progressFill.style.width = '100%';
+      progressFill.className = 'progress-fill critical';
+      countdownStatus.textContent = '🎉 C\'est le jour J !';
+      countdownStatus.className = 'countdown-status critical';
+      return;
+    }
+
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+    cdDays.textContent = days;
+    cdHours.textContent = String(hours).padStart(2, '0');
+    cdMinutes.textContent = String(minutes).padStart(2, '0');
+    cdSeconds.textContent = String(seconds).padStart(2, '0');
+
+    const start = getSchoolYearStart(exam);
+    const total = exam - start;
+    const elapsed = now - start;
+    const progress = total > 0 ? Math.min(100, Math.max(0, (elapsed / total) * 100)) : 0;
+    progressFill.style.width = progress + '%';
+
+    let progressClass = 'early';
+    if (progress > 85) progressClass = 'critical';
+    else if (progress > 70) progressClass = 'late';
+    else if (progress > 50) progressClass = 'mid';
+    progressFill.className = 'progress-fill ' + progressClass;
+
+    const msg = getCountdownMessages(days);
+    countdownStatus.textContent = `${msg.emoji} ${msg.message}`;
+    countdownStatus.className = 'countdown-status ' + msg.class;
   }
 
-  majHeroClasse();
-  window.addEventListener('arvexa:profile', majHeroClasse);
-  window.addEventListener('pageshow', majHeroClasse);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) majHeroClasse(); });
+  updateCountdown();
+  const countdownInterval = setInterval(updateCountdown, 1000); // v6.7 tick chaque seconde
+  window.addEventListener('beforeunload', () => clearInterval(countdownInterval));
 
   // ================================================================
   // HERO — date + citation du jour
@@ -2924,6 +2737,66 @@
 
   // ================================================================
   // PROGRESSION SCOLAIRE (prioritaire)
+  // ================================================================
+  function readProgressData() {
+    let readParts = [];
+    try {
+      readParts = JSON.parse(localStorage.getItem(READ_KEY) || '[]');
+    } catch (e) { readParts = []; }
+
+    const perSubject = {};
+    SUBJECTS.forEach(s => { perSubject[s.key] = new Set(); });
+
+    readParts.forEach(key => {
+      const parts = String(key).split('_');
+      if (parts.length >= 2 && perSubject[parts[0]]) {
+        perSubject[parts[0]].add(parts[1]);
+      }
+    });
+
+    let totalChaptersRead = 0;
+    let subjectsTouched = 0;
+    const totalChaptersAll = SUBJECTS.reduce((acc, s) => acc + s.chapters, 0);
+
+    SUBJECTS.forEach(s => {
+      const count = perSubject[s.key].size;
+      if (count > 0) {
+        subjectsTouched++;
+        totalChaptersRead += count;
+      }
+    });
+
+    return {
+      perSubject,
+      totalChaptersRead,
+      totalChaptersAll,
+      subjectsTouched,
+      subjectsTotal: SUBJECTS.length
+    };
+  }
+
+  function renderProgress() {
+    const data = readProgressData();
+
+    // Mettre à jour les cartes matières (compteurs)
+    SUBJECTS.forEach(s => {
+      const el = document.querySelector(`[data-subject="${s.key}"]`);
+      if (el) {
+        const count = data.perSubject[s.key].size;
+        if (count > 0) {
+          el.textContent = `${count}/${s.chapters} chapitres lus`;
+          el.classList.add('has-progress');
+        } else {
+          el.textContent = `${s.chapters} chapitres`;
+          el.classList.remove('has-progress');
+        }
+      }
+    });
+
+    // Badges (gamification)
+    renderBadges();
+  }
+
   // ================================================================
   // ACTIVITÉ QUOTIDIENNE (série / objectif / semaine)
   // Écrit aussi par lecture.html (hook temps réel) + merge snapshot ici.
@@ -2987,31 +2860,50 @@
   // BADGES — réalisations
   // ================================================================
   const badgesScroll = document.getElementById('badgesScroll');
-  // ✅ v8.51a — BADGES EN DUR (demande du propriétaire : « on va les mettre
-  // en dur et fixer à la page… toujours connecté pour voir tes
-  // réalisations ») : les 9 badges sont écrits STATIQUEMENT dans le HTML,
-  // une seule source de vérité partagée avec la restauration instantanée
-  // (ARVEXA_BADGE_CHECKS + __arvexaPaintBadges + __arvexaBadgeStats,
-  // définis en tête de page). Le module se CONTENT de déléguer : bascule
-  // de la classe « unlocked » selon les données réelles (cache Résumé +
-  // activité de l'appareil) — plus AUCUNE reconstruction du DOM, la liste
-  // ne « charge » plus jamais à l'écran.
+  const BADGES = [
+    { icon: '📖', name: 'Première section', check: (st) => st.totalParts >= 1 },
+    { icon: '📚', name: '5 sections', check: (st) => st.totalParts >= 5 },
+    { icon: '🎓', name: '15 sections', check: (st) => st.totalParts >= 15 },
+    { icon: '🏅', name: '30 sections', check: (st) => st.totalParts >= 30 },
+    { icon: '🌍', name: 'Toutes matières', check: (st) => st.subjectsTouched >= 4 },
+    { icon: '🔥', name: 'Série de 3 jours', check: (st) => st.streak >= 3 },
+    { icon: '🚀', name: 'Série de 7 jours', check: (st) => st.streak >= 7 },
+    { icon: '💎', name: 'Programme complet', check: (st) => st.chaptersRead >= st.chaptersTotal }
+  ];
+
   function renderBadges() {
-    if (typeof window.__arvexaPaintBadges === 'function') {
-      window.__arvexaPaintBadges();
-      return;
-    }
-    /* Repli défensif (moteur absent — ne doit jamais arriver) : ne rien
-       reconstruire, seulement garantir la fermeture de la porte badges. */
-    try { if (window.__arvexaReady) window.__arvexaReady('badges'); } catch (e) {}
+    if (!badgesScroll) return;
+    const activity = computeActivity();
+    const streak = computeStreak(activity);
+    const prog = readProgressData();
+    const st = {
+      totalParts: getTotalParts(),
+      subjectsTouched: prog.subjectsTouched,
+      chaptersRead: prog.totalChaptersRead,
+      chaptersTotal: prog.totalChaptersAll,
+      streak: streak
+    };
+    badgesScroll.textContent = '';
+    BADGES.forEach((b) => {
+      const item = document.createElement('div');
+      item.className = 'badge-item' + (b.check(st) ? ' unlocked' : '');
+      const coin = document.createElement('div');
+      coin.className = 'badge-coin';
+      coin.textContent = b.icon;
+      const nm = document.createElement('div');
+      nm.className = 'badge-name';
+      nm.textContent = b.name;
+      item.appendChild(coin);
+      item.appendChild(nm);
+      badgesScroll.appendChild(item);
+    });
   }
 
+  // ✅ v8.0 — SYNC FIREBASE : re-rendu quand la progression fusionne/arrive du
+  // cloud (compteurs matières, badges, série quotidienne). Les lectures faites
+  // sur un autre appareil apparaissent ici sans recharger.
   window.addEventListener('arvexa-progress-updated', () => {
-    try { renderBadges(); } catch (e) {}
-  });
-  window.addEventListener('pageshow', () => { try { renderBadges(); } catch (e) {} });
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) { try { renderBadges(); } catch (e) {} }
+    try { renderProgress(); renderBadges(); } catch (e) {}
   });
 
   // ================================================================
@@ -3060,7 +2952,7 @@
     tt.textContent = 'Installe ARVEXA';
     const td = document.createElement('div');
     td.className = 'install-desc';
-    td.textContent = "Icône sur ton écran d'accueil, comme une vraie app — 100 % en ligne.";
+    td.textContent = "Accès hors ligne + icône sur ton écran d'accueil, comme une vraie app.";
     txt.appendChild(tt);
     txt.appendChild(td);
     const btn = document.createElement('button');
@@ -3096,7 +2988,7 @@
     });
   }
 
-  renderBadges();
+  renderProgress();
 
 
   // ================================================================
@@ -3181,7 +3073,7 @@
     if (!isPremium) {
       reminder.style.display = 'block';
       subTitle.textContent = '🔓 Débloque tout ARVEXA School';
-      subText.textContent = 'Accède à tout ARVEXA : résumés, questions, cartes mentales, outils et plus encore avec Premium.';
+      subText.textContent = 'Accède à tous les chapitres, exercices, corrections et plus de fonctionnalités avec Premium.';
       subExpiry.style.display = 'none';
       subBtn.textContent = 'Voir les offres';
       subBtn.className = 'sub-btn';
@@ -3226,16 +3118,6 @@
 
   function renderUserData(data) {
     if (!data) return;
-    // ✅ v8.35 — publie la classe pour le héros aussi sur le chemin cache
-    // (hors ligne / retour instantané) puis re-peint titre + objectif.
-    try {
-      window.ARVEXA_USER_PROFILE = {
-        classId: data.classId || '',
-        series: data.series || '',
-        customClass: data.customClass || ''
-      };
-      window.dispatchEvent(new Event('arvexa:profile'));
-    } catch (e) {}
     updateGreeting(data.firstName || 'Élève');
     const premium = isUserPremium(data);
     updateSubscriptionDisplay(premium, data);
@@ -3243,14 +3125,7 @@
   }
 
   function showDashboard() {
-    /* ✅ v8.51a — PORTE PROFIL : toutes les données du tableau de bord
-       (salutation, héros, niveau figé, abonnement) sont peintes par
-       renderUserData AVANT cet appel → la porte « profil » se ferme ici,
-       sur TOUS les chemins (snapshot temps réel, cache, erreur). */
-    try { if (window.__arvexaReady) window.__arvexaReady('profile'); } catch (e) {}
     hideSplash();
-    /* ✅ v8.65a — l'accueil n'a PLUS de cercle boot-loader (chargement
-       d'origine restauré : splash 1ʳᵉ ouverture de session uniquement). */
     const dynamic = document.getElementById('dynamicContent');
     if (dynamic) dynamic.style.display = 'block';
   }
@@ -3510,6 +3385,16 @@
   // ================================================================
   let userData = null;
   let unsubscribeUser = null;
+  /* ✅ v1.2 SPA — chaque nouvelle exécution du module (retour sur cette page
+     via navigation instantanée) coupe les écouteurs temps réel posés par le
+     passage précédent : sinon onAuthStateChanged / onSnapshot s'empilent à
+     chaque visite et l'ancien module continue d'écrire dans le nouveau DOM. */
+  (function () {
+    try { if (typeof window.__ARV_IDX_AUTH_UNSUB__ === 'function') window.__ARV_IDX_AUTH_UNSUB__(); } catch (e) {}
+    window.__ARV_IDX_AUTH_UNSUB__ = null;
+    try { if (typeof window.__ARV_IDX_UNSUB__ === 'function') window.__ARV_IDX_UNSUB__(); } catch (e) {}
+    window.__ARV_IDX_UNSUB__ = null;
+  })();
   let currentUid = null;
   let isRedirecting = false;
   let isAuthResolved = false;
@@ -3751,23 +3636,11 @@
     lastSnapshotUid = user.uid;
 
     const userRef = doc(db, 'users', user.uid);
-    unsubscribeUser = onSnapshot(userRef,
+    window.__ARV_IDX_UNSUB__ = unsubscribeUser = onSnapshot(userRef,
       (docSnap) => {
         const cached = getCachedUserData(user.uid);
         if (docSnap.exists()) {
           userData = docSnap.data();
-
-          // ✅ v8.34 — publie la vraie classe complète pour la carte
-          // « Ton parcours » (parcours.js lit ARVEXA_USER_PROFILE).
-          try {
-            window.ARVEXA_USER_PROFILE = {
-              classId: userData.classId || '',
-              series: userData.series || '',
-              customClass: userData.customClass || ''
-            };
-            window.dispatchEvent(new Event('arvexa:profile'));
-          } catch (e) {}
-          freezeExamInfoToSession(userData);
 
           if (userData.accountStatus === 'blocked') {
             if (unsubscribeUser) { unsubscribeUser(); unsubscribeUser = null; }
@@ -3788,24 +3661,12 @@
           }
 
           saveUserDataToCache(userData, user.uid);
-          /* ✅ v8.63a — réalisations FRAÎCHES depuis Firebase à chaque
-             snapshot (aucun cache entre les comptes). */
-          try { window.__ARVEXA_CURRENT_UID = user.uid; } catch (e) {}
           renderUserData(userData);
           showDashboard();
-          fetchBadgeDashboard();
           checkUnreadNotifications(user.uid);
           hideSyncPill();
         } else if (cached) {
           userData = cached;
-          try {
-            window.ARVEXA_USER_PROFILE = {
-              classId: userData.classId || '',
-              series: userData.series || '',
-              customClass: userData.customClass || ''
-            };
-          } catch (e) {}
-          freezeExamInfoToSession(cached);
           renderUserData(cached);
           showDashboard();
         } else {
@@ -3825,58 +3686,6 @@
         console.warn('[Firestore] onSnapshot users:', error.code || error.message);
       }
     );
-  }
-
-  /* ✅ v8.63a — RÉALISATIONS FRAÎCHES DEPUIS FIREBASE (demande propriétaire :
-     « doivent être stockées sur Firebase… sans faire appel au cache »).
-     À chaque snapshot du compte, le dashboard SERVEUR est récupéré
-     (sections créées, matières, temps d'étude, série) puis les réalisations
-     sont re-peintes avec les vraies données du compte connecté. Le cache
-     local est ré-estampillé par uid — jamais de mélange entre comptes. */
-  let badgeFetchInFlight = false;
-  let badgeFetchAt = 0;
-  async function fetchBadgeDashboard() {
-    const u = (typeof auth !== 'undefined' && auth && auth.currentUser) ? auth.currentUser : null;
-    if (!u) return;
-    if (badgeFetchInFlight) return;
-    /* Au plus une requête toutes les 15 s — les snapshots Firestore arrivent
-       souvent en rafale au démarrage. */
-    if (Date.now() - badgeFetchAt < 15000) return;
-    badgeFetchInFlight = true;
-    badgeFetchAt = Date.now();
-    try {
-      const token = await window.__arvexaGetIdToken();
-      if (!token) return;
-      const res = await fetch('/api/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ action: 'getDashboard' })
-      });
-      const data = await res.json();
-      if (data && data.success && data.summary) {
-        data._uid = u.uid;
-        window.__arvexaFbDash = data;
-        try { window.__ARVEXA_CURRENT_UID = u.uid; } catch (e) {}
-        if (typeof window.__arvexaPaintBadges === 'function') {
-          try { window.__arvexaPaintBadges(); } catch (e) {}
-        }
-        try {
-          localStorage.setItem('arvexa_dash_cache_v1', JSON.stringify(Object.assign({}, data, { _uid: u.uid })));
-          localStorage.setItem('arv_smart_cache_v1', JSON.stringify({
-            at: Date.now(), success: true, _uid: u.uid,
-            study: (data.smart && data.smart.study) || data.studyTime,
-            summary: data.summary,
-            subjects: data.subjects,
-            lacune: (data.smart && data.smart.lacune) || null
-          }));
-          window.dispatchEvent(new Event('arvexa-progress-updated'));
-        } catch (e) {}
-      }
-    } catch (e) {
-      /* silencieux : hors ligne le cache du MÊME compte reste affiché */
-    } finally {
-      badgeFetchInFlight = false;
-    }
   }
 
   // ✅ CORRIGÉ — pas de redirection automatique vers register.html
@@ -3938,7 +3747,7 @@
         saveUserDataToCache(fresh, user.uid);
         renderUserData(fresh);
       }
-      renderBadges();
+      renderProgress();
       showToast('Données actualisées', 'success');
     } catch (e) {
       console.warn('[Refresh] erreur:', e.message);
@@ -3962,7 +3771,7 @@
   function initAuthGuard(onAuthenticated) {
     if (authUnsubscribe) return;
 
-    authUnsubscribe = onAuthStateChanged(auth, (user) => {
+    window.__ARV_IDX_AUTH_UNSUB__ = authUnsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         if (authGraceTimer) { clearTimeout(authGraceTimer); authGraceTimer = null; }
         if (!isAuthResolved) isAuthResolved = true;
@@ -4036,7 +3845,7 @@
     }
 
     loadUserData(user);
-    renderBadges();
+    renderProgress();
 
     // Retour instantané : signal discret « mise à jour en arrière-plan »
     // ✅ v5.9 — PLUS JAMAIS À CHAQUE RAFRAÎCHISSEMENT. La snapshot miroir
@@ -4147,9 +3956,15 @@
     handleLogout();
   });
 
-  // ⚡ v8.60a — le menu latéral est désormais piloté par arvexa-menu.js
-  // (script classique : s'ouvre dès le clic, même juste après un
-  // rafraîchissement, sans attendre Firebase ni les données).
+  document.getElementById('menuToggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('active');
+  });
+
+  document.getElementById('sidebarOverlay').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+  });
 
   document.getElementById('notifBtn').addEventListener('click', () => {
     window.location.href = 'notifications.html';
@@ -4198,11 +4013,11 @@
 
   // Rafraîchir la progression quand l'utilisateur revient sur la page
   window.addEventListener('pageshow', (e) => {
-    if (e.persisted) renderBadges();
+    if (e.persisted) renderProgress();
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') renderBadges();
+    if (document.visibilityState === 'visible') renderProgress();
   });
 
   window.addEventListener('beforeunload', () => {
@@ -4214,18 +4029,5 @@
 <script src="arvexa-streak.js" defer></script>
 <script src="parcours.js" defer></script>
 <script src="arvexa-vivant.js"></script>
-<script src="arvexa-modal.js" defer></script>
-<!-- ⚡ v8.56a — capture du code parrainage ?ref=CODE (30 jours, lue à l'inscription) -->
-<script>
-(function () {
-  try {
-    var raw = (new URLSearchParams(window.location.search).get('ref') || '').toUpperCase().trim();
-    if (/^[A-Z0-9][A-Z0-9_-]{2,23}$/.test(raw)) {
-      localStorage.setItem('arvexaRef', JSON.stringify({ code: raw, ts: Date.now() }));
-      history.replaceState(null, '', window.location.pathname);
-    }
-  } catch (e) { /* no-op */ }
-})();
-</script>
 </body>
 </html>
