@@ -487,7 +487,11 @@ async function callProvider(provider, prompt, maxTokens, temperature, timeoutMs)
   // ✅ v8.73a — timeout par appel borné (45 s par défaut) ; generateWithFallback
   // passe le temps RESTANT du budget global pour que la fonction rentre
   // TOUJOURS avant le plateau Vercel (fini l'écran de chargement sans fin).
-  const timeout = setTimeout(() => controller.abort(), Math.max(5000, Math.min(45000, Number(timeoutMs) || 45000)));
+  // ✅ v8.73a — cap 75 s : le PREMIER fournisseur (Gemini ~40-50 s pour un
+  // examen JSON complet de ~3800 tokens) doit pouvoir TERMINER dans le budget
+  // 60 s de génération / 70 s de correction — les enveloppes (timeoutMs =
+  // temps restant) restent les vraies bornes, jamais le cap.
+  const timeout = setTimeout(() => controller.abort(), Math.max(5000, Math.min(75000, Number(timeoutMs) || 45000)));
   try {
     console.log(`[AI] ${provider.name} | prompt: ${prompt.length} car | max_tokens: ${maxTokens}`);
 
