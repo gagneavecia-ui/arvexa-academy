@@ -407,6 +407,19 @@ async function releaseFreeGeneration(uid, usageDate) {
 
 function getProviders() {
   const providers = [];
+  if (process.env.GEMINI_API_KEY) {
+    // ✅ v8.73a — GEMINI EN TÊTE DE CHAÎNE : les relais OpenRouter :free sont
+    // INTERMITTENTS (vagues de « réponse vide » + finish=length constatées le
+    // 27/11 — le raisonnement interne brûle tout le budget de tokens). Gemini
+    // est natif JSON (responseMimeType) avec thinkingBudget 0 (zéro gaspillage)
+    // et deux modèles stables enfile l'un derrière l'autre — la génération et
+    // la correction reprennent un service régulier.
+    providers.push(
+      { name: 'Gemini/gemini-3.8-flash', key: process.env.GEMINI_API_KEY, gemini: true, endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', model: 'gemini-3.8-flash' },
+      { name: 'Gemini/flash-latest', key: process.env.GEMINI_API_KEY, gemini: true, endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent', model: 'gemini-flash-latest' },
+      { name: 'Gemini/flash-lite-latest', key: process.env.GEMINI_API_KEY, gemini: true, endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent', model: 'gemini-flash-lite-latest' }
+    );
+  }
   if (process.env.OPENROUTER_API_KEY) {
     // ✅ v8.65a — CHAÎNE VÉRIFIÉE EN DIRECT le 26/11/2026 (test réel depuis
     // le sandbox) : nemotron-3-ultra (550B) + ernie-5.5 répondent avec un JSON
@@ -424,13 +437,19 @@ function getProviders() {
       jsonMode: true, headers: orHeaders
     });
     providers.push(
-      orModel('particle-1:free', 'particle-ai/particle-1:free'),
+      // ✅ v8.73a — ORDRE CORRIGÉ (demande du propriétaire : « la génération
+      // n'aboutit jamais ») : les DEUX modèles vérifiés fiables (ernie-5.5
+      // rapide + nemotron-3-ultra le plus robuste) passent EN PREMIER — les
+      // relais à cap variable (particle/gemma/ling) sont relégués après.
+      // Ancien ordre : les 5 premiers essais échouaient (« réponse vide »)
+      // et le budget 60 s s'épuisait AVANT d'atteindre nemotron-3-ultra.
       orModel('ernie-5.5-flash:free', 'baidu/ernie-5.5-flash-preview:free'),
+      orModel('nemotron-3-ultra:free', 'nvidia/nemotron-3-ultra-550b-a55b:free'),
+      orModel('nemotron-3.5-super:free', 'nvidia/nemotron-3.5-super-vl:free'),
+      orModel('particle-1:free', 'particle-ai/particle-1:free'),
       orModel('gemma-4-31b:free', 'google/gemma-4-31b-it:free'),
       orModel('ling-3.2-flash:free', 'inclusionai/ling-3.2-flash:free'),
-      orModel('nemotron-3.5-super:free', 'nvidia/nemotron-3.5-super-vl:free'),
-      orModel('flint-v1:free', 'recursive/flint-v1.0:free'),
-      orModel('nemotron-3-ultra:free', 'nvidia/nemotron-3-ultra-550b-a55b:free')
+      orModel('flint-v1:free', 'recursive/flint-v1.0:free')
     );
   }
   if (process.env.GROQ_API_KEY) {
@@ -500,20 +519,87 @@ async function callProvider(provider, prompt, maxTokens, temperature, timeoutMs)
     };
     if (provider.headers) Object.assign(headers, provider.headers);
 
-    const result = await fetch(provider.endpoint, {
-      method: 'POST', headers, body: JSON.stringify(body), signal: controller.signal
-    });
+    // ✅ v8.73a — API GEMINI (generateContent) : JSON natif via responseMimeType
+    // + thinkingBudget 0 (zéro tokens brûlés en raisonnement — la cause des
+    // « réponse vide » des relais :free). Clé en query ET en header : couvre
+    // les clés AIza… et AQ.… (même convention que api/progress.js).
+    if (provider.gemini) {
+      const gBody = {
+        system_instruction: { parts: [{ text: 'Tu produis exclusivement du JSON valide. Tu respectes scrupuleusement le schéma demandé.' }] },
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: typeof temperature === 'number' ? temperature : 0.3,
+          maxOutputTokens: maxTokens,
+          responseMimeType: 'application/json',
+          thinkingConfig: { thinkingBudget: 0 }
+        }
+      };
+      const gRes = await fetch(`${provider.endpoint}?key=${encodeURIComponent(provider.key)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': provider.key },
+        body: JSON.stringify(gBody),
+        signal: controller.signal
+      });
+      const gData = await gRes.json().catch(() => null);
+      if (!gRes.ok) {
+        const msg = gData?.error?.message || ('HTTP ' + gRes.status);
+        throw new Error(provider.name + ': ' + msg);
+      }
+      const parts = gData?.candidates?.[0]?.content?.parts || [];
+      const gContent = parts.map((p) => (p && typeof p.text === 'string') ? p.text : '').join('');
+      if (!gContent || !gContent.trim()) throw new Error(provider.name + ': réponse vide');
+      console.log(`[AI] ${provider.name} — réponse: ${gContent.length} car`);
+      const gClean = String(gContent).replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const gCandidates = [repairMathEscapes(gClean), gClean, repairAllEscapes(gClean)];
+      for (let gi = 0; gi < gCandidates.length; gi++) {
+        try { return JSON.parse(gCandidates[gi]); }
+        catch (e) {
+          if (gi === gCandidates.length - 1) {
+            console.warn(`[AI] ${provider.name} — JSON invalide même réparé. Début: ${gClean.slice(0, 200)}`);
+            const gErr = new Error(provider.name + ': JSON invalide');
+            gErr.raw = gClean;
+            throw gErr;
+          }
+        }
+      }
+    }
 
-    const data = await result.json().catch(() => null);
-    if (!result.ok) {
-      const msg = data?.error?.message || data?.message || ('HTTP ' + result.status);
-      throw new Error(provider.name + ': ' + msg);
+    // ✅ v8.73a — RETRY INTERNE sur « réponse vide » : les relais :free sont
+    // INTERMITTENTS (le même appel renvoie vide puis OK 10 s plus tard —
+    // constaté en diagnostic direct). Un seul essai par relais gaspillait la
+    // chaîne : on retente UNE fois le même relais (1,2 s de pause) dans la
+    // même enveloppe de temps (AbortController commun).
+    let data = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const result = await fetch(provider.endpoint, {
+        method: 'POST', headers, body: JSON.stringify(body), signal: controller.signal
+      });
+      data = await result.json().catch(() => null);
+      if (!result.ok) {
+        const msg = data?.error?.message || data?.message || ('HTTP ' + result.status);
+        // 429/5xx du relais : re-tenter une fois peut suffire (cap transitoire)
+        if (attempt === 1 && (result.status === 429 || result.status >= 500)) {
+          await new Promise((r) => setTimeout(r, 1500));
+          continue;
+        }
+        throw new Error(provider.name + ': ' + msg);
+      }
+      let content = data?.choices?.[0]?.message?.content;
+      if (!content) {
+        // ✅ v8.65a — filet : sur certains relais le JSON aboutit dans le champ
+        // « reasoning » (exclusion non appliquée en amont). On le récupère.
+        const rsn = data?.choices?.[0]?.message?.reasoning;
+        if (rsn && String(rsn).trim().length > 40) content = String(rsn);
+      }
+      if (content) break;
+      if (attempt === 1) {
+        console.warn(`[AI] ${provider.name} — réponse vide (essai 1/2), re-tentative…`);
+        await new Promise((r) => setTimeout(r, 1200));
+      }
     }
 
     let content = data?.choices?.[0]?.message?.content;
     if (!content) {
-      // ✅ v8.65a — filet : sur certains relais le JSON aboutit dans le champ
-      // « reasoning » (exclusion non appliquée en amont). On le récupère.
       const rsn = data?.choices?.[0]?.message?.reasoning;
       if (rsn && String(rsn).trim().length > 40) content = String(rsn);
     }
@@ -3316,6 +3402,18 @@ module.exports = async function handler(request, response) {
       console.error('Exam generation failed:', error.message);
       if (reservation?.reserved) {
         try { await releaseFreeGeneration(verifiedUser.uid, reservation.usageDate); } catch (_) {}
+      }
+
+      // ✅ v8.73a — MODE ENTRAÎNEMENT : le pool ne contient PAS le chapitre du
+      // cahier de l'élève → un examen pool serait HORS SUJET tout en étant
+      // présenté comme « ton entraînement ». On refuse ce mensonge : message
+      // clair de re-tentative (le retry interne des relais rend ce cas rare).
+      if (body.notebookContext) {
+        return response.status(502).json({
+          success: false,
+          error: 'La fabrication de ton entraînement a échoué cette fois (relais IA momentanément saturés). Réessaie dans quelques secondes : ton cours est bien lu.',
+          code: 'TRAINING_GENERATION_FAILED'
+        });
       }
 
       const pooled = await buildExamFromPool(body);
