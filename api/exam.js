@@ -3412,7 +3412,9 @@ module.exports = async function handler(request, response) {
         return response.status(502).json({
           success: false,
           error: 'La fabrication de ton entraînement a échoué cette fois (relais IA momentanément saturés). Réessaie dans quelques secondes : ton cours est bien lu.',
-          code: 'TRAINING_GENERATION_FAILED'
+          code: 'TRAINING_GENERATION_FAILED',
+          // ✅ v8.73a-diag — chaîne des échecs par relais (diagnostic propriétaire)
+          detail: String(error.message || '').slice(0, 900)
         });
       }
 
