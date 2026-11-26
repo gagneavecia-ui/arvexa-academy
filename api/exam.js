@@ -525,19 +525,20 @@ async function callProvider(provider, prompt, maxTokens, temperature, timeoutMs)
     };
     if (provider.headers) Object.assign(headers, provider.headers);
 
-    // ✅ v8.73a — API GEMINI (generateContent) : JSON natif via responseMimeType
-    // + thinkingBudget 0 (zéro tokens brûlés en raisonnement — la cause des
-    // « réponse vide » des relais :free). Clé en query ET en header : couvre
-    // les clés AIza… et AQ.… (même convention que api/progress.js).
+    // ✅ v8.73a — API GEMINI (generateContent) : clé en query ET en header
+    // (couvre les clés AIza… et AQ.…, même convention que api/arv.js).
     if (provider.gemini) {
+      // ✅ v8.73a-fix3 — configuration identique à api/arv.js (chat : 3 s en
+      // production) : generateContent SANS responseMimeType NI thinkingConfig
+      // (flash-lite rejetait thinkingBudget 0 = « invalid argument » ; les
+      // autres brûlaient leur temps en raisonnement). Le JSON est extrait du
+      // texte (fences retirées + réparations d'échappements déjà en place).
       const gBody = {
         system_instruction: { parts: [{ text: 'Tu produis exclusivement du JSON valide. Tu respectes scrupuleusement le schéma demandé.' }] },
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: typeof temperature === 'number' ? temperature : 0.3,
-          maxOutputTokens: maxTokens,
-          responseMimeType: 'application/json',
-          thinkingConfig: { thinkingBudget: 0 }
+          maxOutputTokens: maxTokens
         }
       };
       const gRes = await fetch(`${provider.endpoint}?key=${encodeURIComponent(provider.key)}`, {
