@@ -415,9 +415,11 @@ function getProviders() {
     // et deux modèles stables enfile l'un derrière l'autre — la génération et
     // la correction reprennent un service régulier.
     providers.push(
-      { name: 'Gemini/gemini-3.8-flash', key: process.env.GEMINI_API_KEY, gemini: true, endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', model: 'gemini-3.8-flash' },
+      // ✅ v8.73a-fix2 — ORDRE PAR VITESSE : flash-lite (le plus rapide) →
+      // flash → 3.8-flash (le plus lent, > 60 s constaté sur un examen complet).
+      { name: 'Gemini/flash-lite-latest', key: process.env.GEMINI_API_KEY, gemini: true, endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent', model: 'gemini-flash-lite-latest' },
       { name: 'Gemini/flash-latest', key: process.env.GEMINI_API_KEY, gemini: true, endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent', model: 'gemini-flash-latest' },
-      { name: 'Gemini/flash-lite-latest', key: process.env.GEMINI_API_KEY, gemini: true, endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent', model: 'gemini-flash-lite-latest' }
+      { name: 'Gemini/gemini-3.8-flash', key: process.env.GEMINI_API_KEY, gemini: true, endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', model: 'gemini-3.8-flash' }
     );
   }
   if (process.env.OPENROUTER_API_KEY) {
@@ -2209,11 +2211,11 @@ async function generateWithFallback(prompt, subjectName, poolLoader, chapter, ex
   if (!providers.length) throw new Error('provider_missing');
 
   const startTime = Date.now();
-  // ✅ v8.73a — budget ramené à 60 s (< maxDuration 90) : même sur les
-  // fournisseurs lents, le handler RENTRE TOUJOURS par lui-même (épreuve ou
-  // repli propre) — fini les réponses coupées par le plateau qui laissaient
-  // l'élève sur un écran de chargement sans fin (« ça n'aboutit jamais »).
-  const TIME_BUDGET_MS = 60000;
+  // ✅ v8.73a — budget 70 s (< maxDuration 90) : même sur les fournisseurs
+  // lents (Gemini ~40-60 s pour un examen JSON complet), le handler RENTRE
+  // TOUJOURS par lui-même (épreuve ou repli propre) — fini les réponses
+  // coupées par le plateau qui laissaient l'élève sur un écran sans fin.
+  const TIME_BUDGET_MS = 70000;
   const errors = [];
 
   for (let i = 0; i < providers.length; i++) {
